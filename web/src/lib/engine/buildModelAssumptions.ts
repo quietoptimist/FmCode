@@ -53,7 +53,7 @@ function buildAssumptionField(def, ctx) {
     single: def.default ?? null,
     annual: Array.from({ length: years }, () => null),
     monthly: Array.from({ length: months }, () => null),
-    growth: null,         // annual growth/inflation, e.g. 0.05 = 5% per year
+    growth: Array.from({ length: years }, () => 0), // Array for YoY growth, init to 0
     smoothing: def.supports?.smoothing ? true : false,
     dateRange: null       // could be { start: 0, end: 59 }
   };
@@ -91,19 +91,15 @@ function materializeMonthly(def, raw, ctx) {
   }
 
   // 2) growth path (alternative to annual): single + annual growth
-  if (def.supports?.growth && raw.growth != null) {
-    const base = raw.single != null ? raw.single : 0;
-    const annualGrowth = raw.growth; // e.g. 0.06
-    // convert to monthly compound
-    const monthlyGrowth = Math.pow(1 + annualGrowth, 1 / 12) - 1;
-    for (let m = 0; m < months; m++) {
-      if (m === 0) {
-        out[m] = base;
-      } else {
-        out[m] = out[m - 1] * (1 + monthlyGrowth);
-      }
-    }
-  } else if (def.supports?.annual && raw.annual?.length) {
+  // Actually, growth mode updates raw.annual, so we can just rely on raw.annual logic below.
+  // But if we want to support calculating FROM growth:
+  // We should probably ensure raw.annual is always the source of truth for calculation,
+  // and raw.growth is just a UI state that updates raw.annual.
+  // HOWEVER, the user said: "the % determine the annual values if in % mode"
+  // So let's support calculating annual FROM growth if needed, but syncing is better.
+  // Let's assume raw.annual is always up to date.
+
+  if (def.supports?.annual && raw.annual?.length) {
     // 3) annual path
     for (let y = 0; y < years; y++) {
       const yearVal = raw.annual[y];
@@ -172,7 +168,7 @@ function deepClone(obj) {
   return copy;
 }
 
-export function updateAssumption(assumptions, objName, type, aliasOrName, fieldName, value, ctx) {
+export function updateAssumption(assumptions, objName, type, aliasOrName, fieldName, value, ctx, subField = null, index = null) {
   const newAssumptions = deepClone(assumptions);
 
   let targetField;
@@ -187,13 +183,64 @@ export function updateAssumption(assumptions, objName, type, aliasOrName, fieldN
     return assumptions;
   }
 
-  // Update raw value (assuming single for now)
-  targetField.raw.single = value;
+  // Ensure growth array exists if we are about to use it
+  if (!Array.isArray(targetField.raw.growth)) {
+    const years = ctx.years ?? 2;
+    targetField.raw.growth = Array.from({ length: years }, () => 0);
+  }
 
-  // If annual is supported, also update annual array to match single
-  // This is necessary because materializeMonthly prioritizes annual over single
-  if (targetField.supports?.annual && Array.isArray(targetField.raw.annual)) {
-    targetField.raw.annual.fill(value);
+  // Handle different update types
+  if (subField === 'annual' && index !== null) {
+    // Updating a specific year in annual array
+    targetField.raw.annual[index] = value;
+
+    // Sync Growth: Calculate growth based on new annual values
+    // Growth[i] = (Annual[i] - Annual[i-1]) / Annual[i-1]
+    // Growth[0] is usually 0 or undefined relative to previous. Let's keep it 0.
+    if (index > 0) {
+      const prev = targetField.raw.annual[index - 1] || 0;
+      if (prev !== 0) {
+        targetField.raw.growth[index] = (value - prev) / prev;
+      } else {
+        targetField.raw.growth[index] = 0;
+      }
+    }
+    // Also update next year's growth if it exists
+    if (index < targetField.raw.annual.length - 1) {
+      const next = targetField.raw.annual[index + 1] || 0;
+      if (value !== 0) {
+        targetField.raw.growth[index + 1] = (next - value) / value;
+      }
+    }
+
+  } else if (subField === 'growth' && index !== null) {
+    // Updating a specific year in growth array
+    targetField.raw.growth[index] = value;
+
+    // Sync Annual: Recalculate annual values based on growth
+    // If index 0 changed (base), it's weird for growth. Usually growth is from year 1.
+    // But if we treat growth[0] as 0, then changing it does nothing?
+    // Let's assume growth applies to the previous year.
+    // So Annual[i] = Annual[i-1] * (1 + Growth[i])
+    // We need to propagate this change forward.
+
+    for (let i = Math.max(1, index); i < targetField.raw.annual.length; i++) {
+      const prev = targetField.raw.annual[i - 1] || 0;
+      const g = targetField.raw.growth[i] || 0;
+      targetField.raw.annual[i] = prev * (1 + g);
+    }
+
+  } else if (subField === 'smoothing') {
+    targetField.raw.smoothing = value;
+  } else {
+    // Default: Update single value
+    targetField.raw.single = value;
+
+    // Sync Annual: Fill all years with single value
+    if (targetField.supports?.annual && Array.isArray(targetField.raw.annual)) {
+      targetField.raw.annual.fill(value);
+      targetField.raw.growth.fill(0); // Constant means 0 growth
+    }
   }
 
   // Re-materialize value

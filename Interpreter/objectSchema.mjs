@@ -335,7 +335,7 @@ export const objectSchema = {
       output: [
         {
           name: "factor",
-          label: "Rate per hour",
+          label: "Price per unit",
           baseType: "number",
           default: 100,
           supports: {
@@ -367,7 +367,7 @@ export const objectSchema = {
       output: [
         {
           name: "factor",
-          label: "Rate per hour",
+          label: "Price per unit",
           baseType: "number",
           default: 100,
           supports: {
@@ -427,7 +427,7 @@ export const objectSchema = {
       ]
     }
   },
-  
+
   // ============================
   // DelRev - delay revenue outputs to account for payment delays
   // ============================

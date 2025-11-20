@@ -26,6 +26,7 @@ export default function Editor({ params }: { params: { id: string } }) {
     const [error, setError] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
     const [name, setName] = useState('Untitled Model');
+    const [modelYears, setModelYears] = useState(2);
     const router = useRouter();
 
     // Helper to rehydrate Maps from JSON
@@ -91,6 +92,12 @@ export default function Editor({ params }: { params: { id: string } }) {
                             const restored = JSON.parse(JSON.stringify(data.assumptions), (key, value) => {
                                 return value;
                             });
+
+                            // Restore settings
+                            if (restored._settings && restored._settings.modelYears) {
+                                setModelYears(restored._settings.modelYears);
+                            }
+
                             const restoreArrays = (obj: any) => {
                                 if (!obj) return;
                                 if (obj.value && Array.isArray(obj.value)) {
@@ -120,7 +127,7 @@ export default function Editor({ params }: { params: { id: string } }) {
         if (!result?.ast || !result?.index) return;
 
         setAssumptions((prev: any) => {
-            const ctx = { months: 60, years: 5 };
+            const ctx = { months: modelYears * 12, years: modelYears };
             const defaults = buildModelAssumptions(result.ast, result.index, objectSchema, ctx);
 
             // If we have previous assumptions, try to merge them
@@ -133,11 +140,74 @@ export default function Editor({ params }: { params: { id: string } }) {
                     if (typeof def === 'object' && typeof existing === 'object') {
                         // If it's a field (has 'raw'), copy 'raw' and 'value'
                         if (def.raw !== undefined && existing.raw !== undefined) {
-                            def.raw = existing.raw;
-                            // We should re-materialize value to be safe, but if we copy value it might be stale if logic changed?
-                            // But logic is in engine.
-                            // Let's copy value too.
-                            if (existing.value !== undefined) def.value = existing.value;
+                            // Copy raw data
+                            // IMPORTANT: Handle resizing of arrays if years changed
+                            // But here we are merging existing (old) into defaults (new size)
+                            // So we should take existing and fit into def
+
+                            // Actually, let's just copy raw properties. 
+                            // buildModelAssumptions logic should handle resizing if we implement it there?
+                            // Or we do it here.
+                            // Let's copy raw, but we might need to ensure arrays are long enough?
+                            // For now, simple copy. We'll rely on buildModelAssumptions to have created correct size defaults,
+                            // and we overlay existing data. If existing is shorter, we keep it short? No, we want new size.
+
+                            // Better strategy: Copy scalar values. For arrays, copy elements.
+                            const newRaw = { ...def.raw };
+                            const oldRaw = existing.raw;
+
+                            if (oldRaw.single !== undefined) newRaw.single = oldRaw.single;
+                            if (oldRaw.smoothing !== undefined) newRaw.smoothing = oldRaw.smoothing;
+
+                            // Arrays: Copy what we have, keep new length (which is correct for current modelYears)
+                            if (Array.isArray(newRaw.annual) && Array.isArray(oldRaw.annual)) {
+                                const oldLen = oldRaw.annual.length;
+                                const newLen = newRaw.annual.length;
+                                const lastVal = oldLen > 0 ? oldRaw.annual[oldLen - 1] : null;
+
+                                for (let i = 0; i < newLen; i++) {
+                                    if (i < oldLen) {
+                                        newRaw.annual[i] = oldRaw.annual[i];
+                                    } else if (lastVal !== null) {
+                                        // Extend with last value to avoid step changes
+                                        newRaw.annual[i] = lastVal;
+                                    }
+                                }
+                            }
+                            if (Array.isArray(newRaw.growth) && Array.isArray(oldRaw.growth)) {
+                                for (let i = 0; i < Math.min(newRaw.growth.length, oldRaw.growth.length); i++) {
+                                    newRaw.growth[i] = oldRaw.growth[i];
+                                }
+                            }
+                            // Monthly?
+                            if (Array.isArray(newRaw.monthly) && Array.isArray(oldRaw.monthly)) {
+                                for (let i = 0; i < Math.min(newRaw.monthly.length, oldRaw.monthly.length); i++) {
+                                    newRaw.monthly[i] = oldRaw.monthly[i];
+                                }
+                            }
+
+                            def.raw = newRaw;
+
+                            // We should re-materialize value to be safe, but logic is in engine.
+                            // For now, let's NOT copy value, but let it be re-calculated?
+                            // No, engine uses .value.
+                            // So we MUST re-materialize or copy value.
+                            // If we copy value, it might be wrong size.
+                            // Let's rely on the fact that runClientEngine doesn't re-materialize assumptions.
+                            // We need to re-materialize.
+                            // Or just copy value and truncate/expand?
+                            // Value is Float64Array.
+
+                            // Let's try to copy value and resize.
+                            if (existing.value && (existing.value instanceof Float64Array || Array.isArray(existing.value))) {
+                                const oldVal = existing.value;
+                                const newVal = new Float64Array(ctx.months);
+                                for (let i = 0; i < Math.min(newVal.length, oldVal.length); i++) {
+                                    newVal[i] = oldVal[i];
+                                }
+                                def.value = newVal;
+                            }
+
                             return def;
                         }
 
@@ -150,19 +220,11 @@ export default function Editor({ params }: { params: { id: string } }) {
                     return def;
                 };
 
-                // Create a deep copy of defaults to merge into, as buildModelAssumptions returns objects with Float64Arrays
-                // which JSON.parse(JSON.stringify) would not handle correctly.
-                // We need a custom deep copy that preserves Float64Arrays.
+                // Create a deep copy of defaults to merge into
                 const deepCopy = (obj: any): any => {
-                    if (obj === null || typeof obj !== 'object') {
-                        return obj;
-                    }
-                    if (obj instanceof Float64Array) {
-                        return new Float64Array(obj);
-                    }
-                    if (Array.isArray(obj)) {
-                        return obj.map(item => deepCopy(item));
-                    }
+                    if (obj === null || typeof obj !== 'object') return obj;
+                    if (obj instanceof Float64Array) return new Float64Array(obj);
+                    if (Array.isArray(obj)) return obj.map(deepCopy);
                     const copy: { [key: string]: any } = {};
                     for (const key in obj) {
                         if (Object.prototype.hasOwnProperty.call(obj, key)) {
@@ -178,7 +240,7 @@ export default function Editor({ params }: { params: { id: string } }) {
 
             return defaults;
         });
-    }, [result]);
+    }, [result, modelYears]); // Re-run when modelYears changes
 
     // Run Engine on Client
     const runClientEngine = useCallback(() => {
@@ -187,7 +249,7 @@ export default function Editor({ params }: { params: { id: string } }) {
         try {
             console.log("Running engine with assumptions:", assumptions);
             const graph = buildOutputGraph(result.ast, result.index);
-            const ctx = { months: 60, years: 5 };
+            const ctx = { months: modelYears * 12, years: modelYears };
 
             const engineOutput = runEngine({
                 ast: result.ast,
@@ -206,7 +268,7 @@ export default function Editor({ params }: { params: { id: string } }) {
             console.error("Engine error:", e);
             setError("Engine Error: " + e.message);
         }
-    }, [result, assumptions, overrides]);
+    }, [result, assumptions, overrides, modelYears]);
 
     // Debounce engine run? For now, just run on effect
     useEffect(() => {
@@ -245,6 +307,9 @@ export default function Editor({ params }: { params: { id: string } }) {
                 return value;
             }));
 
+            // Save settings inside assumptions
+            serializableAssumptions._settings = { modelYears };
+
             const modelData = {
                 user_id: user.id,
                 name: name,
@@ -276,10 +341,10 @@ export default function Editor({ params }: { params: { id: string } }) {
         }
     };
 
-    const handleAssumptionChange = (objName: string, type: 'object' | 'output', aliasOrName: string, fieldName: string, value: any) => {
+    const handleAssumptionChange = (objName: string, type: 'object' | 'output', aliasOrName: string, fieldName: string, value: any, subField: string | null = null, index: number | null = null) => {
         if (!assumptions) return;
-        const ctx = { months: 60, years: 5 };
-        const newAssumptions = updateAssumption(assumptions, objName, type, aliasOrName, fieldName, value, ctx);
+        const ctx = { months: modelYears * 12, years: modelYears };
+        const newAssumptions = updateAssumption(assumptions, objName, type, aliasOrName, fieldName, value, ctx, subField, index);
         setAssumptions(newAssumptions);
     };
 
@@ -299,6 +364,20 @@ export default function Editor({ params }: { params: { id: string } }) {
         });
     };
 
+    // Calculate dynamic column spans based on years
+    // We must use full class strings for Tailwind to detect them
+    let leftColClass = "lg:col-span-4";
+    let rightColClass = "lg:col-span-8";
+
+    if (modelYears > 3) {
+        leftColClass = "lg:col-span-5";
+        rightColClass = "lg:col-span-7";
+    }
+    if (modelYears > 6) {
+        leftColClass = "lg:col-span-6";
+        rightColClass = "lg:col-span-6";
+    }
+
     return (
         <main className="flex min-h-screen flex-col items-center p-4 bg-gray-50 text-black">
             <div className="w-full max-w-[1600px] flex justify-between items-center mb-4">
@@ -317,6 +396,19 @@ export default function Editor({ params }: { params: { id: string } }) {
                     />
                 </div>
                 <div className="flex gap-4 items-center">
+                    {/* Model Years Control */}
+                    <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded border border-gray-200 shadow-sm">
+                        <label className="text-xs font-medium text-gray-500 uppercase">Years</label>
+                        <input
+                            type="number"
+                            min="1"
+                            max="10"
+                            value={modelYears}
+                            onChange={(e) => setModelYears(Math.max(1, Math.min(10, parseInt(e.target.value) || 1)))}
+                            className="w-12 text-center font-bold text-gray-700 outline-none border-b border-transparent focus:border-blue-500"
+                        />
+                    </div>
+
                     {error && <div className="text-red-600 text-sm">{error}</div>}
                     <button
                         onClick={handleSave}
@@ -350,25 +442,34 @@ export default function Editor({ params }: { params: { id: string } }) {
 
             <div className="w-full max-w-[1600px] flex flex-col gap-8 pb-20">
                 {result?.index?.outputsByObject && assumptions ? (
-                    (Array.from(result.index.outputsByObject.entries()) as [string, string[]][]).map(([objName, aliases]) => (
-                        <div key={objName} className="grid grid-cols-1 lg:grid-cols-12 gap-6 border-b border-gray-200 pb-8">
-                            <div className="lg:col-span-4">
-                                <ObjectAssumptions
-                                    objName={objName}
-                                    objAss={assumptions[objName]}
-                                    onChange={handleAssumptionChange}
-                                />
+                    (Array.from(result.index.outputsByObject.entries()) as [string, string[]][]).map(([objName, aliases]) => {
+                        const objDef = result.ast.objects.find((o: any) => o.name === objName);
+                        const typeName = objDef?.fnName;
+                        const channelDefs = typeName ? objectSchema[typeName]?.channels : {};
+
+                        return (
+                            <div key={objName} className="grid grid-cols-1 lg:grid-cols-12 gap-6 border-b border-gray-200 pb-8">
+                                <div className={leftColClass}>
+                                    <ObjectAssumptions
+                                        objName={objName}
+                                        objAss={assumptions[objName]}
+                                        years={modelYears}
+                                        onChange={handleAssumptionChange}
+                                    />
+                                </div>
+                                <div className={`${rightColClass} overflow-hidden`}>
+                                    <ObjectOutputs
+                                        aliases={aliases}
+                                        store={engineResult?.store}
+                                        overrides={overrides}
+                                        months={modelYears * 12}
+                                        channelDefs={channelDefs}
+                                        onOverride={handleOverride}
+                                    />
+                                </div>
                             </div>
-                            <div className="lg:col-span-8 overflow-hidden">
-                                <ObjectOutputs
-                                    aliases={aliases}
-                                    store={engineResult?.store}
-                                    overrides={overrides}
-                                    onOverride={handleOverride}
-                                />
-                            </div>
-                        </div>
-                    ))
+                        );
+                    })
                 ) : (
                     <div className="text-center text-gray-500 py-10">
                         {result ? "Loading assumptions..." : "Parse the model to see assumptions and outputs."}
