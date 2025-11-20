@@ -1,0 +1,84 @@
+SaaS with upsell
+"""
+Our company provides a healthy habits app that helps people make simple changes in their lives to improve their health and wellbeing.
+
+We acquire most customers through social media advertising, principally Facebook and Instagram ads.
+Most customers join in Q1, then fairly steady for the rest of the year.
+Customers can choose from three tiers of subscription, Free, Boosted, Unlimited.
+They pay monthly and are not locked in, so some churn each month.
+We also sell supplements, and a small % of active customers buy them each month.
+Customers who order them typically buy 2 packs each time.
+We keep a small stock of supplements as supplier lead times can be over a month, and pay a monthly fee for the storage space.
+
+We pay for packing and shipping each supplement order.
+We have to pay app store fees which are a % of subscriber revenues.
+Our hosting and inference costs grow with active users.
+
+I have a small team of developers, a head of marketing, someone to order and ship supplements, CFO and me (CEO).
+
+We rent serviced office space that includes everything we need, and scales with our total number of staff.
+Not many other costs, insurance, travel and software subscriptions (which vary with headcount) come to mind.
+
+The company provides laptops and mobile phones for every member of staff.
+We didn't need to buy furniture or monitors as those were provided by our serviced office.
+I bought a label printer, and barcode scanner for the supplements fulfilment work.
+"""
+
+Brick & Mortar physical Stores
+"""
+We have a single clothing store on the highstreet, focused on selling casual & athletic clothing to our Gen Z customers. I don't sell online as I had too many returns when I tried that.
+It's going well, and I want to add a small number of new stores over the next couple of years in nearby towns.
+My current store gets about 1000 visitors each week, and would hope new stores would ramp up to a similar level within a year of opening.
+New stores should be a similar format and size, but I would need flexibility to model different setup costs and long term footfall for each location.
+I will rent each location, and cover utility costs and insurance. I will also have to pay to fitout and decorate each new store, and install till equipment and scanners for inventory management.
+
+I have two distinct seasons, summer and winter, with a different product range for each. I place large orders months in advance that cover the expected sales for each season.
+I have storage space in my current store, but anticipate handling the new ones from a central warehouse that I would rent, and also have to fit out and equip.
+
+I need the equivalent of 3 full time staff per store as they work shifts. 1 manager (full time) and 2 part time (although that can be 5+ actual people).
+
+We don't have a head office as I do all the admin from my home. I might need help with bookkeeping going forward, and may hire someone to help with supply chain.
+
+I spend a little on local advertising for my current store each month, so would do the same for each new locations too. I would also invest in some one-off launch marketing and a launch event when I open new ones.
+"""
+
+Early Ecommerce
+"""
+A family run company selling lamps & lamp shades through my Etsy store.
+I attract customers through my instagram profile, and pay for some Facebook ads.
+
+Currently I only have 2 lamp designs (both large), but let's model large, medium and small categories.
+I make the lamp shades myself on 3d printers. I will need to invest in more printers if volumes grow as I am currently limited to around 50 shades per month.
+Printer capacity is determined by Kg of filament used, as that drives printing time.
+
+I also buy the sockets, cables and plugs from china, one of each per lamp. I assemble them myself.
+The shades are shipped in a strong cardboard box, a different size for each category.
+
+I run the business from home, so only my partner and I work in it.
+Other than the parts and packaging, our other costs are advertising, shipping, electricity, printer maintenance.
+I can charge the costs of my home office and workshop to the business.
+"""
+
+Numberly Financial models
+"""
+We have a company called Numberly building financial models for startups.
+We acquire clients through Upwork and Google Ads.
+Upwork charges 10% of revenues, and we pay per click for google visitors.
+We have an agency handling our marketing on G-ads who charge a fixed fee per month.
+A dedicated employee bids on upwork jobs.
+
+Each new client incurs a small inference cost for an AI to interview them about their business and to generate a draft model design.
+
+We employ people to check those designs, turn them into financial models, and to provide a follow up call or video for the client.
+Each of those activities takes a certain number of hours.
+That modelling team will need to grow with the total number of hours required to handle clients.
+Clients pay a one-off fee for their initial model (after a short delay)
+
+We retain clients beyond their first model, and each month a small percentage will buy some hours of advice.
+These calls are also handled by a team of people that will grow with hours demanded.
+
+There is a small management team of 2 founders, an assistant, the UW booking person mentioned above.
+Overheads include bookkeeping, accounting, insurance, office consumables.
+
+We provide laptops for each employee, but do not need office space as everyone works remotely.
+"""
