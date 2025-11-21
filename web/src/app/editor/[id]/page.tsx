@@ -287,6 +287,15 @@ export default function Editor({ params }: { params: { id: string } }) {
             if (!res.ok) throw new Error(data.error || 'Failed to parse');
 
             const rehydrated = rehydrateParseResult(data);
+
+            // Validate that we can build assumptions from this result
+            try {
+                const testCtx = { months: modelYears * 12, years: modelYears };
+                buildModelAssumptions(rehydrated.ast, rehydrated.index, objectSchema, testCtx);
+            } catch (e: any) {
+                throw new Error("Error building assumptions: " + e.message);
+            }
+
             setResult(rehydrated);
         } catch (err: any) {
             setError(err.message);
@@ -448,7 +457,7 @@ export default function Editor({ params }: { params: { id: string } }) {
                         const channelDefs = typeName ? objectSchema[typeName]?.channels : {};
 
                         return (
-                            <div key={objName} className="grid grid-cols-1 lg:grid-cols-12 gap-6 border-b border-gray-200 pb-8">
+                            <div key={objName} className="grid grid-cols-1 lg:grid-cols-12 gap-3 border-b border-gray-200 pb-4">
                                 <div className={leftColClass}>
                                     <ObjectAssumptions
                                         objName={objName}

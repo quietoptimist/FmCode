@@ -11,14 +11,7 @@ export const objectSchema = {
       val: { label: "Value" }
     },
     assumptions: {
-      object: [
-        {
-          name: "smooth",
-          label: "Smooth annual → monthly",
-          baseType: "boolean",
-          default: true
-        }
-      ],
+      object: [],
       output: [
         {
           name: "amount",
@@ -59,14 +52,7 @@ export const objectSchema = {
       val: { label: "Value" }
     },
     assumptions: {
-      object: [
-        {
-          name: "smooth",
-          label: "Smooth annual → monthly",
-          baseType: "boolean",
-          default: true
-        }
-      ],
+      object: [],
       output: [
         {
           name: "factor",
@@ -107,14 +93,7 @@ export const objectSchema = {
       val: { label: "Value" }
     },
     assumptions: {
-      object: [
-        {
-          name: "smooth",
-          label: "Smooth annual → monthly",
-          baseType: "boolean",
-          default: true
-        }
-      ],
+      object: [],
       output: [
         {
           name: "amount",
@@ -156,14 +135,7 @@ export const objectSchema = {
       val: { label: "Value" }
     },
     assumptions: {
-      object: [
-        {
-          name: "smooth",
-          label: "Smooth annual → monthly",
-          baseType: "boolean",
-          default: true
-        }
-      ],
+      object: [],
       output: [
         {
           name: "amount",
@@ -428,7 +400,7 @@ export const objectSchema = {
       ]
     }
   },
-  
+
   // ============================
   // DelRev - delay revenue outputs to account for payment delays
   // ============================

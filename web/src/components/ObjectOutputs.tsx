@@ -49,6 +49,31 @@ export function ObjectOutputs({ aliases, store, overrides, months, channelDefs, 
                         const channels = byAlias[alias];
                         if (!channels) return null;
 
+                        const channelEntries = Object.entries(channels);
+                        const isSingleChannel = channelEntries.length === 1;
+
+                        if (isSingleChannel) {
+                            const [channel, series] = channelEntries[0];
+                            return (
+                                <tr key={`${alias}.${channel}`} className="hover:bg-gray-50 group transition-colors">
+                                    <td className="p-3 font-medium text-gray-600 sticky left-0 bg-white group-hover:bg-gray-50 z-10 border-r shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)] whitespace-nowrap">
+                                        {alias}
+                                    </td>
+                                    {Array.from(series).slice(0, months).map((val, m) => {
+                                        const overrideVal = overrides?.[alias]?.[channel]?.[m];
+                                        return (
+                                            <OverrideCell
+                                                key={m}
+                                                calculatedValue={val}
+                                                overrideValue={overrideVal}
+                                                onOverride={(newVal) => onOverride(alias, channel, m, newVal)}
+                                            />
+                                        );
+                                    })}
+                                </tr>
+                            );
+                        }
+
                         return (
                             <React.Fragment key={alias}>
                                 <tr className="bg-blue-50/30">
@@ -57,7 +82,7 @@ export function ObjectOutputs({ aliases, store, overrides, months, channelDefs, 
                                     </td>
                                     <td colSpan={months} className="border-b border-blue-100"></td>
                                 </tr>
-                                {Object.entries(channels).map(([channel, series]) => (
+                                {channelEntries.map(([channel, series]) => (
                                     <tr key={`${alias}.${channel}`} className="hover:bg-gray-50 group transition-colors">
                                         <td className="p-3 font-medium text-gray-600 sticky left-0 bg-white group-hover:bg-gray-50 z-10 border-r shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)] whitespace-nowrap">
                                             {channelDefs?.[channel]?.label || channel}

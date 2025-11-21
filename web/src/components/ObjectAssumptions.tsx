@@ -12,9 +12,11 @@ type InputMode = 'single' | 'annual' | 'growth';
 export function ObjectAssumptions({ objName, objAss, years, onChange }: ObjectAssumptionsProps) {
     const [mode, setMode] = useState<InputMode>('single');
 
+    if (!objAss) return null;
+
     return (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 space-y-6 h-fit">
-            <div className="flex justify-between items-center border-b pb-4">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 space-y-3 h-fit">
+            <div className="flex justify-between items-center border-b pb-2">
                 <h3 className="text-lg font-bold text-blue-700 flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-blue-500"></span>
                     {objName}
@@ -56,7 +58,7 @@ export function ObjectAssumptions({ objName, objAss, years, onChange }: ObjectAs
 
             {/* Output Level Assumptions Table */}
             {objAss.outputs && Object.keys(objAss.outputs).length > 0 && (
-                <div className="mt-4 overflow-x-auto">
+                <div className="mt-2 overflow-x-auto">
                     <table className="w-full text-sm text-left">
                         <thead className="text-xs text-gray-500 uppercase bg-gray-50">
                             <tr>
@@ -68,7 +70,7 @@ export function ObjectAssumptions({ objName, objAss, years, onChange }: ObjectAs
                                 {mode !== 'single' && <th className="px-2 py-2 font-medium w-16">Smooth</th>}
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100">
+                        <tbody>
                             {Object.entries(objAss.outputs).map(([alias, outAss]: [string, any]) => {
                                 // Find relevant fields
                                 const startMonthField = outAss['startMonth'];
@@ -78,10 +80,10 @@ export function ObjectAssumptions({ objName, objAss, years, onChange }: ObjectAs
 
                                 return (
                                     <tr key={alias} className="group hover:bg-gray-50">
-                                        <td className="px-2 py-3 font-medium text-gray-700 align-top pt-4">{alias}</td>
+                                        <td className="px-2 py-1 font-medium text-gray-700 align-top pt-1">{alias}</td>
 
                                         {/* Start Month */}
-                                        <td className="px-2 py-3 align-top pt-4">
+                                        <td className="px-2 py-1 align-top pt-1">
                                             {startMonthField && (
                                                 <input
                                                     type="number"
@@ -93,7 +95,7 @@ export function ObjectAssumptions({ objName, objAss, years, onChange }: ObjectAs
                                         </td>
 
                                         {/* Value Inputs */}
-                                        <td className="px-2 py-3">
+                                        <td className="px-2 py-1">
                                             {valueField && (
                                                 <ValueInput
                                                     field={valueField}
@@ -106,7 +108,7 @@ export function ObjectAssumptions({ objName, objAss, years, onChange }: ObjectAs
 
                                         {/* Options (Smoothing) */}
                                         {mode !== 'single' && (
-                                            <td className="px-2 py-3 align-top pt-4 text-center">
+                                            <td className="px-2 py-1 align-top pt-1 text-center">
                                                 {valueField?.supports?.smoothing && (
                                                     <input
                                                         type="checkbox"
