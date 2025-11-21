@@ -450,31 +450,42 @@ export default function Editor({ params }: { params: { id: string } }) {
             </div>
 
             <div className="w-full max-w-[1600px] flex flex-col gap-8 pb-20">
-                {result?.index?.outputsByObject && assumptions ? (
-                    (Array.from(result.index.outputsByObject.entries()) as [string, string[]][]).map(([objName, aliases]) => {
-                        const objDef = result.ast.objects.find((o: any) => o.name === objName);
-                        const typeName = objDef?.fnName;
+                {result?.ast?.objects && assumptions ? (
+                    result.ast.objects.map((obj: any, index: number) => {
+                        const objName = obj.name;
+                        const aliases = result.index.outputsByObject.get(objName) || [];
+                        const typeName = obj.fnName;
                         const channelDefs = typeName ? objectSchema[typeName]?.channels : {};
 
+                        const prevObj = index > 0 ? result.ast.objects[index - 1] : null;
+                        const showSection = obj.section && (!prevObj || obj.section !== prevObj.section);
+
                         return (
-                            <div key={objName} className="grid grid-cols-1 lg:grid-cols-12 gap-3 border-b border-gray-200 pb-4">
-                                <div className={leftColClass}>
-                                    <ObjectAssumptions
-                                        objName={objName}
-                                        objAss={assumptions[objName]}
-                                        years={modelYears}
-                                        onChange={handleAssumptionChange}
-                                    />
-                                </div>
-                                <div className={`${rightColClass} overflow-hidden`}>
-                                    <ObjectOutputs
-                                        aliases={aliases}
-                                        store={engineResult?.store}
-                                        overrides={overrides}
-                                        months={modelYears * 12}
-                                        channelDefs={channelDefs}
-                                        onOverride={handleOverride}
-                                    />
+                            <div key={objName} className="flex flex-col">
+                                {showSection && (
+                                    <div className="w-full border-b-2 border-gray-200 mb-6 mt-8 pb-2">
+                                        <h2 className="text-2xl font-bold text-gray-800">{obj.section}</h2>
+                                    </div>
+                                )}
+                                <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 border-b border-gray-200 pb-4">
+                                    <div className={leftColClass}>
+                                        <ObjectAssumptions
+                                            objName={objName}
+                                            objAss={assumptions[objName]}
+                                            years={modelYears}
+                                            onChange={handleAssumptionChange}
+                                        />
+                                    </div>
+                                    <div className={`${rightColClass} overflow-hidden`}>
+                                        <ObjectOutputs
+                                            aliases={aliases}
+                                            store={engineResult?.store}
+                                            overrides={overrides}
+                                            months={modelYears * 12}
+                                            channelDefs={channelDefs}
+                                            onOverride={handleOverride}
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         );

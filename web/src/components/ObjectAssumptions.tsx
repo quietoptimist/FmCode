@@ -65,7 +65,26 @@ export function ObjectAssumptions({ objName, objAss, years, onChange }: ObjectAs
                                 <th className="px-2 py-2 font-medium">Output</th>
                                 <th className="px-2 py-2 font-medium w-20">Start</th>
                                 <th className="px-2 py-2 font-medium">
-                                    {mode === 'single' ? 'Value' : mode === 'annual' ? 'Annual Values' : 'YoY Growth %'}
+                                    {mode === 'single' ? (
+                                        'Value'
+                                    ) : mode === 'annual' ? (
+                                        <div className="flex gap-2">
+                                            {Array.from({ length: years }).map((_, i) => (
+                                                <div key={i} className="w-20 text-[10px] text-gray-500 uppercase">
+                                                    Y{i + 1}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="flex gap-2">
+                                            <div className="w-20 text-[10px] text-gray-500 uppercase">Base (Y1)</div>
+                                            {Array.from({ length: years - 1 }).map((_, i) => (
+                                                <div key={i} className="w-20 text-[10px] text-gray-500 uppercase">
+                                                    Gr% (Y{i + 2})
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </th>
                                 {mode !== 'single' && <th className="px-2 py-2 font-medium w-16">Smooth</th>}
                             </tr>
@@ -101,6 +120,7 @@ export function ObjectAssumptions({ objName, objAss, years, onChange }: ObjectAs
                                                     field={valueField}
                                                     mode={mode}
                                                     years={years}
+                                                    showLabels={false}
                                                     onChange={(val, subField, index) => onChange(objName, 'output', alias, valueFieldName!, val, subField, index)}
                                                 />
                                             )}
@@ -162,7 +182,7 @@ function AssumptionInput({ label, field, mode, years, onChange }: any) {
     );
 }
 
-function ValueInput({ field, mode, years, onChange }: { field: any, mode: InputMode, years: number, onChange: (val: any, subField?: string | null, index?: number | null) => void }) {
+function ValueInput({ field, mode, years, showLabels = true, onChange }: { field: any, mode: InputMode, years: number, showLabels?: boolean, onChange: (val: any, subField?: string | null, index?: number | null) => void }) {
     // Local state for inputs to allow typing "0.5" (which starts with "0.") without it being forced to 0 immediately if we were strict.
     // However, for simplicity in this fix, we'll just rely on the fact that "0." parses to 0, but we need to preserve the string if possible?
     // Actually, controlled inputs with number type are tricky.
@@ -188,7 +208,7 @@ function ValueInput({ field, mode, years, onChange }: { field: any, mode: InputM
             <div className="flex gap-2">
                 {Array.from({ length: years }).map((_, i) => (
                     <div key={i} className="flex flex-col gap-0.5 w-20">
-                        <label className="text-[10px] text-gray-400 uppercase">Y{i + 1}</label>
+                        {showLabels && <label className="text-[10px] text-gray-400 uppercase">Y{i + 1}</label>}
                         <input
                             type="number"
                             className="w-full p-1.5 border border-gray-300 rounded text-sm focus:ring-1 focus:ring-blue-500 outline-none"
@@ -206,7 +226,7 @@ function ValueInput({ field, mode, years, onChange }: { field: any, mode: InputM
             <div className="flex gap-2">
                 {/* Year 1 is Base Value */}
                 <div className="flex flex-col gap-0.5 w-20">
-                    <label className="text-[10px] text-gray-400 uppercase">Base (Y1)</label>
+                    {showLabels && <label className="text-[10px] text-gray-400 uppercase">Base (Y1)</label>}
                     <input
                         type="number"
                         className="w-full p-1.5 border border-gray-300 rounded text-sm focus:ring-1 focus:ring-blue-500 outline-none"
@@ -220,7 +240,7 @@ function ValueInput({ field, mode, years, onChange }: { field: any, mode: InputM
                     const growthVal = field.raw.growth?.[yearIndex] ?? 0;
                     return (
                         <div key={yearIndex} className="flex flex-col gap-0.5 w-20">
-                            <label className="text-[10px] text-gray-400 uppercase">Gr% (Y{yearIndex + 1})</label>
+                            {showLabels && <label className="text-[10px] text-gray-400 uppercase">Gr% (Y{yearIndex + 1})</label>}
                             <div className="relative">
                                 <input
                                     type="number"
