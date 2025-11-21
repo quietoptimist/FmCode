@@ -13,7 +13,7 @@ export function buildModelAssumptions(ast, index, objectSchema, ctx = { months: 
       continue;
     }
 
-    const objAss = { object: {}, outputs: {} };
+    const objAss = { object: {}, outputs: {}, uiMode: 'single' };
 
     // 1) object-level assumptions
     const objectDefs = (schema.assumptions && schema.assumptions.object) || [];
@@ -172,7 +172,14 @@ export function updateAssumption(assumptions, objName, type, aliasOrName, fieldN
   const newAssumptions = deepClone(assumptions);
 
   let targetField;
-  if (type === 'object') {
+  if (type === 'meta') {
+    if (fieldName === 'uiMode') {
+      if (newAssumptions[objName]) {
+        newAssumptions[objName].uiMode = value;
+      }
+      return newAssumptions;
+    }
+  } else if (type === 'object') {
     targetField = newAssumptions[objName]?.object?.[fieldName];
   } else {
     targetField = newAssumptions[objName]?.outputs?.[aliasOrName]?.[fieldName];

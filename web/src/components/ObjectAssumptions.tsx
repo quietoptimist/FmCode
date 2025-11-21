@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
+import { formatName } from '@/lib/formatters';
 
 interface ObjectAssumptionsProps {
     objName: string;
     objAss: any;
     years: number;
-    onChange: (objName: string, type: 'object' | 'output', aliasOrName: string, fieldName: string, value: any, subField?: string | null, index?: number | null) => void;
+    uiMode?: InputMode;
+    onChange: (objName: string, type: 'object' | 'output' | 'meta', aliasOrName: string, fieldName: string, value: any, subField?: string | null, index?: number | null) => void;
 }
 
 type InputMode = 'single' | 'annual' | 'growth';
 
-export function ObjectAssumptions({ objName, objAss, years, onChange }: ObjectAssumptionsProps) {
-    const [mode, setMode] = useState<InputMode>('single');
+export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', onChange }: ObjectAssumptionsProps) {
+    const mode = uiMode;
 
     if (!objAss) return null;
 
@@ -18,8 +20,7 @@ export function ObjectAssumptions({ objName, objAss, years, onChange }: ObjectAs
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 space-y-3 h-fit">
             <div className="flex justify-between items-center border-b pb-2">
                 <h3 className="text-lg font-bold text-blue-700 flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-                    {objName}
+                    {formatName(objName)}
                 </h3>
 
                 {/* Mode Switcher */}
@@ -27,7 +28,7 @@ export function ObjectAssumptions({ objName, objAss, years, onChange }: ObjectAs
                     {(['single', 'annual', 'growth'] as const).map((m) => (
                         <button
                             key={m}
-                            onClick={() => setMode(m)}
+                            onClick={() => onChange(objName, 'meta', 'uiMode', 'uiMode', m)}
                             className={`px-3 py-1 text-xs font-medium rounded-md capitalize transition-all ${mode === m
                                 ? 'bg-white text-blue-600 shadow-sm'
                                 : 'text-gray-500 hover:text-gray-700'
@@ -50,7 +51,7 @@ export function ObjectAssumptions({ objName, objAss, years, onChange }: ObjectAs
                             field={field}
                             mode={mode}
                             years={years}
-                            onChange={(val, subField, index) => onChange(objName, 'object', fieldName, fieldName, val, subField, index)}
+                            onChange={(val: any, subField?: string | null, index?: number | null) => onChange(objName, 'object', fieldName, fieldName, val, subField, index)}
                         />
                     ))}
                 </div>
@@ -99,7 +100,7 @@ export function ObjectAssumptions({ objName, objAss, years, onChange }: ObjectAs
 
                                 return (
                                     <tr key={alias} className="group hover:bg-gray-50">
-                                        <td className="px-2 py-1 font-medium text-gray-700 align-top pt-1">{alias}</td>
+                                        <td className="px-2 py-1 font-medium text-gray-700 align-top pt-1">{formatName(alias)}</td>
 
                                         {/* Start Month */}
                                         <td className="px-2 py-1 align-top pt-1">

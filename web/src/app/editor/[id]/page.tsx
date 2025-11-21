@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { formatName } from '@/lib/formatters';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import { runEngine } from '@/lib/engine/engine';
@@ -216,8 +217,9 @@ export default function Editor({ params }: { params: { id: string } }) {
                                 def[key] = smartMerge(def[key], existing[key]);
                             }
                         }
+                        return def;
                     }
-                    return def;
+                    return existing;
                 };
 
                 // Create a deep copy of defaults to merge into
@@ -350,7 +352,7 @@ export default function Editor({ params }: { params: { id: string } }) {
         }
     };
 
-    const handleAssumptionChange = (objName: string, type: 'object' | 'output', aliasOrName: string, fieldName: string, value: any, subField: string | null = null, index: number | null = null) => {
+    const handleAssumptionChange = (objName: string, type: 'object' | 'output' | 'meta', aliasOrName: string, fieldName: string, value: any, subField: string | null = null, index: number | null = null) => {
         if (!assumptions) return;
         const ctx = { months: modelYears * 12, years: modelYears };
         const newAssumptions = updateAssumption(assumptions, objName, type, aliasOrName, fieldName, value, ctx, subField, index);
@@ -464,7 +466,7 @@ export default function Editor({ params }: { params: { id: string } }) {
                             <div key={objName} className="flex flex-col">
                                 {showSection && (
                                     <div className="w-full border-b-2 border-gray-200 mb-6 mt-8 pb-2">
-                                        <h2 className="text-2xl font-bold text-gray-800">{obj.section}</h2>
+                                        <h2 className="text-2xl font-bold text-gray-800">{formatName(obj.section)}</h2>
                                     </div>
                                 )}
                                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 border-b border-gray-200 pb-4">
@@ -473,6 +475,7 @@ export default function Editor({ params }: { params: { id: string } }) {
                                             objName={objName}
                                             objAss={assumptions[objName]}
                                             years={modelYears}
+                                            uiMode={assumptions[objName].uiMode}
                                             onChange={handleAssumptionChange}
                                         />
                                     </div>
