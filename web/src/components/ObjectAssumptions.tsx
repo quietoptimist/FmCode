@@ -60,7 +60,7 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
             {/* Output Level Assumptions Table */}
             {objAss.outputs && Object.keys(objAss.outputs).length > 0 && (
                 <div className="mt-2 overflow-x-auto">
-                    <table className="w-full text-sm text-left">
+                    <table className="text-sm text-left">
                         <thead className="text-xs text-gray-500 uppercase bg-gray-50">
                             <tr>
                                 <th className="px-2 py-2 font-medium">Output</th>
@@ -176,7 +176,7 @@ function AssumptionInput({ label, field, mode, years, onChange }: any) {
         );
     }
     return (
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1 items-start">
             <label className="text-xs font-medium text-gray-500">{label}</label>
             <ValueInput field={field} mode={mode} years={years} onChange={onChange} />
         </div>
@@ -192,15 +192,13 @@ function ValueInput({ field, mode, years, showLabels = true, onChange }: { field
 
     if (mode === 'single' || !field.supports?.annual) {
         return (
-            <div className="flex items-center gap-2">
-                <input
-                    type="number"
-                    className="w-full p-1.5 border border-gray-300 rounded text-sm focus:ring-1 focus:ring-blue-500 outline-none"
-                    value={field.raw.single ?? ''}
-                    onChange={(e) => onChange(safeParseFloat(e.target.value))}
-                    placeholder="Constant value..."
-                />
-            </div>
+            <input
+                type="number"
+                className="w-20 p-1.5 border border-gray-300 rounded text-sm focus:ring-1 focus:ring-blue-500 outline-none"
+                value={field.raw.single ?? ''}
+                onChange={(e) => onChange(safeParseFloat(e.target.value))}
+                placeholder="Value"
+            />
         );
     }
 
