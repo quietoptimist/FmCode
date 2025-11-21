@@ -640,7 +640,7 @@ Objects can be as simple as multiplying an input by an assumption, or can handle
         - Each outputName corresponds to a specific revenue stream (e.g. smallCandleRev, upsellRev).
 
         Output Attributes:
-        - .rev = monthly revenue (input quantity × unit price). Available at both object level (totals) and per-outputName.
+        - .val = monthly revenue (input quantity × unit price). Available at both object level (totals) and per-outputName.
         - .cum = cumulative monthly revenues. Available at both object level (totals) and per-outputName.
         - .assum = unit price entered by the user. Available at outputName level only.
 
@@ -651,9 +651,9 @@ Objects can be as simple as multiplying an input by an assumption, or can handle
         `   OnboardingRevenues = RevDrvNew(newCustomers.val) => joiningFeeRev, setupFeeRev     // One-off revenues to setup new customers`
 
         Notes / Interpretation:
-        - `ProductRevenues.rev` = total monthly recurring revenues across all products.
-        - `OnboardingRevenues.rev` = total monthly non-recurring revenues from new customers.
-        - `joiningFeeRev.rev` = monthly joining fees from new customers.
+        - `ProductRevenues.val` = total monthly recurring revenues across all products.
+        - `OnboardingRevenues.val` = total monthly non-recurring revenues from new customers.
+        - `joiningFeeRev.val` = monthly joining fees from new customers.
         - `joiningFeeRev.assum` = unit joining fee per new customer.
 
     </RevDrv_spec>
@@ -690,25 +690,25 @@ Objects can be as simple as multiplying an input by an assumption, or can handle
         - One or more outputNames, each representing a revenue stream (e.g. softwareLicences, consultingProjects, setupFees).
 
         Output Attributes:
-        - .rev = revenue recognised in each month (as per RevDrv).
+        - .val = revenue recognised in each month (as per RevDrv).
         - .cash = cash received in each month (revenue shifted by the payment delay).
         - .ar = Accounts Receivable balance outstanding, representing revenue earned but not yet collected.
         - Attributes are available at both object level (totals) and per-outputName.
 
-        Example FM Code (recurring invoiced software revenue):
-        ```FM
-            SoftwareRevenues = RevDrvDel(activeClients.val) => softwareLicences     // Software licenses invoiced to clients (Revenue and accounts receivable)
-            SoftwarePayments = DelRev(softwareLicences.rev) => SoftwarePaid         // Software invoices paid (accounts received and cash in)
-        ```
-
         Example FM Code (one-time implementation fees with delay):
         ```FM
             ImplementationRevenues = RevDrvNewDel(newClients.val) => setupFees  // One-off setup fees invoiced to clients (RevenueNew and accounts receivable)
-            SetupPayments = DelRev(setupFees.rev) => setupPaid  // Setup invoices paid (accounts received and cash in)
+            SetupPayments = DelRev(setupFees.val) => setupPaid  // Setup invoices paid (accounts received and cash in)
+        ```
+
+        Example FM Code (recurring invoiced software revenue):
+        ```FM
+            SoftwareRevenues = RevDrvDel(activeClients.val) => softwareLicences     // Software licenses invoiced to clients (Revenue and accounts receivable)
+            SoftwarePayments = DelRev(softwareLicences.val) => SoftwarePaid         // Software invoices paid (accounts received and cash in)
         ```
 
         Notes / Interpretation:
-        - `softwareLicences.rev` = recognised revenue in the correct delivery month.
+        - `softwareLicences.val` = recognised revenue in the correct delivery month.
         - `softwareLicences.cash` = cash collected, shifted forward by the payment delay.
         - `softwareLicences.ar` = balance of unpaid invoices, cleared when cash is received.
         - At object level, totals are available (e.g. `SoftwareRevenues.ar` = total Accounts Receivable across all outputs).
@@ -748,7 +748,7 @@ Objects can be as simple as multiplying an input by an assumption, or can handle
         - Each outputName corresponds to a separate cost stream, e.g. materialsCost, deliveryCost.
 
         Output Attributes:
-        - .cost = monthly cost (input × unit cost assumption). Available at both object level (totals) and outputName level.
+        - .val = monthly cost (input × unit cost assumption). Available at both object level (totals) and outputName level.
         - .assum = unit cost entered by the user. Available at outputName level only.
 
         Example with inputs for every output:
@@ -760,8 +760,8 @@ Objects can be as simple as multiplying an input by an assumption, or can handle
         `   FulfilmentCosts = CostDrvDC(Orders.val) => packagingCost, shippingCost  // Fulfilment costs from total orders multiplied by each process unit costs`
 
         Notes / Interpretation:
-        - `MaterialsCosts.cost` = total material costs across all components (wax + wicks + jars) per month.
-        - `waxCost.cost` = monthly wax cost, based on kg needed × wax cost per kg.
+        - `MaterialsCosts.val` = total material costs across all components (wax + wicks + jars) per month.
+        - `waxCost.val` = monthly wax cost, based on kg needed × wax cost per kg.
         - `waxCost.assum` = wax cost per kg by month.
         - If using Supply*() elsewhere in the model that will handle product or component COGS automatically, so do not duplicate COGS with CostDrvDC(), but CostDrvDC() will still be needed for credit card fees, variable platform fees, fulfilment costs, etc.
 
@@ -797,7 +797,7 @@ Objects can be as simple as multiplying an input by an assumption, or can handle
         - Each outputName corresponds to a separate predictable cost line item (e.g. officeRent, insurance).
 
         Output Attributes:
-        - .cost = monthly cost. Available both at the object level (totals) and per-outputName.
+        - .val = monthly cost. Available both at the object level (totals) and per-outputName.
 
         Example FM Code (overheads):
         `   OverheadCosts = CostAnnGA() => officeRent, utilities, insurance, softwareSubscriptions // Annual regular overhead costs by expense type`
@@ -809,8 +809,8 @@ Objects can be as simple as multiplying an input by an assumption, or can handle
         `   DevelopmentCosts = CostAnnRD() => designSoftware, labRental    // Research & Development budgets by cost type`
 
         Notes / Interpretation:
-        - `OverheadCosts.cost` = total monthly overhead costs across all outputs.
-        - `insurance.cost` = monthly insurance cost.
+        - `OverheadCosts.val` = total monthly overhead costs across all outputs.
+        - `insurance.val` = monthly insurance cost.
 
     </CostAnn_spec>
 
@@ -843,7 +843,7 @@ Objects can be as simple as multiplying an input by an assumption, or can handle
         - One or more outputNames, each representing a monthly cost stream (e.g. campaignCost, prototypeCost).
 
         Output Attributes:
-        - .cost = monthly cost entered by the user.
+        - .val = monthly cost entered by the user.
         - .cum = cumulative monthly cost.
         - Attributes available at both object level (totals) and outputName level.
 
@@ -860,8 +860,8 @@ Objects can be as simple as multiplying an input by an assumption, or can handle
         `   DevelopmentProjects = CostMthRD() => prototypeDesign, freelanceResearchers, patentFees // Occasional Research & Development expenses in the month incurred`
 
         Notes / Interpretation:
-        - `OccasionalCosts.cost` = total monthly occasional costs across all included items.
-        - `legalFees.cost` = monthly legal fees, entered directly by the user.
+        - `OccasionalCosts.val` = total monthly occasional costs across all included items.
+        - `legalFees.val` = monthly legal fees, entered directly by the user.
         - Costs can vary month by month without needing an even spread or seasonality, and can be zero in many months.
 
     </CostMth_spec>
@@ -1008,7 +1008,7 @@ Objects can be as simple as multiplying an input by an assumption, or can handle
         - One or more outputNames, each representing a category of one-off capex (e.g. officeChairs, officeDesks, officePrinters).
 
         Output Attributes:
-        - .capex = monthly capex entered by the user.
+        - .val = monthly capex entered by the user.
         - .depr = depreciation of historic purchases
         - Attributes available at both object level (totals) and outputName level.
 
@@ -1016,8 +1016,8 @@ Objects can be as simple as multiplying an input by an assumption, or can handle
         `   CompanySetup = CapexMth() => officeFurniture, officeFitout  // One-off high value capitalised company setup costs in the month incurred`
 
         Notes / Interpretation:
-        - CompanySetup.capex = total amount spent on capitalised setup by month
-        - officeFurniture.capex = amount spent on capitalised furniture by month
+        - CompanySetup.val = total amount spent on capitalised setup by month
+        - officeFurniture.val = amount spent on capitalised furniture by month
         - CompanySetup.depr = total amount of depreciation related to historic company setup expense
 
     </CapexMth_spec>
@@ -1057,22 +1057,22 @@ Objects can be as simple as multiplying an input by an assumption, or can handle
         - One or more outputNames, each representing an investment category (e.g. design, permissions, construction, fitout, equipment).
 
         Output Attributes:
-        - .capex = actual capex spend in each month (summing overlapping projects).
+        - .val = actual capex spend in each month (summing overlapping projects).
         - .depr = monthly depreciation expense, based on accumulated investments and their lifetimes.
         - .proj = total investment per project start month, locked to the start date (not spread).
             • Used when projects are later sold and must be moved from Assets into COGS.
             • Example: building houses or ships — investment accumulates over months, sits on the balance sheet as work-in-progress, then `.project` value is charged to COGS when the unit is sold.
         - Attributes are available at both object level (totals) and per-outputName.
 
+        Example FM Code (houses with relative costs applied before CapexProj):
+        `   HouseScalars = QuantDrv(newHouses.val) => houseSizeFactor  // Scalar for house costs in each month relative to typical cost`
+        `   HouseCapex = CapexProj(houseSizeFactor.val) => land, foundations, build, interiors // scaled investments for new houses in each month phased around completion date`
+
         Example FM Code (retail store projects):
         `   StoreCapex = CapexProj(newStores.val) => design, permissions, construction, fitout, equipment  // Investments in new stores by cost type phased around opening month`
 
-        Example FM Code (houses with relative costs applied before CapexProj):
-        `   HouseSclars = QuantDrv(newHouses.val) => houseSizeFactor  // Scalar for house costs in each month relative to typical cost`
-        `   HouseCapex = CapexProj(houseSizeFactor.val) => land, foundations, build, interiors // scaled investments for new houses in each month phased around completion date`
-
         Notes / Interpretation:
-        - If `newStores.val = 1` in Jan-25 and `1` in Jul-25, both projects’ spending schedules overlap and are summed into `.capex`.
+        - If `newStores.val = 1` in Jan-25 and `1` in Jul-25, both projects’ spending schedules overlap and are summed into `StoreCapex.val`.
         - If the Jul-25 store is 150% larger than average, its input can be passed as `1.5` instead of `1`, scaling all category costs proportionally.
         - Inflation ensures later projects cost more than earlier ones.
         - `StoreCapex.depr` = ongoing depreciation of accumulated investments.
@@ -1114,7 +1114,7 @@ Objects can be as simple as multiplying an input by an assumption, or can handle
         • If multiple inputs are provided, each outputName is driven by its own demand input.
 
         Output Attributes:
-        - .capex = capex spend in each month on new equipment purchases.
+        - .val = capex spend in each month on new equipment purchases.
         - .depr = monthly depreciation of all equipment owned.
         - .nbuy = number of units purchased in that month.
         - .nown = number of units owned in that month (cumulative).
@@ -1138,8 +1138,8 @@ Objects can be as simple as multiplying an input by an assumption, or can handle
         ```
         // Outputs track per-size fleets and costs
         // economyCars.nown = number of economy cars owned by month
-        // economyCars.capex = monthly spend on new economy cars
-        // RentalFleet.capex = total fleet investment across all sizes
+        // economyCars.val = monthly spend on new economy cars
+        // RentalFleet.val = total fleet investment across all sizes
 
         Notes / Interpretation:
         - Demand is compared against installed capacity for each equipment type each month.
@@ -1184,7 +1184,7 @@ Objects can be as simple as multiplying an input by an assumption, or can handle
         - Each outputName corresponds to a specific staff role (e.g. ceo, headOfMarketing).
 
         Output Attributes:
-        - .cost = monthly cost of the role (salary + taxes + bonus from the start date).
+        - .val = monthly cost of the role (salary + taxes + bonus from the start date).
         - .heads = monthly headcount contribution (1 while role is active, 0 before start date).
         - Attributes are available both at the object level (totals) and per-outputName.
 
@@ -1192,8 +1192,8 @@ Objects can be as simple as multiplying an input by an assumption, or can handle
         `   LeadershipTeam = StaffRole() => ceo, operationsManager, headOfMarketing, financeManager    // Leadership salaries and start dates by role`
 
         Notes / Interpretation:
-        - `LeadershipTeam.cost` = total monthly leadership team cost across all roles.
-        - `ceo.cost` = monthly cost of the CEO (salary + tax + bonus).
+        - `LeadershipTeam.val` = total monthly leadership team cost across all roles.
+        - `ceo.val` = monthly cost of the CEO (salary + tax + bonus).
         - `ceo.heads` = 1 when the CEO is employed, 0 otherwise.
 
     </StaffRole_spec>
@@ -1236,7 +1236,7 @@ Objects can be as simple as multiplying an input by an assumption, or can handle
         - Each outputName corresponds to a specific team (e.g. financeTeam, marketingTeam).
 
         Output Attributes:
-        - .cost = monthly team cost (team headcount × [monthly salary + taxes + bonus], by month from the start date).
+        - .val = monthly team cost (team headcount × [monthly salary + taxes + bonus], by month from the start date).
         - .heads = monthly headcount of the team (number of staff active in each month).
         - Attributes are available both at the object level (totals) and per-outputName.
 
@@ -1250,8 +1250,8 @@ Objects can be as simple as multiplying an input by an assumption, or can handle
         `   DevelopmentTeams = StaffTeamRD() => productDesignTeam, labTeam, frontEndDevs, backEndDevs // Development Teams headcounts and average salaries by type of team`
 
         Notes / Interpretation:
-        - `CentralTeams.cost` = total monthly cost across all central teams.
-        - `financeTeam.cost` = monthly cost of the finance team (headcount × [salary + taxes + bonus] ÷ 12).
+        - `CentralTeams.val` = total monthly cost across all central teams.
+        - `financeTeam.val` = monthly cost of the finance team (headcount × [salary + taxes + bonus] ÷ 12).
         - `financeTeam.heads` = number of finance staff in each month.
 
     </StaffTeam_spec>
@@ -1292,7 +1292,7 @@ Objects can be as simple as multiplying an input by an assumption, or can handle
         - Each outputName corresponds to a specific staff team driven by activity (e.g. fulfilmentTeam, supportTeam).
 
         Output Attributes:
-        - .cost = monthly team cost (driven headcount × [monthly salary + taxes + bonus]).
+        - .val = monthly team cost (driven headcount × [monthly salary + taxes + bonus]).
         - .heads = monthly headcount of the team (driven by activity).
         - Attributes are available both at the object level (totals) and per-outputName.
 
@@ -1303,9 +1303,9 @@ Objects can be as simple as multiplying an input by an assumption, or can handle
         `   SalesTeams = StaffDrvSM(NewCustomers.val) => salesTeam, onboardingTeam  // Sales team headcounts scale with new customers`
 
         Notes / Interpretation:
-        - `FulfilmentTeams.cost` = total monthly cost across all fulfilment-related teams.
+        - `FulfilmentTeams.val` = total monthly cost across all fulfilment-related teams.
         - `warehouseTeam.heads` = number of warehouse staff each month, based on orders ÷ staff-per-orders assumption.
-        - `supportTeam.cost` = monthly cost of customer support staff, based on active customers × staff ratio × (salary + taxes + bonus).
+        - `supportTeam.val` = monthly cost of customer support staff, based on active customers × staff ratio × (salary + taxes + bonus).
 
     </StaffDrv_spec>
 
@@ -1337,7 +1337,7 @@ Objects can be as simple as multiplying an input by an assumption, or can handle
         • One or more outputNames (roles): manager, receptionist, security, …
         • Attributes (available at object and role level):
             - .heads = (active locations × roles per location) by month.
-            - .cost  = .heads × (salary + taxes + bonus)/12, with wage inflation.
+            - .val  = .heads × (salary + taxes + bonus)/12, with wage inflation.
 
         Pairing with activity-driven teams (StaffDrv*()):
         Why:
@@ -1993,7 +1993,7 @@ Objects can be as simple as multiplying an input by an assumption, or can handle
 
             Costs:
                 AcqCosts            = CostDrvSM(socialCustomers.val) => socialAdsCost // Paid social acquisition cost driven by CPA per paid new customer
-                PlatformFees        = CostDrvDC(Subscribers.rev) => appStoreFees      // App store fees charged as % of subscriber revenues
+                PlatformFees        = CostDrvDC(Subscribers.val) => appStoreFees      // App store fees charged as % of subscriber revenues
                 ServiceCosts        = CostDrvDC(Subscribers.act) => hostingCost, inferenceCost // Cost per active user for hosting & inference
                 FulfilmentCosts     = CostDrvDC(suppBuyers.val) => packingCost, shippingCost   // Packing & shipping per supplements order (per buyer)
                 Overheads           = CostAnnGA() => servicedOffice, insurance, travel, software, storageSpace // Annual cost of serviced office, insurance, travel, per-seat software, warehouse storage fee
@@ -2013,11 +2013,11 @@ Objects can be as simple as multiplying an input by an assumption, or can handle
 
             Acquisition:
                 KpiNewCustomers     = DashTableSum(...Acquisition.val)                  // New customers by channel (social vs organic)
-                KpiCustomerNew      = DashTableSum(Acquisition.val, Subscribers.chu)    // Total new customers, churned customers
+                KpiCustomerChange   = DashTableSum(Acquisition.val, Subscribers.chu)    // Total new customers, churned customers
                 KpiCustomerActive   = DashTableCum(Subscribers.act)                     // Total active subscribers
 
             RevenuesBySource:
-                KpiRevenues         = DashTableSum(Subscribers.rev, supplementsRev.rev) // Subscription MRR and Supplements revenue
+                KpiRevenues         = DashTableSum(Subscribers.val, supplementsRev.val) // Subscription MRR and Supplements revenue
 
             HeadcountsByTeam:
                 KpiHeads            = DashTableCum(Leadership.heads, DevTeams.heads, TotalHeads.val) // Leadership roles, Dev team headcounts and total heads
@@ -2036,7 +2036,7 @@ Objects can be as simple as multiplying an input by an assumption, or can handle
                 SubsActive          = DashChartCum(Subscribers.act)                              // Chart for Active customers
 
             IncomeStatementCharts:
-                RevenueMixChart     = DashChartSum(Subscribers.rev, supplementsRev.rev)
+                RevenueMixChart     = DashChartSum(Subscribers.val, supplementsRev.val)
                 OperatingCosts      = DashChartSum(output_total_cogs, output_total_cust_acquis, output_total_overheads, output_total_prod_dev, output_total_depreciation, output_total_other_expinc)  // standard outputs so same in every model
                 ProfitBeforeTax     = DashChartSum(output_net_profit)                            // standard outputs so same in every model
 
@@ -2165,7 +2165,7 @@ Objects can be as simple as multiplying an input by an assumption, or can handle
 • Setup the boilerplate code. The model design will go inside it.
 • Choose the right objects from <Object_specifications>; **only** include objects that are needed.
 • Use the right object variant to classify P&L correctly (CostDrvDC/SM, CostAnnGA/SM/RD, RevDrvNew, etc.).
-• Prefer the spread operator for inputs with 1:1 mappings to outputs.
+• Prefer the spread operator for inputs with 1:1 mappings to outputs to keep code succinct.
 • Prefer object totals; use Sum() **only** when adding across objects or subsets of outputs.
 • Add concise section titles before related parts of the code
 • Check that every input name also has the correct attribute added (standard names like 'output*\*' do not have attributes, all others must have an attribute)

@@ -44,6 +44,48 @@ export const objectSchema = {
   },
 
   // ============================
+  // QuantAnnSeas — just creates numbers, no inputs, seasonal variation
+  // ============================
+  QuantAnnSeas: {
+    impl: "QuantStart",
+    channels: {
+      val: { label: "Value" }
+    },
+    assumptions: {
+      object: [],
+      output: [
+        {
+          name: "amount",
+          label: "Annual amount",
+          baseType: "number",
+          default: 10,
+          supports: {
+            single: true,
+            annual: true,
+            monthly: true,
+            smoothing: true,
+            growth: false,     // you could turn this on if you want
+            dateRange: true,
+            seasonal: true
+          },
+          ui: {
+            defaultMode: "annual"
+          }
+        },
+        {
+          name: "startMonth",
+          label: "Start month",
+          baseType: "number",
+          default: 0,
+          supports: {
+            single: true
+          }
+        }
+      ]
+    }
+  },
+
+  // ============================
   // QuantDrv → ScaleDrv impl
   // ============================
   QuantDrv: {
