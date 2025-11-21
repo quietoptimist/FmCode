@@ -341,7 +341,7 @@ export function updateAssumption(assumptions: any, objName: string, type: string
   } else {
     // Default: Update first year (single mode behavior)
     // Set annual[0] to the value and fill remaining years with same value
-    if (targetField.supports?.annual && Array.isArray(targetField.raw.annual)) {
+    if ((targetField.supports?.annual || targetField.supports?.single) && Array.isArray(targetField.raw.annual)) {
       targetField.raw.annual.fill(value);
       targetField.raw.growth.fill(0); // Constant means 0 growth
     }

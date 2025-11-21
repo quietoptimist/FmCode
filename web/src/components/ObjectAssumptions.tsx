@@ -134,7 +134,7 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
                                                 <input
                                                     type="number"
                                                     className="w-16 p-1.5 border border-gray-300 rounded text-sm focus:ring-1 focus:ring-blue-500 outline-none"
-                                                    value={startMonthField.raw.single ?? 0}
+                                                    value={startMonthField.raw.annual?.[0] ?? 0}
                                                     onChange={(e) => onChange(objName, 'output', alias, 'startMonth', parseFloat(e.target.value))}
                                                 />
                                             )}
@@ -193,7 +193,7 @@ function AssumptionInput({ label, field, mode, years, onChange }: any) {
             <div className="flex items-center gap-2">
                 <input
                     type="checkbox"
-                    checked={field.raw.single}
+                    checked={field.raw.annual?.[0] ?? false}
                     onChange={(e) => onChange(e.target.checked)}
                     className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
                 />
