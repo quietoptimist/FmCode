@@ -70,6 +70,7 @@ function buildAssumptionField(def: any, ctx: any, seasonalEnabled: boolean = fal
     value,
     label: def.label ?? def.name,
     baseType: def.baseType ?? "number",
+    isRate: def.isRate, // Propagate isRate flag
     supports: def.supports
   };
 }
@@ -103,8 +104,8 @@ function materializeMonthly(def: any, raw: any, ctx: any, seasonalEnabled: boole
         out[m] = singleVal * factor;
       }
     } else {
-      // Just divide by 12 for all months
-      const monthlyVal = singleVal / 12;
+      // Check if this is a rate (don't divide) or a total (divide by 12)
+      const monthlyVal = def.isRate ? singleVal : singleVal / 12;
       for (let m = 0; m < months; m++) {
         out[m] = monthlyVal;
       }
@@ -140,8 +141,8 @@ function materializeMonthly(def: any, raw: any, ctx: any, seasonalEnabled: boole
           const factor = raw.seasonal[monthIdx] ?? (1 / 12);
           val = val * factor;
         } else {
-          // For non-seasonal, divide annual amount by 12 to get monthly value
-          val = val / 12;
+          // For non-seasonal, check if rate or total
+          val = def.isRate ? val : val / 12;
         }
 
         out[idx] = val;
@@ -170,8 +171,8 @@ function materializeMonthly(def: any, raw: any, ctx: any, seasonalEnabled: boole
             const factor = raw.seasonal[monthIdx] ?? (1 / 12);
             out[idx] = smoothedAnnual * factor;
           } else {
-            // For non-seasonal, divide the smoothed annual by 12
-            out[idx] = smoothedAnnual / 12;
+            // For non-seasonal, check if rate or total
+            out[idx] = def.isRate ? smoothedAnnual : smoothedAnnual / 12;
           }
         }
       }
@@ -239,7 +240,7 @@ export function updateAssumption(assumptions: any, objName: string, type: string
             for (const fName in outAss) {
               const field = outAss[fName];
               const def = {
-                baseType: field.baseType,
+                baseType: field.baseType, isRate: field.isRate,
                 supports: field.supports
               };
               field.value = materializeMonthly(def, field.raw, ctx, seasonalEnabled, value);
@@ -264,7 +265,7 @@ export function updateAssumption(assumptions: any, objName: string, type: string
               const field = outAss[fName];
               // Re-materialize
               const def = {
-                baseType: field.baseType,
+                baseType: field.baseType, isRate: field.isRate,
                 supports: field.supports
               };
               const uiMode = obj.uiMode || 'single';
@@ -349,6 +350,7 @@ export function updateAssumption(assumptions: any, objName: string, type: string
   // Re-materialize value
   const def = {
     baseType: targetField.baseType,
+    isRate: targetField.isRate,
     supports: targetField.supports
   };
   const uiMode = newAssumptions[objName]?.uiMode || 'single';
@@ -356,4 +358,48 @@ export function updateAssumption(assumptions: any, objName: string, type: string
   targetField.value = materializeMonthly(def, targetField.raw, ctx, seasonalEnabled, uiMode);
 
   return newAssumptions;
+}
+
+export function recalculateAll(assumptions: any, ctx: any) {
+  for (const objName in assumptions) {
+    const obj = assumptions[objName];
+    if (!obj) continue;
+
+    const seasonalEnabled = obj.seasonalEnabled ?? false;
+    const uiMode = obj.uiMode ?? 'single';
+
+    // Object-level assumptions
+    if (obj.object) {
+      for (const fName in obj.object) {
+        const field = obj.object[fName];
+        if (field && field.raw) {
+          const def = {
+            baseType: field.baseType,
+            isRate: field.isRate,
+            supports: field.supports
+          };
+          field.value = materializeMonthly(def, field.raw, ctx, seasonalEnabled, uiMode);
+        }
+      }
+    }
+
+    // Output assumptions
+    if (obj.outputs) {
+      for (const alias in obj.outputs) {
+        const outAss = obj.outputs[alias];
+        for (const fName in outAss) {
+          const field = outAss[fName];
+          if (field && field.raw) {
+            const def = {
+              baseType: field.baseType,
+              isRate: field.isRate,
+              supports: field.supports
+            };
+            field.value = materializeMonthly(def, field.raw, ctx, seasonalEnabled, uiMode);
+          }
+        }
+      }
+    }
+  }
+  return assumptions;
 }

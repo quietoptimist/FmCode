@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import { runEngine } from '@/lib/engine/engine';
 import { buildOutputGraph } from '@/lib/engine/buildGraph';
-import { buildModelAssumptions, updateAssumption } from '@/lib/engine/buildModelAssumptions';
+import { buildModelAssumptions, updateAssumption, recalculateAll } from '@/lib/engine/buildModelAssumptions';
 import { objectSchema } from '@/lib/engine/objectSchema';
 import { fnRegistry } from '@/lib/engine/fnRegistry';
 import { ObjectAssumptions } from '@/components/ObjectAssumptions';
@@ -227,7 +227,8 @@ export default function Editor({ params }: { params: { id: string } }) {
                 };
 
                 const mergedDefaults = deepCopy(defaults);
-                return smartMerge(mergedDefaults, prev);
+                const merged = smartMerge(mergedDefaults, prev);
+                return recalculateAll(merged, ctx);
             }
 
             return defaults;

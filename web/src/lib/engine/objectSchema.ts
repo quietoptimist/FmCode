@@ -35,6 +35,7 @@ export const objectSchema = {
           label: "Start month",
           baseType: "number",
           default: 0,
+          isRate: true, // Don't divide by 12 - this is a scalar index
           supports: {
             single: true
           }
@@ -77,6 +78,7 @@ export const objectSchema = {
           label: "Start month",
           baseType: "number",
           default: 0,
+          isRate: true, // Don't divide by 12 - this is a scalar index
           supports: {
             single: true
           }
@@ -101,6 +103,7 @@ export const objectSchema = {
           label: "Driver factor",
           baseType: "number",
           default: 2,
+          isRate: true,  // Don't divide by 12 - this is a monthly rate/multiplier
           supports: {
             single: true,
             annual: true,
@@ -118,6 +121,7 @@ export const objectSchema = {
           label: "Start month",
           baseType: "number",
           default: 0,
+          isRate: true, // Don't divide by 12 - this is a scalar index
           supports: {
             single: true
           }
@@ -159,6 +163,7 @@ export const objectSchema = {
           label: "Start month",
           baseType: "number",
           default: 0,
+          isRate: true, // Don't divide by 12 - this is a scalar index
           supports: {
             single: true
           }
@@ -201,6 +206,7 @@ export const objectSchema = {
           label: "Start month",
           baseType: "number",
           default: 0,
+          isRate: true, // Don't divide by 12 - this is a scalar index
           supports: {
             single: true
           }
@@ -225,6 +231,7 @@ export const objectSchema = {
           label: "Cost per unit",
           baseType: "number",
           default: 1,
+          isRate: true,  // Don't divide by 12 - this is a monthly rate/cost
           supports: {
             single: true,
             annual: true,
@@ -257,6 +264,7 @@ export const objectSchema = {
           label: "Cost per unit",
           baseType: "number",
           default: 1,
+          isRate: true,  // Dont divide by 12 - this is a monthly rate
           supports: {
             single: true,
             annual: true,
@@ -279,7 +287,7 @@ export const objectSchema = {
   RevDrvNew: {
     impl: "ScaleDrv",
     channels: {
-      rev: { label: "Revenue" }
+      val: { label: "Revenue" }
     },
     assumptions: {
       object: [],
@@ -289,6 +297,7 @@ export const objectSchema = {
           label: "Price / fee",
           baseType: "number",
           default: 50,
+          isRate: true,  // Dont divide by 12 - this is a monthly rate
           supports: {
             single: true,
             annual: true,
@@ -311,7 +320,7 @@ export const objectSchema = {
   RevDrvNewDel: {
     impl: "ScaleDrv",
     channels: {
-      rev: { label: "Revenue" }
+      val: { label: "Revenue" }
     },
     assumptions: {
       object: [],
@@ -321,6 +330,7 @@ export const objectSchema = {
           label: "Price / fee",
           baseType: "number",
           default: 50,
+          isRate: true,  // Dont divide by 12 - this is a monthly rate
           supports: {
             single: true,
             annual: true,
@@ -343,7 +353,7 @@ export const objectSchema = {
   RevDrv: {
     impl: "ScaleDrv",
     channels: {
-      rev: { label: "Revenue" }
+      val: { label: "Revenue" }
     },
     assumptions: {
       object: [],
@@ -353,6 +363,7 @@ export const objectSchema = {
           label: "Rate per hour",
           baseType: "number",
           default: 100,
+          isRate: true,  // Dont divide by 12 - this is a monthly rate
           supports: {
             single: true,
             annual: true,
@@ -375,7 +386,7 @@ export const objectSchema = {
   RevDrvDel: {
     impl: "ScaleDrv",
     channels: {
-      rev: { label: "Revenue" }
+      val: { label: "Revenue" }
     },
     assumptions: {
       object: [],
@@ -385,6 +396,7 @@ export const objectSchema = {
           label: "Rate per hour",
           baseType: "number",
           default: 100,
+          isRate: true,  // Dont divide by 12 - this is a monthly rate
           supports: {
             single: true,
             annual: true,
@@ -418,6 +430,7 @@ export const objectSchema = {
           label: "Monthly churn rate",
           baseType: "number",
           default: 0.08,
+          isRate: true,  // Rate/percentage - don't divide by 12
           supports: {
             single: true,
             annual: true,
@@ -435,6 +448,7 @@ export const objectSchema = {
           label: "Start month",
           baseType: "number",
           default: 0,
+          isRate: true, // Don't divide by 12 - this is a scalar index
           supports: {
             single: true
           }
@@ -459,6 +473,7 @@ export const objectSchema = {
           label: "Delay (months)",
           baseType: "number",
           default: 2,
+          isRate: true, // Don't divide by 12 - this is a scalar (months)
           supports: {
             single: true,
             monthly: true,     // let the user have per-month delays later
@@ -469,6 +484,41 @@ export const objectSchema = {
           },
           ui: {
             defaultMode: "single"
+          }
+        }
+      ]
+    }
+  },
+
+  // ============================
+  // StaffRoles - delay revenue outputs to account for payment delays
+  // ============================
+  StaffRoles: {
+    impl: "StaffRoles",
+    channels: {
+      cost: { label: "Staff Cost" },
+      heads: { label: "Staff Heads" }
+    },
+    assumptions: {
+      object: [],
+      output: [
+        {
+          name: "headCount",
+          label: "Staff Heads",
+          baseType: "number",
+          default: 1,
+          isRate: true, // Don't divide by 12 - this is a scalar count
+          supports: {
+            single: false,
+            monthly: false,
+            dateRange: true,
+            annual: false,
+            growth: false,
+            smoothing: false,
+            seasonal: false
+          },
+          ui: {
+            defaultMode: "dateRange"
           }
         }
       ]
