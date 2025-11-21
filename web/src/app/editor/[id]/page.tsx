@@ -157,7 +157,6 @@ export default function Editor({ params }: { params: { id: string } }) {
                             const newRaw = { ...def.raw };
                             const oldRaw = existing.raw;
 
-                            if (oldRaw.single !== undefined) newRaw.single = oldRaw.single;
                             if (oldRaw.smoothing !== undefined) newRaw.smoothing = oldRaw.smoothing;
 
                             // Arrays: Copy what we have, keep new length (which is correct for current modelYears)
@@ -186,28 +185,19 @@ export default function Editor({ params }: { params: { id: string } }) {
                                     newRaw.monthly[i] = oldRaw.monthly[i];
                                 }
                             }
+                            // Seasonal? (always 12 months)
+                            if (Array.isArray(newRaw.seasonal) && Array.isArray(oldRaw.seasonal)) {
+                                for (let i = 0; i < 12; i++) {
+                                    if (i < oldRaw.seasonal.length) {
+                                        newRaw.seasonal[i] = oldRaw.seasonal[i];
+                                    }
+                                }
+                            }
 
                             def.raw = newRaw;
 
-                            // We should re-materialize value to be safe, but logic is in engine.
-                            // For now, let's NOT copy value, but let it be re-calculated?
-                            // No, engine uses .value.
-                            // So we MUST re-materialize or copy value.
-                            // If we copy value, it might be wrong size.
-                            // Let's rely on the fact that runClientEngine doesn't re-materialize assumptions.
-                            // We need to re-materialize.
-                            // Or just copy value and truncate/expand?
-                            // Value is Float64Array.
-
-                            // Let's try to copy value and resize.
-                            if (existing.value && (existing.value instanceof Float64Array || Array.isArray(existing.value))) {
-                                const oldVal = existing.value;
-                                const newVal = new Float64Array(ctx.months);
-                                for (let i = 0; i < Math.min(newVal.length, oldVal.length); i++) {
-                                    newVal[i] = oldVal[i];
-                                }
-                                def.value = newVal;
-                            }
+                            // Don't copy old value arrays - let buildModelAssumptions recalculate them
+                            // from the raw data using the current/correct logic
 
                             return def;
                         }
@@ -464,32 +454,40 @@ export default function Editor({ params }: { params: { id: string } }) {
 
                         return (
                             <div key={objName} className="flex flex-col">
-                                {showSection && (
-                                    <div className="w-full border-b-2 border-gray-200 mb-6 mt-8 pb-2">
-                                        <h2 className="text-2xl font-bold text-gray-800">{formatName(obj.section)}</h2>
-                                    </div>
+                                {(!assumptions[objName]) ? null : (
+                                    <>
+                                        {showSection && (
+                                            <div className="w-full border-b-2 border-gray-200 mb-6 mt-8 pb-2">
+                                                <h2 className="text-2xl font-bold text-gray-800">{formatName(obj.section)}</h2>
+                                            </div>
+                                        )}
+                                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 border-b border-gray-200 pb-4">
+                                            <div className={leftColClass}>
+                                                <ObjectAssumptions
+                                                    objName={objName}
+                                                    objAss={assumptions[objName]}
+                                                    years={modelYears}
+                                                    uiMode={assumptions[objName].uiMode as 'single' | 'annual' | 'growth'}
+                                                    onChange={handleAssumptionChange}
+                                                />
+                                            </div>
+                                            <div className={`${rightColClass} overflow-hidden`}>
+                                                <ObjectOutputs
+                                                    aliases={aliases}
+                                                    store={engineResult?.store}
+                                                    overrides={overrides}
+                                                    months={modelYears * 12}
+                                                    channelDefs={channelDefs}
+                                                    onOverride={handleOverride}
+                                                    objAss={assumptions[objName]}
+                                                    seasonalEnabled={assumptions[objName]?.seasonalEnabled ?? false}
+                                                    objName={objName}
+                                                    onAssumptionChange={handleAssumptionChange}
+                                                />
+                                            </div>
+                                        </div>
+                                    </>
                                 )}
-                                <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 border-b border-gray-200 pb-4">
-                                    <div className={leftColClass}>
-                                        <ObjectAssumptions
-                                            objName={objName}
-                                            objAss={assumptions[objName]}
-                                            years={modelYears}
-                                            uiMode={assumptions[objName].uiMode as 'single' | 'annual' | 'growth'}
-                                            onChange={handleAssumptionChange}
-                                        />
-                                    </div>
-                                    <div className={`${rightColClass} overflow-hidden`}>
-                                        <ObjectOutputs
-                                            aliases={aliases}
-                                            store={engineResult?.store}
-                                            overrides={overrides}
-                                            months={modelYears * 12}
-                                            channelDefs={channelDefs}
-                                            onOverride={handleOverride}
-                                        />
-                                    </div>
-                                </div>
                             </div>
                         );
                     })

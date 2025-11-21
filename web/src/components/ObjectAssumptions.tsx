@@ -13,8 +13,16 @@ type InputMode = 'single' | 'annual' | 'growth';
 
 export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', onChange }: ObjectAssumptionsProps) {
     const mode = uiMode;
+    const seasonalEnabled = objAss?.seasonalEnabled ?? false;
 
     if (!objAss) return null;
+
+    // Check if any output supports seasonal
+    const supportsSeasonal = objAss.outputs && Object.values(objAss.outputs).some((out: any) =>
+        Object.values(out).some((field: any) => field.supports?.seasonal)
+    );
+
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
     return (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 space-y-3 h-fit">
@@ -23,20 +31,38 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
                     {formatName(objName)}
                 </h3>
 
-                {/* Mode Switcher */}
-                <div className="flex bg-gray-100 p-1 rounded-lg">
-                    {(['single', 'annual', 'growth'] as const).map((m) => (
-                        <button
-                            key={m}
-                            onClick={() => onChange(objName, 'meta', 'uiMode', 'uiMode', m)}
-                            className={`px-3 py-1 text-xs font-medium rounded-md capitalize transition-all ${mode === m
-                                ? 'bg-white text-blue-600 shadow-sm'
-                                : 'text-gray-500 hover:text-gray-700'
-                                }`}
-                        >
-                            {m}
-                        </button>
-                    ))}
+                <div className="flex items-center gap-4">
+                    {/* Seasonal Toggle */}
+                    {supportsSeasonal && (
+                        <div className="flex items-center gap-2">
+                            <input
+                                type="checkbox"
+                                id={`seasonal-${objName}`}
+                                checked={seasonalEnabled}
+                                onChange={(e) => onChange(objName, 'meta', 'seasonalEnabled', 'seasonalEnabled', e.target.checked)}
+                                className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                            />
+                            <label htmlFor={`seasonal-${objName}`} className="text-sm font-medium text-gray-700 cursor-pointer">
+                                Seasonal
+                            </label>
+                        </div>
+                    )}
+
+                    {/* Mode Switcher */}
+                    <div className="flex bg-gray-100 p-1 rounded-lg">
+                        {(['single', 'annual', 'growth'] as const).map((m) => (
+                            <button
+                                key={m}
+                                onClick={() => onChange(objName, 'meta', 'uiMode', 'uiMode', m)}
+                                className={`px-3 py-1 text-xs font-medium rounded-md capitalize transition-all ${mode === m
+                                    ? 'bg-white text-blue-600 shadow-sm'
+                                    : 'text-gray-500 hover:text-gray-700'
+                                    }`}
+                            >
+                                {m}
+                            </button>
+                        ))}
+                    </div>
                 </div>
             </div>
 
@@ -195,8 +221,8 @@ function ValueInput({ field, mode, years, showLabels = true, onChange }: { field
             <input
                 type="number"
                 className="w-20 p-1.5 border border-gray-300 rounded text-sm focus:ring-1 focus:ring-blue-500 outline-none"
-                value={field.raw.single ?? ''}
-                onChange={(e) => onChange(safeParseFloat(e.target.value))}
+                value={field.raw.annual?.[0] ?? ''}
+                onChange={(e) => onChange(safeParseFloat(e.target.value), 'annual', 0)}
                 placeholder="Value"
             />
         );
