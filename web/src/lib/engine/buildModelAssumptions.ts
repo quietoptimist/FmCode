@@ -1,8 +1,8 @@
-// @ts-nocheck
+
 // buildModelAssumptions.mjs
 
-export function buildModelAssumptions(ast, index, objectSchema, ctx = { months: 24, years: 2 }) {
-  const result = {};
+export function buildModelAssumptions(ast: any, index: any, objectSchema: any, ctx = { months: 24, years: 2 }) {
+  const result: any = {};
 
   for (const obj of ast.objects) {
     const typeName = obj.fnName;
@@ -13,7 +13,7 @@ export function buildModelAssumptions(ast, index, objectSchema, ctx = { months: 
       continue;
     }
 
-    const objAss = { object: {}, outputs: {}, uiMode: 'single' };
+    const objAss: any = { object: {}, outputs: {}, uiMode: 'single' };
 
     // 1) object-level assumptions
     const objectDefs = (schema.assumptions && schema.assumptions.object) || [];
@@ -29,7 +29,7 @@ export function buildModelAssumptions(ast, index, objectSchema, ctx = { months: 
     const outputDefs = (schema.assumptions && schema.assumptions.output) || [];
 
     for (const alias of outputAliases) {
-      const outAss = {};
+      const outAss: any = {};
       for (const def of outputDefs) {
         outAss[def.name] = buildAssumptionField(def, ctx);
       }
@@ -45,11 +45,11 @@ export function buildModelAssumptions(ast, index, objectSchema, ctx = { months: 
 /**
  * Build one assumption field = { raw: {...}, value: ... , label, baseType }
  */
-function buildAssumptionField(def, ctx) {
+function buildAssumptionField(def: any, ctx: any) {
   const months = ctx.months ?? 60;
   const years = ctx.years ?? Math.ceil(months / 12);
 
-  const raw = {
+  const raw: any = {
     single: def.default ?? null,
     annual: Array.from({ length: years }, () => null),
     monthly: Array.from({ length: months }, () => null),
@@ -78,7 +78,7 @@ function buildAssumptionField(def, ctx) {
  * The shared pipeline that turns raw {single, annual, monthly, growth, smoothing, dateRange}
  * into a monthly array.
  */
-function materializeMonthly(def, raw, ctx) {
+function materializeMonthly(def: any, raw: any, ctx: any) {
   const months = ctx.months ?? 60;
   const years = ctx.years ?? Math.ceil(months / 12);
 
@@ -155,11 +155,11 @@ function materializeMonthly(def, raw, ctx) {
   return out;
 }
 
-function deepClone(obj) {
+function deepClone(obj: any): any {
   if (obj === null || typeof obj !== 'object') return obj;
   if (obj instanceof Float64Array) return new Float64Array(obj);
   if (Array.isArray(obj)) return obj.map(deepClone);
-  const copy = {};
+  const copy: any = {};
   for (const key in obj) {
     if (Object.prototype.hasOwnProperty.call(obj, key)) {
       copy[key] = deepClone(obj[key]);
@@ -168,7 +168,7 @@ function deepClone(obj) {
   return copy;
 }
 
-export function updateAssumption(assumptions, objName, type, aliasOrName, fieldName, value, ctx, subField = null, index = null) {
+export function updateAssumption(assumptions: any, objName: string, type: string, aliasOrName: string, fieldName: string, value: any, ctx: any, subField: string | null = null, index: number | null = null) {
   const newAssumptions = deepClone(assumptions);
 
   let targetField;

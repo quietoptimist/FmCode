@@ -352,10 +352,10 @@ export default function Editor({ params }: { params: { id: string } }) {
         }
     };
 
-    const handleAssumptionChange = (objName: string, type: 'object' | 'output' | 'meta', aliasOrName: string, fieldName: string, value: any, subField: string | null = null, index: number | null = null) => {
+    const handleAssumptionChange = (objName: string, type: 'object' | 'output' | 'meta', aliasOrName: string, fieldName: string, value: any, subField?: string | null, index?: number | null) => {
         if (!assumptions) return;
         const ctx = { months: modelYears * 12, years: modelYears };
-        const newAssumptions = updateAssumption(assumptions, objName, type, aliasOrName, fieldName, value, ctx, subField, index);
+        const newAssumptions = updateAssumption(assumptions, objName, type, aliasOrName, fieldName, value, ctx, subField ?? null, index ?? null);
         setAssumptions(newAssumptions);
     };
 
@@ -457,7 +457,7 @@ export default function Editor({ params }: { params: { id: string } }) {
                         const objName = obj.name;
                         const aliases = result.index.outputsByObject.get(objName) || [];
                         const typeName = obj.fnName;
-                        const channelDefs = typeName ? objectSchema[typeName]?.channels : {};
+                        const channelDefs = typeName ? (objectSchema as any)[typeName]?.channels : {};
 
                         const prevObj = index > 0 ? result.ast.objects[index - 1] : null;
                         const showSection = obj.section && (!prevObj || obj.section !== prevObj.section);
@@ -475,7 +475,7 @@ export default function Editor({ params }: { params: { id: string } }) {
                                             objName={objName}
                                             objAss={assumptions[objName]}
                                             years={modelYears}
-                                            uiMode={assumptions[objName].uiMode}
+                                            uiMode={assumptions[objName].uiMode as 'single' | 'annual' | 'growth'}
                                             onChange={handleAssumptionChange}
                                         />
                                     </div>
