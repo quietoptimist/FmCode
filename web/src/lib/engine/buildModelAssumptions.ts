@@ -105,7 +105,7 @@ function materializeMonthly(def: any, raw: any, ctx: any, seasonalEnabled: boole
       }
     } else {
       // Check if this is a rate (don't divide) or a total (divide by 12)
-      const monthlyVal = def.isRate ? singleVal : singleVal / 12;
+      const monthlyVal = singleVal;
       for (let m = 0; m < months; m++) {
         out[m] = monthlyVal;
       }
@@ -142,7 +142,7 @@ function materializeMonthly(def: any, raw: any, ctx: any, seasonalEnabled: boole
           val = val * factor;
         } else {
           // For non-seasonal, check if rate or total
-          val = def.isRate ? val : val / 12;
+          val = val;
         }
 
         out[idx] = val;
@@ -172,7 +172,7 @@ function materializeMonthly(def: any, raw: any, ctx: any, seasonalEnabled: boole
             out[idx] = smoothedAnnual * factor;
           } else {
             // For non-seasonal, check if rate or total
-            out[idx] = def.isRate ? smoothedAnnual : smoothedAnnual / 12;
+            out[idx] = smoothedAnnual;
           }
         }
       }

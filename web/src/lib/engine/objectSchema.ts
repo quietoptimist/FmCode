@@ -15,7 +15,7 @@ export const objectSchema = {
       output: [
         {
           name: "amount",
-          label: "Annual Quantity",
+          label: "Monthly Quantity",
           baseType: "number",
           default: 10,
           supports: {
@@ -40,14 +40,14 @@ export const objectSchema = {
   QuantAnnSeas: {
     impl: "QuantStart",
     channels: {
-      val: { label: "Annual Quantity" }
+      val: { label: "Monthly Quantity" }
     },
     assumptions: {
       object: [],
       output: [
         {
           name: "amount",
-          label: "Annual Quantity",
+          label: "Monthly Quantity",
           baseType: "number",
           default: 10,
           supports: {
@@ -113,7 +113,7 @@ export const objectSchema = {
       output: [
         {
           name: "amount",
-          label: "Annual amount",
+          label: "Monthly amount",
           baseType: "number",
           default: 1000,
           supports: {
@@ -146,7 +146,7 @@ export const objectSchema = {
       output: [
         {
           name: "amount",
-          label: "Annual amount",
+          label: "Monthly amount",
           baseType: "number",
           default: 100,
           supports: {
