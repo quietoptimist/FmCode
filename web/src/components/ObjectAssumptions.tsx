@@ -49,20 +49,47 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
                     )}
 
                     {/* Mode Switcher */}
-                    <div className="flex bg-gray-100 p-1 rounded-lg">
-                        {(['single', 'annual', 'growth'] as const).map((m) => (
-                            <button
-                                key={m}
-                                onClick={() => onChange(objName, 'meta', 'uiMode', 'uiMode', m)}
-                                className={`px-3 py-1 text-xs font-medium rounded-md capitalize transition-all ${mode === m
-                                    ? 'bg-white text-blue-600 shadow-sm'
-                                    : 'text-gray-500 hover:text-gray-700'
-                                    }`}
-                            >
-                                {m}
-                            </button>
-                        ))}
-                    </div>
+                    {(() => {
+                        // Calculate supported modes
+                        const supportsSingle = objAss.outputs && Object.values(objAss.outputs).some((out: any) =>
+                            Object.values(out).some((field: any) => field.supports?.single)
+                        );
+                        const supportsAnnual = objAss.outputs && Object.values(objAss.outputs).some((out: any) =>
+                            Object.values(out).some((field: any) => field.supports?.annual)
+                        );
+                        const supportsGrowth = objAss.outputs && Object.values(objAss.outputs).some((out: any) =>
+                            Object.values(out).some((field: any) => field.supports?.growth)
+                        );
+
+                        const availableModes = [
+                            supportsSingle ? 'single' : null,
+                            supportsAnnual ? 'annual' : null,
+                            supportsGrowth ? 'growth' : null
+                        ].filter(Boolean) as InputMode[];
+
+                        if (availableModes.length <= 1) return null;
+
+                        return (
+                            <div className="relative">
+                                <select
+                                    value={mode}
+                                    onChange={(e) => onChange(objName, 'meta', 'uiMode', 'uiMode', e.target.value)}
+                                    className="appearance-none bg-gray-50 border border-gray-200 text-gray-700 text-xs font-medium py-1 pl-3 pr-8 rounded leading-tight focus:outline-none focus:bg-white focus:border-blue-500"
+                                >
+                                    {availableModes.map((m) => (
+                                        <option key={m} value={m} className="capitalize">
+                                            {m}
+                                        </option>
+                                    ))}
+                                </select>
+                                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                                    <svg className="fill-current h-3 w-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                                        <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                                    </svg>
+                                </div>
+                            </div>
+                        );
+                    })()}
                 </div>
             </div>
 
