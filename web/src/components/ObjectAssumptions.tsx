@@ -34,19 +34,35 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
                 <div className="flex items-center gap-4">
                     {/* Seasonal Toggle */}
                     {supportsSeasonal && (
-                        <div className="flex items-center gap-2">
+                        <label className="flex items-center gap-1 text-xs font-medium text-gray-600 cursor-pointer select-none">
                             <input
                                 type="checkbox"
-                                id={`seasonal-${objName}`}
-                                checked={seasonalEnabled}
+                                checked={objAss.seasonalEnabled ?? false}
                                 onChange={(e) => onChange(objName, 'meta', 'seasonalEnabled', 'seasonalEnabled', e.target.checked)}
-                                className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                                className="w-3.5 h-3.5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
                             />
-                            <label htmlFor={`seasonal-${objName}`} className="text-sm font-medium text-gray-700 cursor-pointer">
-                                Seasonal
-                            </label>
-                        </div>
+                            Seasonal
+                        </label>
                     )}
+
+                    {/* Date Range Toggle */}
+                    {(() => {
+                        const supportsDateRange = objAss.outputs && Object.values(objAss.outputs).some((out: any) =>
+                            Object.values(out).some((field: any) => field.supports?.dateRange)
+                        );
+                        if (!supportsDateRange) return null;
+                        return (
+                            <label className="flex items-center gap-1 text-xs font-medium text-gray-600 cursor-pointer select-none">
+                                <input
+                                    type="checkbox"
+                                    checked={objAss.dateRangeEnabled ?? false}
+                                    onChange={(e) => onChange(objName, 'meta', 'dateRangeEnabled', 'dateRangeEnabled', e.target.checked)}
+                                    className="w-3.5 h-3.5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                                />
+                                Fr-To Mth
+                            </label>
+                        );
+                    })()}
 
                     {/* Mode Switcher */}
                     {(() => {
@@ -117,7 +133,7 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
                         <thead className="text-xs text-gray-500 uppercase bg-gray-50">
                             <tr>
                                 <th className="px-2 py-2 font-medium">Output</th>
-                                <th className="px-2 py-2 font-medium w-20">Start</th>
+
                                 <th className="px-2 py-2 font-medium">
                                     {mode === 'single' ? (
                                         'Value'
@@ -141,6 +157,7 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
                                     )}
                                 </th>
                                 {mode !== 'single' && <th className="px-2 py-2 font-medium w-16">Smooth</th>}
+                                {objAss.dateRangeEnabled && <th className="px-2 py-2 font-medium w-32">Fr-To Mth</th>}
                             </tr>
                         </thead>
                         <tbody>
@@ -156,16 +173,8 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
                                         <td className="px-2 py-1 font-medium text-gray-700 align-top pt-1">{formatName(alias)}</td>
 
                                         {/* Start Month */}
-                                        <td className="px-2 py-1 align-top pt-1">
-                                            {startMonthField && (
-                                                <input
-                                                    type="number"
-                                                    className="w-16 p-1.5 border border-gray-300 rounded text-sm focus:ring-1 focus:ring-blue-500 outline-none"
-                                                    value={startMonthField.raw.annual?.[0] ?? 0}
-                                                    onChange={(e) => onChange(objName, 'output', alias, 'startMonth', parseFloat(e.target.value))}
-                                                />
-                                            )}
-                                        </td>
+                                        {/* Date Range */}
+
 
                                         {/* Value Inputs */}
                                         <td className="px-2 py-1">
@@ -193,6 +202,28 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
                                                 )}
                                             </td>
                                         )}
+                                        {/* Date Range */}
+                                        <td className="px-2 py-1 align-top pt-1">
+                                            {objAss.dateRangeEnabled && valueField?.supports?.dateRange && (
+                                                <div className="flex items-center gap-1 text-xs">
+                                                    <input
+                                                        type="number"
+                                                        className="w-10 p-1 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 outline-none text-center"
+                                                        placeholder="1"
+                                                        value={valueField.raw.dateRange?.start ?? 1}
+                                                        onChange={(e) => onChange(objName, 'output', alias, valueFieldName!, { ...valueField.raw.dateRange, start: safeParseFloat(e.target.value) }, 'dateRange')}
+                                                    />
+                                                    <span className="text-gray-400">-</span>
+                                                    <input
+                                                        type="number"
+                                                        className="w-10 p-1 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 outline-none text-center"
+                                                        placeholder="End"
+                                                        value={valueField.raw.dateRange?.end ?? (years * 12)}
+                                                        onChange={(e) => onChange(objName, 'output', alias, valueFieldName!, { ...valueField.raw.dateRange, end: safeParseFloat(e.target.value) }, 'dateRange')}
+                                                    />
+                                                </div>
+                                            )}
+                                        </td>
                                     </tr>
                                 );
                             })}

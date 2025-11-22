@@ -158,6 +158,7 @@ export default function Editor({ params }: { params: { id: string } }) {
                             const oldRaw = existing.raw;
 
                             if (oldRaw.smoothing !== undefined) newRaw.smoothing = oldRaw.smoothing;
+                            if (oldRaw.dateRange !== undefined) newRaw.dateRange = oldRaw.dateRange;
 
                             // Arrays: Copy what we have, keep new length (which is correct for current modelYears)
                             if (Array.isArray(newRaw.annual) && Array.isArray(oldRaw.annual)) {

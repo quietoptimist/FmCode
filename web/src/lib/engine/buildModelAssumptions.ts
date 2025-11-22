@@ -13,7 +13,7 @@ export function buildModelAssumptions(ast: any, index: any, objectSchema: any, c
       continue;
     }
 
-    const objAss: any = { object: {}, outputs: {}, uiMode: 'single', seasonalEnabled: false };
+    const objAss: any = { object: {}, outputs: {}, uiMode: 'single', seasonalEnabled: false, dateRangeEnabled: false };
 
     // 1) object-level assumptions
     const objectDefs = (schema.assumptions && schema.assumptions.object) || [];
@@ -80,7 +80,7 @@ function buildAssumptionField(def: any, ctx: any, seasonalEnabled: boolean = fal
  * into a monthly array.
  * @param uiMode - The UI mode: 'single', 'annual', or 'growth'
  */
-function materializeMonthly(def: any, raw: any, ctx: any, seasonalEnabled: boolean = false, uiMode: 'single' | 'annual' | 'growth' = 'single') {
+function materializeMonthly(def: any, raw: any, ctx: any, seasonalEnabled: boolean = false, uiMode: 'single' | 'annual' | 'growth' = 'single', dateRangeEnabled: boolean = false) {
   const months = ctx.months ?? 60;
   const years = ctx.years ?? Math.ceil(months / 12);
 
@@ -195,11 +195,14 @@ function materializeMonthly(def: any, raw: any, ctx: any, seasonalEnabled: boole
   }
 
   // 6) apply date range (if any)
-  if (raw.dateRange && typeof raw.dateRange === "object") {
-    const start = raw.dateRange.start ?? 0;
-    const end = raw.dateRange.end ?? (months - 1);
+  // 6) apply date range (if enabled and exists)
+  if (dateRangeEnabled && def.supports?.dateRange && raw.dateRange && typeof raw.dateRange === "object") {
+    const start = raw.dateRange.start ?? 1; // Default to Month 1 (1-based)
+    const end = raw.dateRange.end ?? months;
     for (let m = 0; m < months; m++) {
-      if (m < start || m > end) {
+      // Logic: m is 0-based index. Month number is m+1.
+      // If Month number < start OR Month number > end, zero it out.
+      if ((m + 1) < start || (m + 1) > end) {
         out[m] = 0;
       }
     }
@@ -226,6 +229,7 @@ export function updateAssumption(assumptions: any, objName: string, type: string
 
   let targetField;
   let seasonalEnabled = newAssumptions[objName]?.seasonalEnabled ?? false;
+  let dateRangeEnabled = newAssumptions[objName]?.dateRangeEnabled ?? false;
 
   if (type === 'meta') {
     if (fieldName === 'uiMode') {
@@ -243,7 +247,7 @@ export function updateAssumption(assumptions: any, objName: string, type: string
                 baseType: field.baseType, isRate: field.isRate,
                 supports: field.supports
               };
-              field.value = materializeMonthly(def, field.raw, ctx, seasonalEnabled, value);
+              field.value = materializeMonthly(def, field.raw, ctx, seasonalEnabled, value, dateRangeEnabled);
             }
           }
         }
@@ -270,6 +274,30 @@ export function updateAssumption(assumptions: any, objName: string, type: string
               };
               const uiMode = obj.uiMode || 'single';
               field.value = materializeMonthly(def, field.raw, ctx, seasonalEnabled, uiMode);
+            }
+          }
+        }
+      }
+      return newAssumptions;
+    }
+    if (fieldName === 'dateRangeEnabled') {
+      if (newAssumptions[objName]) {
+        newAssumptions[objName].dateRangeEnabled = value;
+        dateRangeEnabled = value; // Update local var
+
+        // Re-materialize ALL outputs
+        const obj = newAssumptions[objName];
+        if (obj.outputs) {
+          for (const alias in obj.outputs) {
+            const outAss = obj.outputs[alias];
+            for (const fName in outAss) {
+              const field = outAss[fName];
+              const def = {
+                baseType: field.baseType, isRate: field.isRate,
+                supports: field.supports
+              };
+              const uiMode = obj.uiMode || 'single';
+              field.value = materializeMonthly(def, field.raw, ctx, seasonalEnabled, uiMode, dateRangeEnabled);
             }
           }
         }
@@ -338,6 +366,8 @@ export function updateAssumption(assumptions: any, objName: string, type: string
     targetField.raw.seasonal[index] = value;
   } else if (subField === 'smoothing') {
     targetField.raw.smoothing = value;
+  } else if (subField === 'dateRange') {
+    targetField.raw.dateRange = value;
   } else {
     // Default: Update first year (single mode behavior)
     // Set annual[0] to the value and fill remaining years with same value
@@ -355,7 +385,7 @@ export function updateAssumption(assumptions: any, objName: string, type: string
   };
   const uiMode = newAssumptions[objName]?.uiMode || 'single';
 
-  targetField.value = materializeMonthly(def, targetField.raw, ctx, seasonalEnabled, uiMode);
+  targetField.value = materializeMonthly(def, targetField.raw, ctx, seasonalEnabled, uiMode, dateRangeEnabled);
 
   return newAssumptions;
 }
@@ -366,6 +396,7 @@ export function recalculateAll(assumptions: any, ctx: any) {
     if (!obj) continue;
 
     const seasonalEnabled = obj.seasonalEnabled ?? false;
+    const dateRangeEnabled = obj.dateRangeEnabled ?? false;
     const uiMode = obj.uiMode ?? 'single';
 
     // Object-level assumptions
@@ -378,7 +409,7 @@ export function recalculateAll(assumptions: any, ctx: any) {
             isRate: field.isRate,
             supports: field.supports
           };
-          field.value = materializeMonthly(def, field.raw, ctx, seasonalEnabled, uiMode);
+          field.value = materializeMonthly(def, field.raw, ctx, seasonalEnabled, uiMode, dateRangeEnabled);
         }
       }
     }
@@ -395,7 +426,7 @@ export function recalculateAll(assumptions: any, ctx: any) {
               isRate: field.isRate,
               supports: field.supports
             };
-            field.value = materializeMonthly(def, field.raw, ctx, seasonalEnabled, uiMode);
+            field.value = materializeMonthly(def, field.raw, ctx, seasonalEnabled, uiMode, dateRangeEnabled);
           }
         }
       }

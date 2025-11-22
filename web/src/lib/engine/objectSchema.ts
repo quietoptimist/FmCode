@@ -15,7 +15,7 @@ export const objectSchema = {
       output: [
         {
           name: "amount",
-          label: "Annual amount",
+          label: "Annual Quantity",
           baseType: "number",
           default: 10,
           supports: {
@@ -23,21 +23,11 @@ export const objectSchema = {
             annual: true,
             monthly: true,
             smoothing: true,
-            growth: false,     // you could turn this on if you want
+            growth: false,     // you could turn this on if you want,
             dateRange: true
           },
           ui: {
             defaultMode: "annual"
-          }
-        },
-        {
-          name: "startMonth",
-          label: "Start month",
-          baseType: "number",
-          default: 0,
-          isRate: true, // Don't divide by 12 - this is a scalar index
-          supports: {
-            single: true
           }
         }
       ]
@@ -50,14 +40,14 @@ export const objectSchema = {
   QuantAnnSeas: {
     impl: "QuantStart",
     channels: {
-      val: { label: "Value" }
+      val: { label: "Annual Quantity" }
     },
     assumptions: {
       object: [],
       output: [
         {
           name: "amount",
-          label: "Annual amount",
+          label: "Annual Quantity",
           baseType: "number",
           default: 10,
           supports: {
@@ -71,16 +61,6 @@ export const objectSchema = {
           },
           ui: {
             defaultMode: "annual"
-          }
-        },
-        {
-          name: "startMonth",
-          label: "Start month",
-          baseType: "number",
-          default: 0,
-          isRate: true, // Don't divide by 12 - this is a scalar index
-          supports: {
-            single: true
           }
         }
       ]
@@ -115,16 +95,6 @@ export const objectSchema = {
           ui: {
             defaultMode: "annual"
           }
-        },
-        {
-          name: "startMonth",
-          label: "Start month",
-          baseType: "number",
-          default: 0,
-          isRate: true, // Don't divide by 12 - this is a scalar index
-          supports: {
-            single: true
-          }
         }
       ]
     }
@@ -156,16 +126,6 @@ export const objectSchema = {
           },
           ui: {
             defaultMode: "annual"
-          }
-        },
-        {
-          name: "startMonth",
-          label: "Start month",
-          baseType: "number",
-          default: 0,
-          isRate: true, // Don't divide by 12 - this is a scalar index
-          supports: {
-            single: true
           }
         }
       ]
@@ -199,16 +159,6 @@ export const objectSchema = {
           },
           ui: {
             defaultMode: "annual"
-          }
-        },
-        {
-          name: "startMonth",
-          label: "Start month",
-          baseType: "number",
-          default: 0,
-          isRate: true, // Don't divide by 12 - this is a scalar index
-          supports: {
-            single: true
           }
         }
       ]
@@ -441,16 +391,6 @@ export const objectSchema = {
           },
           ui: {
             defaultMode: "single"
-          }
-        },
-        {
-          name: "startMonth",
-          label: "Start month",
-          baseType: "number",
-          default: 0,
-          isRate: true, // Don't divide by 12 - this is a scalar index
-          supports: {
-            single: true
           }
         }
       ]
