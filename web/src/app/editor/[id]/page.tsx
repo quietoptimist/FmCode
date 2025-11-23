@@ -346,10 +346,15 @@ export default function Editor({ params }: { params: { id: string } }) {
     };
 
     const handleAssumptionChange = (objName: string, type: 'object' | 'output' | 'meta', aliasOrName: string, fieldName: string, value: any, subField?: string | null, index?: number | null) => {
-        if (!assumptions) return;
-        const ctx = { months: modelYears * 12, years: modelYears };
-        const newAssumptions = updateAssumption(assumptions, objName, type, aliasOrName, fieldName, value, ctx, subField ?? null, index ?? null);
-        setAssumptions(newAssumptions);
+        try {
+            if (!assumptions) return;
+            const ctx = { months: modelYears * 12, years: modelYears };
+            const newAssumptions = updateAssumption(assumptions, objName, type, aliasOrName, fieldName, value, ctx, subField ?? null, index ?? null);
+            setAssumptions(newAssumptions);
+        } catch (e) {
+            console.error("Error updating assumption:", e);
+            setError("Error updating assumption: " + (e as any).message);
+        }
     };
 
     const handleOverride = (alias: string, channel: string, month: number, value: number | null) => {

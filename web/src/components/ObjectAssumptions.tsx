@@ -65,6 +65,25 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
                             );
                         })()}
 
+                        {/* Integers Toggle */}
+                        {(() => {
+                            const supportsIntegers = objAss.outputs && Object.values(objAss.outputs).some((out: any) =>
+                                Object.values(out).some((field: any) => field.supports?.integers)
+                            );
+                            if (!supportsIntegers) return null;
+                            return (
+                                <label className="flex items-center gap-1 text-xs font-medium text-gray-600 cursor-pointer select-none">
+                                    <input
+                                        type="checkbox"
+                                        checked={objAss.integersEnabled ?? false}
+                                        onChange={(e) => onChange(objName, 'meta', 'integersEnabled', 'integersEnabled', e.target.checked)}
+                                        className="w-3.5 h-3.5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                                    />
+                                    Integers
+                                </label>
+                            );
+                        })()}
+
                         {/* Mode Switcher */}
                         {(() => {
                             // Calculate supported modes

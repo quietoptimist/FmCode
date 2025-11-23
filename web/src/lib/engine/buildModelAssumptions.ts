@@ -13,7 +13,7 @@ export function buildModelAssumptions(ast: any, index: any, objectSchema: any, c
       continue;
     }
 
-    const objAss: any = { object: {}, outputs: {}, uiMode: 'single', seasonalEnabled: false, dateRangeEnabled: false, comment: obj.comment };
+    const objAss: any = { object: {}, outputs: {}, uiMode: 'single', seasonalEnabled: false, dateRangeEnabled: false, integersEnabled: false, comment: obj.comment };
 
     // 1) object-level assumptions
     const objectDefs = (schema.assumptions && schema.assumptions.object) || [];
@@ -80,7 +80,7 @@ function buildAssumptionField(def: any, ctx: any, seasonalEnabled: boolean = fal
  * into a monthly array.
  * @param uiMode - The UI mode: 'single', 'annual', or 'growth'
  */
-function materializeMonthly(def: any, raw: any, ctx: any, seasonalEnabled: boolean = false, uiMode: 'single' | 'annual' | 'growth' = 'single', dateRangeEnabled: boolean = false) {
+function materializeMonthly(def: any, raw: any, ctx: any, seasonalEnabled: boolean, uiMode: string, dateRangeEnabled: boolean, integersEnabled: boolean) {
   const months = ctx.months ?? 60;
   const years = ctx.years ?? Math.ceil(months / 12);
 
@@ -120,68 +120,67 @@ function materializeMonthly(def: any, raw: any, ctx: any, seasonalEnabled: boole
       }
     }
 
-    return out;
-  }
+  } else {
+    // Annual/Growth mode: use multi-year logic
 
-  // Annual/Growth mode: use multi-year logic
-
-  if (def.supports?.annual && raw.annual?.length) {
-    // 3) annual path
-    for (let y = 0; y < years; y++) {
-      const yearVal = raw.annual[y];
-      for (let m = 0; m < 12; m++) {
-        const idx = y * 12 + m;
-        if (idx >= months) break;
-
-        let val = yearVal != null ? yearVal : 0;
-
-        // Apply seasonal factors if enabled and supported
-        if (seasonalEnabled && def.supports?.seasonal && raw.seasonal) {
-          const monthIdx = m; // 0-11
-          const factor = raw.seasonal[monthIdx] ?? (1 / 12);
-          val = val * factor;
-        } else {
-          // For non-seasonal, check if rate or total
-          val = val;
-        }
-
-        out[idx] = val;
-      }
-    }
-
-    // 3b) smoothing between years
-    if (def.supports?.smoothing && raw.smoothing) {
-      for (let y = 0; y < years - 1; y++) {
-        const startIdx = y * 12;
-        const endIdx = (y + 1) * 12;
-        const startVal = raw.annual[y] ?? 0;
-        const endVal = raw.annual[y + 1] ?? startVal;
-        const step = (endVal - startVal) / 12;
-
+    if (def.supports?.annual && raw.annual?.length) {
+      // 3) annual path
+      for (let y = 0; y < years; y++) {
+        const yearVal = raw.annual[y];
         for (let m = 0; m < 12; m++) {
-          const idx = startIdx + m;
+          const idx = y * 12 + m;
           if (idx >= months) break;
 
-          // Calculate smoothed annual value for this month
-          const smoothedAnnual = startVal + step * m;
+          let val = yearVal != null ? yearVal : 0;
 
-          // Apply seasonal factors if enabled
+          // Apply seasonal factors if enabled and supported
           if (seasonalEnabled && def.supports?.seasonal && raw.seasonal) {
             const monthIdx = m; // 0-11
             const factor = raw.seasonal[monthIdx] ?? (1 / 12);
-            out[idx] = smoothedAnnual * factor;
+            val = val * factor;
           } else {
             // For non-seasonal, check if rate or total
-            out[idx] = smoothedAnnual;
+            val = val;
+          }
+
+          out[idx] = val;
+        }
+      }
+
+      // 3b) smoothing between years
+      if (def.supports?.smoothing && raw.smoothing) {
+        for (let y = 0; y < years - 1; y++) {
+          const startIdx = y * 12;
+          const endIdx = (y + 1) * 12;
+          const startVal = raw.annual[y] ?? 0;
+          const endVal = raw.annual[y + 1] ?? startVal;
+          const step = (endVal - startVal) / 12;
+
+          for (let m = 0; m < 12; m++) {
+            const idx = startIdx + m;
+            if (idx >= months) break;
+
+            // Calculate smoothed annual value for this month
+            const smoothedAnnual = startVal + step * m;
+
+            // Apply seasonal factors if enabled
+            if (seasonalEnabled && def.supports?.seasonal && raw.seasonal) {
+              const monthIdx = m; // 0-11
+              const factor = raw.seasonal[monthIdx] ?? (1 / 12);
+              out[idx] = smoothedAnnual * factor;
+            } else {
+              // For non-seasonal, check if rate or total
+              out[idx] = smoothedAnnual;
+            }
           }
         }
       }
-    }
-  } else {
-    // 4) fallback: use first year value for all months (single mode behavior)
-    const singleVal = raw.annual?.[0] ?? 0;
-    for (let m = 0; m < months; m++) {
-      out[m] = singleVal;
+    } else {
+      // 4) fallback: use first year value for all months (single mode behavior)
+      const singleVal = raw.annual?.[0] ?? 0;
+      for (let m = 0; m < months; m++) {
+        out[m] = singleVal;
+      }
     }
   }
 
@@ -208,6 +207,20 @@ function materializeMonthly(def: any, raw: any, ctx: any, seasonalEnabled: boole
     }
   }
 
+  // 7) apply integers logic (if enabled and supported)
+  if (integersEnabled && def.supports?.integers) {
+    let cumReal = 0;
+    let cumInt = 0;
+    for (let m = 0; m < months; m++) {
+      const originalVal = out[m];
+      cumReal += originalVal;
+      const targetInt = Math.floor(cumReal);
+      const diff = targetInt - cumInt;
+      out[m] = diff;
+      cumInt += diff;
+    }
+  }
+
   return out;
 }
 
@@ -230,6 +243,7 @@ export function updateAssumption(assumptions: any, objName: string, type: string
   let targetField;
   let seasonalEnabled = newAssumptions[objName]?.seasonalEnabled ?? false;
   let dateRangeEnabled = newAssumptions[objName]?.dateRangeEnabled ?? false;
+  let integersEnabled = newAssumptions[objName]?.integersEnabled ?? false;
 
   if (type === 'meta') {
     if (fieldName === 'uiMode') {
@@ -247,7 +261,7 @@ export function updateAssumption(assumptions: any, objName: string, type: string
                 baseType: field.baseType, isRate: field.isRate,
                 supports: field.supports
               };
-              field.value = materializeMonthly(def, field.raw, ctx, seasonalEnabled, value, dateRangeEnabled);
+              field.value = materializeMonthly(def, field.raw, ctx, seasonalEnabled, value, dateRangeEnabled, integersEnabled);
             }
           }
         }
@@ -273,7 +287,7 @@ export function updateAssumption(assumptions: any, objName: string, type: string
                 supports: field.supports
               };
               const uiMode = obj.uiMode || 'single';
-              field.value = materializeMonthly(def, field.raw, ctx, seasonalEnabled, uiMode);
+              field.value = materializeMonthly(def, field.raw, ctx, seasonalEnabled, uiMode, dateRangeEnabled, integersEnabled);
             }
           }
         }
@@ -297,7 +311,31 @@ export function updateAssumption(assumptions: any, objName: string, type: string
                 supports: field.supports
               };
               const uiMode = obj.uiMode || 'single';
-              field.value = materializeMonthly(def, field.raw, ctx, seasonalEnabled, uiMode, dateRangeEnabled);
+              field.value = materializeMonthly(def, field.raw, ctx, seasonalEnabled, uiMode, dateRangeEnabled, integersEnabled);
+            }
+          }
+        }
+      }
+      return newAssumptions;
+    }
+    if (fieldName === 'integersEnabled') {
+      if (newAssumptions[objName]) {
+        newAssumptions[objName].integersEnabled = value;
+        integersEnabled = value; // Update local var
+
+        // Re-materialize ALL outputs
+        const obj = newAssumptions[objName];
+        if (obj.outputs) {
+          for (const alias in obj.outputs) {
+            const outAss = obj.outputs[alias];
+            for (const fName in outAss) {
+              const field = outAss[fName];
+              const def = {
+                baseType: field.baseType, isRate: field.isRate,
+                supports: field.supports
+              };
+              const uiMode = obj.uiMode || 'single';
+              field.value = materializeMonthly(def, field.raw, ctx, seasonalEnabled, uiMode, dateRangeEnabled, integersEnabled);
             }
           }
         }
@@ -385,7 +423,7 @@ export function updateAssumption(assumptions: any, objName: string, type: string
   };
   const uiMode = newAssumptions[objName]?.uiMode || 'single';
 
-  targetField.value = materializeMonthly(def, targetField.raw, ctx, seasonalEnabled, uiMode, dateRangeEnabled);
+  targetField.value = materializeMonthly(def, targetField.raw, ctx, seasonalEnabled, uiMode, dateRangeEnabled, integersEnabled);
 
   return newAssumptions;
 }
@@ -397,6 +435,7 @@ export function recalculateAll(assumptions: any, ctx: any) {
 
     const seasonalEnabled = obj.seasonalEnabled ?? false;
     const dateRangeEnabled = obj.dateRangeEnabled ?? false;
+    const integersEnabled = obj.integersEnabled ?? false;
     const uiMode = obj.uiMode ?? 'single';
 
     // Object-level assumptions
@@ -409,7 +448,7 @@ export function recalculateAll(assumptions: any, ctx: any) {
             isRate: field.isRate,
             supports: field.supports
           };
-          field.value = materializeMonthly(def, field.raw, ctx, seasonalEnabled, uiMode, dateRangeEnabled);
+          field.value = materializeMonthly(def, field.raw, ctx, seasonalEnabled, uiMode, dateRangeEnabled, integersEnabled);
         }
       }
     }
@@ -426,7 +465,7 @@ export function recalculateAll(assumptions: any, ctx: any) {
               isRate: field.isRate,
               supports: field.supports
             };
-            field.value = materializeMonthly(def, field.raw, ctx, seasonalEnabled, uiMode, dateRangeEnabled);
+            field.value = materializeMonthly(def, field.raw, ctx, seasonalEnabled, uiMode, dateRangeEnabled, integersEnabled);
           }
         }
       }

@@ -24,7 +24,8 @@ export const objectSchema = {
             monthly: true,
             smoothing: true,
             growth: false,     // you could turn this on if you want,
-            dateRange: true
+            dateRange: true,
+            integers: true
           },
           ui: {
             defaultMode: "annual"
@@ -57,7 +58,8 @@ export const objectSchema = {
             smoothing: true,
             growth: false,     // you could turn this on if you want
             dateRange: true,
-            seasonal: true
+            seasonal: true,
+            integers: true
           },
           ui: {
             defaultMode: "annual"
