@@ -14,6 +14,7 @@ type InputMode = 'single' | 'annual' | 'growth';
 export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', onChange }: ObjectAssumptionsProps) {
     const mode = uiMode;
     const seasonalEnabled = objAss?.seasonalEnabled ?? false;
+    const [optionsExpanded, setOptionsExpanded] = useState(false);
 
     if (!objAss) return null;
 
@@ -33,99 +34,114 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
                     </h3>
 
                     <div className="flex items-center gap-4">
-                        {/* Seasonal Toggle */}
-                        {supportsSeasonal && (
-                            <label className="flex items-center gap-1 text-xs font-medium text-gray-600 cursor-pointer select-none">
-                                <input
-                                    type="checkbox"
-                                    checked={objAss.seasonalEnabled ?? false}
-                                    onChange={(e) => onChange(objName, 'meta', 'seasonalEnabled', 'seasonalEnabled', e.target.checked)}
-                                    className="w-3.5 h-3.5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                                />
-                                Seasonal
-                            </label>
+                        {/* Collapsible Options */}
+                        {optionsExpanded && (
+                            <>
+                                {/* Seasonal Toggle */}
+                                {supportsSeasonal && (
+                                    <label className="flex items-center gap-1 text-xs font-medium text-gray-600 cursor-pointer select-none" title="Add seasonality by scaling assumptions in each calendar month relative to the average">
+                                        <input
+                                            type="checkbox"
+                                            checked={objAss.seasonalEnabled ?? false}
+                                            onChange={(e) => onChange(objName, 'meta', 'seasonalEnabled', 'seasonalEnabled', e.target.checked)}
+                                            className="w-3.5 h-3.5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                                        />
+                                        Seasonal
+                                    </label>
+                                )}
+
+                                {/* Date Range Toggle */}
+                                {(() => {
+                                    const supportsDateRange = objAss.outputs && Object.values(objAss.outputs).some((out: any) =>
+                                        Object.values(out).some((field: any) => field.supports?.dateRange)
+                                    );
+                                    if (!supportsDateRange) return null;
+                                    return (
+                                        <label className="flex items-center gap-1 text-xs font-medium text-gray-600 cursor-pointer select-none" title="Zero monthly assumptions outside of a range of months">
+                                            <input
+                                                type="checkbox"
+                                                checked={objAss.dateRangeEnabled ?? false}
+                                                onChange={(e) => onChange(objName, 'meta', 'dateRangeEnabled', 'dateRangeEnabled', e.target.checked)}
+                                                className="w-3.5 h-3.5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                                            />
+                                            Fr-To Mth
+                                        </label>
+                                    );
+                                })()}
+
+                                {/* Integers Toggle */}
+                                {(() => {
+                                    const supportsIntegers = objAss.outputs && Object.values(objAss.outputs).some((out: any) =>
+                                        Object.values(out).some((field: any) => field.supports?.integers)
+                                    );
+                                    if (!supportsIntegers) return null;
+                                    return (
+                                        <label className="flex items-center gap-1 text-xs font-medium text-gray-600 cursor-pointer select-none" title="Turn fractional monthly assumptions into whole numbers">
+                                            <input
+                                                type="checkbox"
+                                                checked={objAss.integersEnabled ?? false}
+                                                onChange={(e) => onChange(objName, 'meta', 'integersEnabled', 'integersEnabled', e.target.checked)}
+                                                className="w-3.5 h-3.5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                                            />
+                                            Integers
+                                        </label>
+                                    );
+                                })()}
+
+                                {/* Mode Switcher */}
+                                {(() => {
+                                    // Calculate supported modes
+                                    const supportsSingle = objAss.outputs && Object.values(objAss.outputs).some((out: any) =>
+                                        Object.values(out).some((field: any) => field.supports?.single)
+                                    );
+                                    const supportsAnnual = objAss.outputs && Object.values(objAss.outputs).some((out: any) =>
+                                        Object.values(out).some((field: any) => field.supports?.annual)
+                                    );
+                                    const supportsGrowth = objAss.outputs && Object.values(objAss.outputs).some((out: any) =>
+                                        Object.values(out).some((field: any) => field.supports?.growth)
+                                    );
+
+                                    const availableModes = [
+                                        supportsSingle ? 'single' : null,
+                                        supportsAnnual ? 'annual' : null,
+                                        supportsGrowth ? 'growth' : null
+                                    ].filter(Boolean) as InputMode[];
+
+                                    if (availableModes.length <= 1) return null;
+
+                                    return (
+                                        <div className="relative">
+                                            <select
+                                                value={mode}
+                                                onChange={(e) => onChange(objName, 'meta', 'uiMode', 'uiMode', e.target.value)}
+                                                className="appearance-none bg-gray-50 border border-gray-200 text-gray-700 text-xs font-medium py-1 pl-3 pr-8 rounded leading-tight focus:outline-none focus:bg-white focus:border-blue-500"
+                                                title="Ways to enter assumptions"
+                                            >
+                                                {availableModes.map((m) => (
+                                                    <option key={m} value={m} className="capitalize">
+                                                        {m === 'annual' ? 'multiple' : m}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                                                <svg className="fill-current h-3 w-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                                                    <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                                                </svg>
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
+                            </>
                         )}
 
-                        {/* Date Range Toggle */}
-                        {(() => {
-                            const supportsDateRange = objAss.outputs && Object.values(objAss.outputs).some((out: any) =>
-                                Object.values(out).some((field: any) => field.supports?.dateRange)
-                            );
-                            if (!supportsDateRange) return null;
-                            return (
-                                <label className="flex items-center gap-1 text-xs font-medium text-gray-600 cursor-pointer select-none">
-                                    <input
-                                        type="checkbox"
-                                        checked={objAss.dateRangeEnabled ?? false}
-                                        onChange={(e) => onChange(objName, 'meta', 'dateRangeEnabled', 'dateRangeEnabled', e.target.checked)}
-                                        className="w-3.5 h-3.5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                                    />
-                                    Fr-To Mth
-                                </label>
-                            );
-                        })()}
-
-                        {/* Integers Toggle */}
-                        {(() => {
-                            const supportsIntegers = objAss.outputs && Object.values(objAss.outputs).some((out: any) =>
-                                Object.values(out).some((field: any) => field.supports?.integers)
-                            );
-                            if (!supportsIntegers) return null;
-                            return (
-                                <label className="flex items-center gap-1 text-xs font-medium text-gray-600 cursor-pointer select-none">
-                                    <input
-                                        type="checkbox"
-                                        checked={objAss.integersEnabled ?? false}
-                                        onChange={(e) => onChange(objName, 'meta', 'integersEnabled', 'integersEnabled', e.target.checked)}
-                                        className="w-3.5 h-3.5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                                    />
-                                    Integers
-                                </label>
-                            );
-                        })()}
-
-                        {/* Mode Switcher */}
-                        {(() => {
-                            // Calculate supported modes
-                            const supportsSingle = objAss.outputs && Object.values(objAss.outputs).some((out: any) =>
-                                Object.values(out).some((field: any) => field.supports?.single)
-                            );
-                            const supportsAnnual = objAss.outputs && Object.values(objAss.outputs).some((out: any) =>
-                                Object.values(out).some((field: any) => field.supports?.annual)
-                            );
-                            const supportsGrowth = objAss.outputs && Object.values(objAss.outputs).some((out: any) =>
-                                Object.values(out).some((field: any) => field.supports?.growth)
-                            );
-
-                            const availableModes = [
-                                supportsSingle ? 'single' : null,
-                                supportsAnnual ? 'annual' : null,
-                                supportsGrowth ? 'growth' : null
-                            ].filter(Boolean) as InputMode[];
-
-                            if (availableModes.length <= 1) return null;
-
-                            return (
-                                <div className="relative">
-                                    <select
-                                        value={mode}
-                                        onChange={(e) => onChange(objName, 'meta', 'uiMode', 'uiMode', e.target.value)}
-                                        className="appearance-none bg-gray-50 border border-gray-200 text-gray-700 text-xs font-medium py-1 pl-3 pr-8 rounded leading-tight focus:outline-none focus:bg-white focus:border-blue-500"
-                                    >
-                                        {availableModes.map((m) => (
-                                            <option key={m} value={m} className="capitalize">
-                                                {m === 'annual' ? 'multiple' : m}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                                        <svg className="fill-current h-3 w-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                                            <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                                        </svg>
-                                    </div>
-                                </div>
-                            );
-                        })()}
+                        {/* Toggle Button */}
+                        <button
+                            onClick={() => setOptionsExpanded(!optionsExpanded)}
+                            className="w-6 h-6 flex items-center justify-center bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded text-gray-600 text-xs font-bold transition-colors"
+                            title={optionsExpanded ? "Hide options" : "Show options"}
+                        >
+                            {optionsExpanded ? '<' : '>'}
+                        </button>
                     </div>
                 </div>
                 {objAss.comment && (
@@ -158,9 +174,17 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
                     <table className="text-sm text-left">
                         <thead className="text-xs text-gray-500 uppercase bg-gray-50">
                             <tr>
-                                <th className="px-2 py-2 font-medium">Output</th>
+                                <th className="px-2 py-1 font-medium">
+                                    {(() => {
+                                        const firstAlias = Object.keys(objAss.outputs)[0];
+                                        const firstOutAss = objAss.outputs[firstAlias];
+                                        const valueFieldName = Object.keys(firstOutAss).find(k => k !== 'startMonth');
+                                        if (!valueFieldName) return 'Output';
+                                        return firstOutAss[valueFieldName]?.label || 'Output';
+                                    })()}
+                                </th>
 
-                                <th className="px-2 py-2 font-medium">
+                                <th className="px-2 py-1 font-medium">
                                     {mode === 'single' ? (
                                         'Value'
                                     ) : mode === 'annual' ? (
@@ -182,8 +206,8 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
                                         </div>
                                     )}
                                 </th>
-                                {mode !== 'single' && <th className="px-2 py-2 font-medium w-16">Smooth</th>}
-                                {objAss.dateRangeEnabled && <th className="px-2 py-2 font-medium w-32">Fr-To Mth</th>}
+                                {mode !== 'single' && <th className="px-2 py-1 font-medium w-16">Smooth</th>}
+                                {objAss.dateRangeEnabled && <th className="px-2 py-1 font-medium w-32">Fr-To Mth</th>}
                             </tr>
                         </thead>
                         <tbody>
@@ -196,14 +220,14 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
 
                                 return (
                                     <tr key={alias} className="group hover:bg-gray-50">
-                                        <td className="px-2 py-1 font-medium text-gray-700 align-top pt-1">{formatName(alias)}</td>
+                                        <td className="px-2 py-0.5 font-medium text-gray-700 align-middle">{formatName(alias)}</td>
 
                                         {/* Start Month */}
                                         {/* Date Range */}
 
 
                                         {/* Value Inputs */}
-                                        <td className="px-2 py-1">
+                                        <td className="px-2 py-0.5 align-middle">
                                             {valueField && (
                                                 <ValueInput
                                                     field={valueField}
@@ -217,7 +241,7 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
 
                                         {/* Options (Smoothing) */}
                                         {mode !== 'single' && (
-                                            <td className="px-2 py-1 align-top pt-1 text-center">
+                                            <td className="px-2 py-0.5 align-middle text-center">
                                                 {valueField?.supports?.smoothing && (
                                                     <input
                                                         type="checkbox"
@@ -229,7 +253,7 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
                                             </td>
                                         )}
                                         {/* Date Range */}
-                                        <td className="px-2 py-1 align-top pt-1">
+                                        <td className="px-2 py-0.5 align-middle">
                                             {objAss.dateRangeEnabled && valueField?.supports?.dateRange && (
                                                 <div className="flex items-center gap-1 text-xs">
                                                     <input
@@ -293,21 +317,132 @@ function AssumptionInput({ label, field, mode, years, onChange }: any) {
     );
 }
 
+interface SingleValueInputProps {
+    value: number | null;
+    onChange: (val: number) => void;
+    format?: string;
+    placeholder?: string;
+    showLabel?: boolean;
+    label?: string;
+}
+
+function SingleValueInput({ value, onChange, format, placeholder, showLabel, label }: SingleValueInputProps) {
+    const isPercent = format === 'percent';
+    const isCurrency = format === 'currency';
+    const isInteger = format === 'integer';
+
+    // Initialize local state
+    const [localValue, setLocalValue] = useState<string>('');
+    const [isFocused, setIsFocused] = useState(false);
+
+    // Sync local value with prop when not focused
+    React.useEffect(() => {
+        if (!isFocused) {
+            if (value === null || value === undefined) {
+                setLocalValue('');
+            } else if (isPercent) {
+                setLocalValue((value * 100).toFixed(2));
+            } else if (isCurrency) {
+                setLocalValue(value.toFixed(2));
+            } else {
+                setLocalValue(value.toString());
+            }
+        }
+    }, [value, isFocused, isPercent, isCurrency]);
+
+    const handleBlur = () => {
+        setIsFocused(false);
+        // On blur, re-format the valid number
+        if (localValue === '' || localValue === '-') {
+            onChange(0);
+            return;
+        }
+
+        const parsed = parseFloat(localValue);
+        if (!isNaN(parsed)) {
+            // If it's a valid number, we update the parent
+            // The useEffect will then re-format it nicely
+            if (isPercent) {
+                onChange(parsed / 100);
+            } else {
+                onChange(parsed);
+            }
+        } else {
+            // Invalid, revert
+            if (value !== null) {
+                if (isPercent) setLocalValue((value * 100).toFixed(2));
+                else if (isCurrency) setLocalValue(value.toFixed(2));
+                else setLocalValue(value.toString());
+            } else {
+                setLocalValue('');
+            }
+        }
+    };
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setLocalValue(e.target.value);
+        // We also update parent immediately to keep state in sync, 
+        // but we parse carefully.
+        // Actually, for "10." case, parseFloat("10.") is 10.
+        // If we update parent 10, parent passes back 10.
+        // If useEffect runs, it formats 10 -> "10.00" (if currency).
+        // So we MUST NOT update localValue from prop if focused.
+        // That is handled by the useEffect condition (!isFocused).
+
+        const val = e.target.value;
+        if (val === '' || val === '-') {
+            onChange(0);
+            return;
+        }
+        const parsed = parseFloat(val);
+        if (!isNaN(parsed)) {
+            if (isPercent) onChange(parsed / 100);
+            else onChange(parsed);
+        }
+    };
+
+    const input = (
+        <input
+            type="text"
+            inputMode={isInteger ? "numeric" : "decimal"}
+            className={`w-full p-1.5 border border-gray-300 rounded text-sm focus:ring-1 focus:ring-blue-500 outline-none text-right ${isCurrency ? 'pl-4' : ''} ${isPercent ? 'pr-4' : ''}`}
+            value={localValue}
+            onChange={handleChange}
+            onFocus={() => setIsFocused(true)}
+            onBlur={handleBlur}
+            placeholder={placeholder || "Value"}
+        />
+    );
+
+    const wrappedInput = (
+        <div className="relative w-full">
+            {isCurrency && <span className="absolute left-1.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs">$</span>}
+            {input}
+            {isPercent && <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs">%</span>}
+        </div>
+    );
+
+    if (showLabel && label) {
+        return (
+            <div className="flex flex-col gap-0.5 w-24">
+                <label className="text-[10px] text-gray-400 uppercase">{label}</label>
+                {wrappedInput}
+            </div>
+        );
+    }
+
+    return <div className="w-24">{wrappedInput}</div>;
+}
+
 function ValueInput({ field, mode, years, showLabels = true, onChange }: { field: any, mode: InputMode, years: number, showLabels?: boolean, onChange: (val: any, subField?: string | null, index?: number | null) => void }) {
-    // Local state for inputs to allow typing "0.5" (which starts with "0.") without it being forced to 0 immediately if we were strict.
-    // However, for simplicity in this fix, we'll just rely on the fact that "0." parses to 0, but we need to preserve the string if possible?
-    // Actually, controlled inputs with number type are tricky.
-    // Let's stick to the safeParseFloat approach for the onChange, but we might need to handle the display value carefully.
-    // If field.raw.single is 0, it shows "0".
+    const format = field.format;
 
     if (mode === 'single' || !field.supports?.annual) {
         return (
-            <input
-                type="number"
-                className="w-20 p-1.5 border border-gray-300 rounded text-sm focus:ring-1 focus:ring-blue-500 outline-none"
-                value={field.raw.annual?.[0] ?? ''}
-                onChange={(e) => onChange(safeParseFloat(e.target.value), 'annual', 0)}
-                placeholder="Value"
+            <SingleValueInput
+                value={field.raw.annual?.[0] ?? null}
+                onChange={(v) => onChange(v, 'annual', 0)}
+                format={format}
             />
         );
     }
@@ -316,15 +451,14 @@ function ValueInput({ field, mode, years, showLabels = true, onChange }: { field
         return (
             <div className="flex gap-2">
                 {Array.from({ length: years }).map((_, i) => (
-                    <div key={i} className="flex flex-col gap-0.5 w-20">
-                        {showLabels && <label className="text-[10px] text-gray-400 uppercase">Y{i + 1}</label>}
-                        <input
-                            type="number"
-                            className="w-full p-1.5 border border-gray-300 rounded text-sm focus:ring-1 focus:ring-blue-500 outline-none"
-                            value={field.raw.annual?.[i] ?? ''}
-                            onChange={(e) => onChange(safeParseFloat(e.target.value), 'annual', i)}
-                        />
-                    </div>
+                    <SingleValueInput
+                        key={i}
+                        value={field.raw.annual?.[i] ?? null}
+                        onChange={(v) => onChange(v, 'annual', i)}
+                        format={format}
+                        showLabel={showLabels}
+                        label={`Y${i + 1}`}
+                    />
                 ))}
             </div>
         );
@@ -334,37 +468,26 @@ function ValueInput({ field, mode, years, showLabels = true, onChange }: { field
         return (
             <div className="flex gap-2">
                 {/* Year 1 is Base Value */}
-                <div className="flex flex-col gap-0.5 w-20">
-                    {showLabels && <label className="text-[10px] text-gray-400 uppercase">Base (Y1)</label>}
-                    <input
-                        type="number"
-                        className="w-full p-1.5 border border-gray-300 rounded text-sm focus:ring-1 focus:ring-blue-500 outline-none"
-                        value={field.raw.annual?.[0] ?? ''}
-                        onChange={(e) => onChange(safeParseFloat(e.target.value), 'annual', 0)}
-                    />
-                </div>
+                <SingleValueInput
+                    value={field.raw.annual?.[0] ?? null}
+                    onChange={(v) => onChange(v, 'annual', 0)}
+                    format={format}
+                    showLabel={showLabels}
+                    label="Base (Y1)"
+                />
                 {/* Subsequent years are Growth % */}
                 {Array.from({ length: years - 1 }).map((_, i) => {
                     const yearIndex = i + 1;
                     const growthVal = field.raw.growth?.[yearIndex] ?? 0;
                     return (
-                        <div key={yearIndex} className="flex flex-col gap-0.5 w-20">
-                            {showLabels && <label className="text-[10px] text-gray-400 uppercase">Gr% (Y{yearIndex + 1})</label>}
-                            <div className="relative">
-                                <input
-                                    type="number"
-                                    className="w-full p-1.5 pr-4 border border-gray-300 rounded text-sm focus:ring-1 focus:ring-blue-500 outline-none"
-                                    // Display as percentage (e.g. 0.05 -> 5)
-                                    // We need to be careful here. If user types "5", we want 0.05.
-                                    // But if we display (0.05 * 100).toFixed(1), it shows "5.0".
-                                    // If user tries to delete "0", it might be weird.
-                                    // For now, let's trust the value.
-                                    value={growthVal !== null ? +(growthVal * 100).toFixed(2) : ''}
-                                    onChange={(e) => onChange(safeParseFloat(e.target.value) / 100, 'growth', yearIndex)}
-                                />
-                                <span className="absolute right-1.5 top-1.5 text-gray-400 text-xs">%</span>
-                            </div>
-                        </div>
+                        <SingleValueInput
+                            key={yearIndex}
+                            value={growthVal}
+                            onChange={(v) => onChange(v, 'growth', yearIndex)}
+                            format="percent" // Growth is always percent
+                            showLabel={showLabels}
+                            label={`Gr% (Y${yearIndex + 1})`}
+                        />
                     );
                 })}
             </div>

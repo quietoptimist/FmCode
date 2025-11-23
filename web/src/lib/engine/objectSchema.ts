@@ -7,6 +7,7 @@ export const objectSchema = {
   // ============================
   QuantAnn: {
     impl: "QuantStart",
+    showMonthlyAssumptions: false,  // Assumptions = outputs, no need to show both
     channels: {
       val: { label: "Value" }
     },
@@ -17,14 +18,16 @@ export const objectSchema = {
           name: "amount",
           label: "Monthly Quantity",
           baseType: "number",
+          format: "integer",
           default: 10,
           supports: {
             single: true,
             annual: true,
             monthly: true,
             smoothing: true,
-            growth: false,     // you could turn this on if you want,
+            growth: true,
             dateRange: true,
+            seasonal: true,
             integers: true
           },
           ui: {
@@ -40,6 +43,7 @@ export const objectSchema = {
   // ============================
   QuantAnnSeas: {
     impl: "QuantStart",
+    showMonthlyAssumptions: false,  // Assumptions = outputs, no need to show both
     channels: {
       val: { label: "Monthly Quantity" }
     },
@@ -50,13 +54,14 @@ export const objectSchema = {
           name: "amount",
           label: "Monthly Quantity",
           baseType: "number",
+          format: "integer",
           default: 10,
           supports: {
             single: true,
             annual: true,
             monthly: true,
             smoothing: true,
-            growth: false,     // you could turn this on if you want
+            growth: true,
             dateRange: true,
             seasonal: true,
             integers: true
@@ -74,6 +79,7 @@ export const objectSchema = {
   // ============================
   QuantDrv: {
     impl: "ScaleDrv",
+    showMonthlyAssumptions: true,  // Has driver inputs, show monthly assumptions
     channels: {
       val: { label: "Value" }
     },
@@ -84,6 +90,7 @@ export const objectSchema = {
           name: "factor",
           label: "Driver factor",
           baseType: "number",
+          format: "decimal",
           default: 2,
           isRate: true,  // Don't divide by 12 - this is a monthly rate/multiplier
           supports: {
@@ -107,6 +114,7 @@ export const objectSchema = {
   // ============================
   CostAnnSM: {
     impl: "QuantStart",
+    showMonthlyAssumptions: false,
     channels: {
       val: { label: "Value" }
     },
@@ -117,13 +125,14 @@ export const objectSchema = {
           name: "amount",
           label: "Monthly amount",
           baseType: "number",
+          format: "currency",
           default: 1000,
           supports: {
             single: true,
             annual: true,
             monthly: true,
             smoothing: true,
-            growth: false,     // you could turn this on if you want
+            growth: true,
             dateRange: true
           },
           ui: {
@@ -140,6 +149,7 @@ export const objectSchema = {
   // ============================
   CostAnnGA: {
     impl: "QuantStart",
+    showMonthlyAssumptions: false,
     channels: {
       val: { label: "Value" }
     },
@@ -150,13 +160,14 @@ export const objectSchema = {
           name: "amount",
           label: "Monthly amount",
           baseType: "number",
+          format: "currency",
           default: 100,
           supports: {
             single: true,
             annual: true,
             monthly: true,
             smoothing: true,
-            growth: false,     // you could turn this on if you want
+            growth: true,     // you could turn this on if you want
             dateRange: true
           },
           ui: {
@@ -168,10 +179,11 @@ export const objectSchema = {
   },
 
   // ============================
-  // CostDrvDC — also a scaler
+  // ScaleDrv — also a scaler
   // ============================
-  CostDrvDC: {
+  ScaleDrv: {
     impl: "ScaleDrv",
+    showMonthlyAssumptions: true,
     channels: {
       val: { label: "Cost" }
     },
@@ -182,6 +194,42 @@ export const objectSchema = {
           name: "factor",
           label: "Cost per unit",
           baseType: "number",
+          format: "currency",
+          default: 1,
+          isRate: true,  // Don't divide by 12 - this is a monthly rate/cost
+          supports: {
+            single: true,
+            annual: true,
+            monthly: true,
+            smoothing: true,
+            growth: true,
+            dateRange: true
+          },
+          ui: {
+            defaultMode: "single"
+          }
+        }
+      ]
+    }
+  },
+
+  // ============================
+  // CostDrvDC — also a scaler
+  // ============================
+  CostDrvDC: {
+    impl: "ScaleDrv",
+    showMonthlyAssumptions: true,
+    channels: {
+      val: { label: "Cost" }
+    },
+    assumptions: {
+      object: [],               // leave empty for now
+      output: [
+        {
+          name: "factor",
+          label: "Cost per unit",
+          baseType: "number",
+          format: "currency",
           default: 1,
           isRate: true,  // Don't divide by 12 - this is a monthly rate/cost
           supports: {
@@ -205,6 +253,7 @@ export const objectSchema = {
   // ============================
   CostDrvSM: {
     impl: "ScaleDrv",
+    showMonthlyAssumptions: true,
     channels: {
       val: { label: "Cost" }
     },
@@ -215,6 +264,7 @@ export const objectSchema = {
           name: "factor",
           label: "Cost per unit",
           baseType: "number",
+          format: "currency",
           default: 1,
           isRate: true,  // Dont divide by 12 - this is a monthly rate
           supports: {
@@ -238,6 +288,7 @@ export const objectSchema = {
   // ============================
   RevDrvNew: {
     impl: "ScaleDrv",
+    showMonthlyAssumptions: true,
     channels: {
       val: { label: "Revenue" }
     },
@@ -246,8 +297,9 @@ export const objectSchema = {
       output: [
         {
           name: "factor",
-          label: "Price / fee",
+          label: "Price or fee",
           baseType: "number",
+          format: "currency",
           default: 50,
           isRate: true,  // Dont divide by 12 - this is a monthly rate
           supports: {
@@ -271,6 +323,7 @@ export const objectSchema = {
   // ============================
   RevDrvNewDel: {
     impl: "ScaleDrv",
+    showMonthlyAssumptions: true,
     channels: {
       val: { label: "Revenue" }
     },
@@ -279,8 +332,9 @@ export const objectSchema = {
       output: [
         {
           name: "factor",
-          label: "Price / fee",
+          label: "Price or fee",
           baseType: "number",
+          format: "currency",
           default: 50,
           isRate: true,  // Dont divide by 12 - this is a monthly rate
           supports: {
@@ -304,6 +358,7 @@ export const objectSchema = {
   // ============================
   RevDrv: {
     impl: "ScaleDrv",
+    showMonthlyAssumptions: true,
     channels: {
       val: { label: "Revenue" }
     },
@@ -312,8 +367,9 @@ export const objectSchema = {
       output: [
         {
           name: "factor",
-          label: "Rate per hour",
+          label: "Unit Price",
           baseType: "number",
+          format: "currency",
           default: 100,
           isRate: true,  // Dont divide by 12 - this is a monthly rate
           supports: {
@@ -337,6 +393,7 @@ export const objectSchema = {
   // ============================
   RevDrvDel: {
     impl: "ScaleDrv",
+    showMonthlyAssumptions: true,
     channels: {
       val: { label: "Revenue" }
     },
@@ -345,8 +402,9 @@ export const objectSchema = {
       output: [
         {
           name: "factor",
-          label: "Rate per hour",
+          label: "Unit Price",
           baseType: "number",
+          format: "currency",
           default: 100,
           isRate: true,  // Dont divide by 12 - this is a monthly rate
           supports: {
@@ -366,10 +424,46 @@ export const objectSchema = {
   },
 
   // ============================
+  // RevDrvDCPrem — same as revDrv but will have different destinations
+  // ============================
+  RevDrvDCPrem: {
+    impl: "ScaleDrv",
+    showMonthlyAssumptions: true,
+    channels: {
+      val: { label: "Revenue" }
+    },
+    assumptions: {
+      object: [],
+      output: [
+        {
+          name: "factor",
+          label: "Price / fee",
+          baseType: "number",
+          format: "currency",
+          default: 50,
+          isRate: true,  // Dont divide by 12 - this is a monthly rate
+          supports: {
+            single: true,
+            annual: true,
+            monthly: true,
+            smoothing: true,
+            growth: true,        // inflation-like
+            dateRange: true
+          },
+          ui: {
+            defaultMode: "annual"
+          }
+        }
+      ]
+    }
+  },
+
+  // ============================
   // SubRetain — multi-channel
   // ============================
   SubRetain: {
     impl: "SubRetain",
+    showMonthlyAssumptions: true,
     channels: {
       act: { label: "Active customers" },
       chu: { label: "Churned customers" }
@@ -381,6 +475,7 @@ export const objectSchema = {
           name: "churnRate",
           label: "Monthly churn rate",
           baseType: "number",
+          format: "percent",
           default: 0.08,
           isRate: true,  // Rate/percentage - don't divide by 12
           supports: {
@@ -404,6 +499,7 @@ export const objectSchema = {
   // ============================
   DelRev: {
     impl: "Delay",
+    showMonthlyAssumptions: true,
     channels: {
       val: { label: "Delayed value" }
     },
@@ -414,6 +510,7 @@ export const objectSchema = {
           name: "delayMonths",
           label: "Delay (months)",
           baseType: "number",
+          format: "integer",
           default: 2,
           isRate: true, // Don't divide by 12 - this is a scalar (months)
           supports: {
@@ -433,10 +530,11 @@ export const objectSchema = {
   },
 
   // ============================
-  // StaffRoles - delay revenue outputs to account for payment delays
+  // Staff - delay revenue outputs to account for payment delays
   // ============================
   StaffRoles: {
     impl: "StaffRoles",
+    showMonthlyAssumptions: true,
     channels: {
       cost: { label: "Staff Cost" },
       heads: { label: "Staff Heads" }
@@ -448,6 +546,7 @@ export const objectSchema = {
           name: "headCount",
           label: "Staff Heads",
           baseType: "number",
+          format: "integer",
           default: 1,
           isRate: true, // Don't divide by 12 - this is a scalar count
           supports: {
@@ -472,6 +571,7 @@ export const objectSchema = {
   // ============================
   Sum: {
     impl: "Sum",
+    showMonthlyAssumptions: false,  // Just sums inputs, no unique assumptions
     channels: {
       val: { label: "Total" }
     },

@@ -510,7 +510,6 @@ export default function Editor({ params }: { params: { id: string } }) {
                                                     seasonalEnabled={assumptions[objName]?.seasonalEnabled ?? false}
                                                     objName={objName}
                                                     onAssumptionChange={handleAssumptionChange}
-                                                    showMonthlyAssumptions={typeName ? (objectSchema as any)[typeName]?.showMonthlyAssumptions : false}
                                                 />
                                             </div>
                                         </div>

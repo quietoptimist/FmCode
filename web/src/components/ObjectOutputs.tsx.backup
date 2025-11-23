@@ -202,58 +202,6 @@ export function ObjectOutputs({ aliases, store, overrides, months, channelDefs, 
                         </tr>
                     )}
 
-                    {/* Monthly Assumptions Section */}
-                    {showMonthlyAssumptions && showAssumptions && objAss && (
-                        <>
-                            {(() => {
-                                let lastLabel = '';
-                                return aliases.map(alias => {
-                                    const outAss = objAss?.outputs?.[alias];
-                                    if (!outAss) return null;
-
-                                    // Find the main value field (usually 'amount' or 'factor')
-                                    const valueFieldName = Object.keys(outAss).find(k => k !== 'startMonth');
-                                    if (!valueFieldName) return null;
-
-                                    const valueField = outAss[valueFieldName];
-                                    if (!valueField?.value) return null;
-
-                                    const showHeader = valueField.label !== lastLabel;
-                                    lastLabel = valueField.label;
-
-                                    return (
-                                        <React.Fragment key={`assumptions-${alias}`}>
-                                            {/* Section header - show field label only when it changes */}
-                                            {showHeader && (
-                                                <tr className="bg-green-50/50">
-                                                    <td className="p-1.5 font-bold text-green-800 sticky left-0 bg-green-50 z-10 border-b border-green-100 border-r shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)] whitespace-nowrap">
-                                                        {valueField.label}
-                                                    </td>
-                                                    <td colSpan={months} className="border-b border-green-100"></td>
-                                                </tr>
-                                            )}
-                                            {/* Month header for this assumption */}
-                                            <tr className="bg-green-50/30">
-                                                <td className="p-1.5 font-medium text-green-700 sticky left-0 bg-green-50/30 z-10 border-b border-green-100 border-r shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)] whitespace-nowrap text-sm">
-                                                    {formatName(alias)}
-                                                </td>
-                                                {Array.from({ length: months }).map((_, i) => (
-                                                    <td key={i} className="p-1.5 min-w-[80px] text-right border-b border-green-100 text-xs text-green-600">
-                                                        {valueField.value[i]?.toLocaleString(undefined, { maximumFractionDigits: 2 }) || '0'}
-                                                    </td>
-                                                ))}
-                                            </tr>
-                                        </React.Fragment>
-                                    );
-                                });
-                            })()}
-                            {/* Spacer row after assumptions */}
-                            <tr className="h-3">
-                                <td colSpan={months + 1} className="p-0"></td>
-                            </tr>
-                        </>
-                    )}
-
                     {/* Month Header Row */}
                     <tr className="bg-gray-50">
                         <td className="p-1.5 font-semibold text-gray-700 sticky left-0 bg-gray-50 z-10 border-t border-b border-r shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)] whitespace-nowrap">

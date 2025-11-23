@@ -13,7 +13,7 @@ export function buildModelAssumptions(ast: any, index: any, objectSchema: any, c
       continue;
     }
 
-    const objAss: any = { object: {}, outputs: {}, uiMode: 'single', seasonalEnabled: false, dateRangeEnabled: false, integersEnabled: false, comment: obj.comment };
+    const objAss: any = { type: typeName, object: {}, outputs: {}, uiMode: 'single', seasonalEnabled: false, dateRangeEnabled: false, integersEnabled: false, comment: obj.comment };
 
     // 1) object-level assumptions
     const objectDefs = (schema.assumptions && schema.assumptions.object) || [];
@@ -53,7 +53,7 @@ function buildAssumptionField(def: any, ctx: any, seasonalEnabled: boolean = fal
     annual: Array.from({ length: years }, () => null),
     monthly: Array.from({ length: months }, () => null),
     growth: Array.from({ length: years }, () => 0), // Array for YoY growth, init to 0
-    seasonal: Array.from({ length: 12 }, () => 1 / 12), // 12 monthly factors, default to equal distribution
+    seasonal: Array.from({ length: 12 }, () => 1), // 12 monthly factors, default to 100% (no scaling)
     smoothing: def.supports?.smoothing ? true : false,
     dateRange: null       // could be { start: 0, end: 59 }
   };
@@ -70,6 +70,7 @@ function buildAssumptionField(def: any, ctx: any, seasonalEnabled: boolean = fal
     value,
     label: def.label ?? def.name,
     baseType: def.baseType ?? "number",
+    format: def.format,
     isRate: def.isRate, // Propagate isRate flag
     supports: def.supports
   };
