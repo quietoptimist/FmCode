@@ -114,7 +114,7 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
                                     >
                                         {availableModes.map((m) => (
                                             <option key={m} value={m} className="capitalize">
-                                                {m}
+                                                {m === 'annual' ? 'multiple' : m}
                                             </option>
                                         ))}
                                     </select>

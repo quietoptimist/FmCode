@@ -63,7 +63,7 @@ function buildAssumptionField(def: any, ctx: any, seasonalEnabled: boolean = fal
     raw.annual = Array.from({ length: years }, () => def.default);
   }
 
-  const value = materializeMonthly(def, raw, ctx, seasonalEnabled, 'single'); // Default to single mode on init
+  const value = materializeMonthly(def, raw, ctx, seasonalEnabled, 'single', false, false); // Default to single mode on init, no date range/integers
 
   return {
     raw,
