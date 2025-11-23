@@ -13,7 +13,7 @@ export function buildModelAssumptions(ast: any, index: any, objectSchema: any, c
       continue;
     }
 
-    const objAss: any = { object: {}, outputs: {}, uiMode: 'single', seasonalEnabled: false, dateRangeEnabled: false };
+    const objAss: any = { object: {}, outputs: {}, uiMode: 'single', seasonalEnabled: false, dateRangeEnabled: false, comment: obj.comment };
 
     // 1) object-level assumptions
     const objectDefs = (schema.assumptions && schema.assumptions.object) || [];

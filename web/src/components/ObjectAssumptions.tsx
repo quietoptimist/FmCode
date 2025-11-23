@@ -26,87 +26,94 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
 
     return (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 space-y-3 h-fit">
-            <div className="flex justify-between items-center border-b pb-2">
-                <h3 className="text-lg font-bold text-blue-700 flex items-center gap-2">
-                    {formatName(objName)}
-                </h3>
+            <div className="border-b pb-2">
+                <div className="flex justify-between items-center">
+                    <h3 className="text-lg font-bold text-blue-700 flex items-center gap-2">
+                        {formatName(objName)}
+                    </h3>
 
-                <div className="flex items-center gap-4">
-                    {/* Seasonal Toggle */}
-                    {supportsSeasonal && (
-                        <label className="flex items-center gap-1 text-xs font-medium text-gray-600 cursor-pointer select-none">
-                            <input
-                                type="checkbox"
-                                checked={objAss.seasonalEnabled ?? false}
-                                onChange={(e) => onChange(objName, 'meta', 'seasonalEnabled', 'seasonalEnabled', e.target.checked)}
-                                className="w-3.5 h-3.5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                            />
-                            Seasonal
-                        </label>
-                    )}
-
-                    {/* Date Range Toggle */}
-                    {(() => {
-                        const supportsDateRange = objAss.outputs && Object.values(objAss.outputs).some((out: any) =>
-                            Object.values(out).some((field: any) => field.supports?.dateRange)
-                        );
-                        if (!supportsDateRange) return null;
-                        return (
+                    <div className="flex items-center gap-4">
+                        {/* Seasonal Toggle */}
+                        {supportsSeasonal && (
                             <label className="flex items-center gap-1 text-xs font-medium text-gray-600 cursor-pointer select-none">
                                 <input
                                     type="checkbox"
-                                    checked={objAss.dateRangeEnabled ?? false}
-                                    onChange={(e) => onChange(objName, 'meta', 'dateRangeEnabled', 'dateRangeEnabled', e.target.checked)}
+                                    checked={objAss.seasonalEnabled ?? false}
+                                    onChange={(e) => onChange(objName, 'meta', 'seasonalEnabled', 'seasonalEnabled', e.target.checked)}
                                     className="w-3.5 h-3.5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
                                 />
-                                Fr-To Mth
+                                Seasonal
                             </label>
-                        );
-                    })()}
+                        )}
 
-                    {/* Mode Switcher */}
-                    {(() => {
-                        // Calculate supported modes
-                        const supportsSingle = objAss.outputs && Object.values(objAss.outputs).some((out: any) =>
-                            Object.values(out).some((field: any) => field.supports?.single)
-                        );
-                        const supportsAnnual = objAss.outputs && Object.values(objAss.outputs).some((out: any) =>
-                            Object.values(out).some((field: any) => field.supports?.annual)
-                        );
-                        const supportsGrowth = objAss.outputs && Object.values(objAss.outputs).some((out: any) =>
-                            Object.values(out).some((field: any) => field.supports?.growth)
-                        );
+                        {/* Date Range Toggle */}
+                        {(() => {
+                            const supportsDateRange = objAss.outputs && Object.values(objAss.outputs).some((out: any) =>
+                                Object.values(out).some((field: any) => field.supports?.dateRange)
+                            );
+                            if (!supportsDateRange) return null;
+                            return (
+                                <label className="flex items-center gap-1 text-xs font-medium text-gray-600 cursor-pointer select-none">
+                                    <input
+                                        type="checkbox"
+                                        checked={objAss.dateRangeEnabled ?? false}
+                                        onChange={(e) => onChange(objName, 'meta', 'dateRangeEnabled', 'dateRangeEnabled', e.target.checked)}
+                                        className="w-3.5 h-3.5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                                    />
+                                    Fr-To Mth
+                                </label>
+                            );
+                        })()}
 
-                        const availableModes = [
-                            supportsSingle ? 'single' : null,
-                            supportsAnnual ? 'annual' : null,
-                            supportsGrowth ? 'growth' : null
-                        ].filter(Boolean) as InputMode[];
+                        {/* Mode Switcher */}
+                        {(() => {
+                            // Calculate supported modes
+                            const supportsSingle = objAss.outputs && Object.values(objAss.outputs).some((out: any) =>
+                                Object.values(out).some((field: any) => field.supports?.single)
+                            );
+                            const supportsAnnual = objAss.outputs && Object.values(objAss.outputs).some((out: any) =>
+                                Object.values(out).some((field: any) => field.supports?.annual)
+                            );
+                            const supportsGrowth = objAss.outputs && Object.values(objAss.outputs).some((out: any) =>
+                                Object.values(out).some((field: any) => field.supports?.growth)
+                            );
 
-                        if (availableModes.length <= 1) return null;
+                            const availableModes = [
+                                supportsSingle ? 'single' : null,
+                                supportsAnnual ? 'annual' : null,
+                                supportsGrowth ? 'growth' : null
+                            ].filter(Boolean) as InputMode[];
 
-                        return (
-                            <div className="relative">
-                                <select
-                                    value={mode}
-                                    onChange={(e) => onChange(objName, 'meta', 'uiMode', 'uiMode', e.target.value)}
-                                    className="appearance-none bg-gray-50 border border-gray-200 text-gray-700 text-xs font-medium py-1 pl-3 pr-8 rounded leading-tight focus:outline-none focus:bg-white focus:border-blue-500"
-                                >
-                                    {availableModes.map((m) => (
-                                        <option key={m} value={m} className="capitalize">
-                                            {m}
-                                        </option>
-                                    ))}
-                                </select>
-                                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                                    <svg className="fill-current h-3 w-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                                        <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                                    </svg>
+                            if (availableModes.length <= 1) return null;
+
+                            return (
+                                <div className="relative">
+                                    <select
+                                        value={mode}
+                                        onChange={(e) => onChange(objName, 'meta', 'uiMode', 'uiMode', e.target.value)}
+                                        className="appearance-none bg-gray-50 border border-gray-200 text-gray-700 text-xs font-medium py-1 pl-3 pr-8 rounded leading-tight focus:outline-none focus:bg-white focus:border-blue-500"
+                                    >
+                                        {availableModes.map((m) => (
+                                            <option key={m} value={m} className="capitalize">
+                                                {m}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                                        <svg className="fill-current h-3 w-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                                            <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                                        </svg>
+                                    </div>
                                 </div>
-                            </div>
-                        );
-                    })()}
+                            );
+                        })()}
+                    </div>
                 </div>
+                {objAss.comment && (
+                    <div className="text-xs text-gray-400 mt-1 w-full break-words">
+                        {objAss.comment}
+                    </div>
+                )}
             </div>
 
             {/* Object Level Assumptions */}

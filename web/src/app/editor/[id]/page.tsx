@@ -204,6 +204,7 @@ export default function Editor({ params }: { params: { id: string } }) {
                         }
 
                         for (const key in def) {
+                            if (key === 'comment') continue; // Always use the comment from the new definition (code)
                             if (existing[key] !== undefined) {
                                 def[key] = smartMerge(def[key], existing[key]);
                             }
