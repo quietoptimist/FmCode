@@ -444,7 +444,7 @@ export default function Editor({ params }: { params: { id: string } }) {
                 </details>
             </div>
 
-            <div className="w-full max-w-[1600px] flex flex-col gap-8 pb-20">
+            <div className="w-full max-w-[1600px] flex flex-col gap-4 pb-20">
                 {result?.ast?.objects && assumptions ? (
                     result.ast.objects.map((obj: any, index: number) => {
                         const objName = obj.name;
@@ -460,7 +460,7 @@ export default function Editor({ params }: { params: { id: string } }) {
                                 {(!assumptions[objName]) ? null : (
                                     <>
                                         {showSection && (
-                                            <div className="w-full border-b-2 border-gray-200 mb-6 mt-8 pb-2">
+                                            <div className="w-full border-b-2 border-gray-200 mb-6 mt-4 pb-2">
                                                 <h2 className="text-2xl font-bold text-gray-800">{formatName(obj.section)}</h2>
                                             </div>
                                         )}
