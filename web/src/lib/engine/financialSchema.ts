@@ -157,7 +157,7 @@ export const defaultFinancialTemplate: FinancialTemplate = {
 
                 // Current Assets
                 { code: "balance.assets.current", label: "Current Assets", level: 1, sign: 1, collapsible: true, children: ["balance.assets.current.cash", "balance.assets.current.ar", "balance.assets.current.inventory", "balance.assets.current.other"] },
-                { code: "balance.assets.current.cash", label: "Cash", level: 2, sign: 1, cumulative: true },
+                { code: "balance.assets.current.cash", label: "Cash", level: 2, sign: 1, cumulative: true, formula: "cash.balance" },  // References cash flow statement
                 { code: "balance.assets.current.ar", label: "Accounts Receivable", level: 2, sign: 1, cumulative: true },
                 { code: "balance.assets.current.inventory", label: "Inventory", level: 2, sign: 1, cumulative: true },
                 { code: "balance.assets.current.other", label: "Other Current Assets", level: 2, sign: 1, cumulative: true },
@@ -191,7 +191,7 @@ export const defaultFinancialTemplate: FinancialTemplate = {
                 // Equity
                 { code: "balance.equity", label: "Equity", level: 0, sign: 1, collapsible: true, children: ["balance.equity.share", "balance.equity.retained"] },
                 { code: "balance.equity.share", label: "Share Capital", level: 1, sign: 1, cumulative: true },
-                { code: "balance.equity.retained", label: "Retained Earnings", level: 1, sign: 1, cumulative: true },
+                { code: "balance.equity.retained", label: "Retained Earnings", level: 1, sign: 1, cumulative: true, formula: "cumsum(pnl.netIncome)" },  // Cumulative P&L net income
                 { code: "balance.equity.total", label: "Total Equity", level: 0, sign: 1, formula: "sum(balance.equity.*)", cumulative: true },
 
                 // Total Liabilities + Equity

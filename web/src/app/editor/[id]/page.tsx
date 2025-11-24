@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { formatName } from '@/lib/formatters';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
@@ -11,6 +11,9 @@ import { objectSchema } from '@/lib/engine/objectSchema';
 import { fnRegistry } from '@/lib/engine/fnRegistry';
 import { ObjectAssumptions } from '@/components/ObjectAssumptions';
 import { ObjectOutputs } from '@/components/ObjectOutputs';
+import { FinancialsPanel } from '@/components/FinancialsPanel';
+import { buildFinancialsFromEngine } from '@/lib/engine/buildFinancialsHelper';
+import Link from 'next/link';
 
 const SAMPLE_CODE = `
 SetupAndFunding:
@@ -30,6 +33,7 @@ export default function Editor({ params }: { params: { id: string } }) {
     const isScrolling = useRef(false);
     const [name, setName] = useState('Untitled Model');
     const [modelYears, setModelYears] = useState(2);
+    const [viewMode, setViewMode] = useState<'editor' | 'financials'>('editor');
     const router = useRouter();
 
     // Helper to rehydrate Maps from JSON
@@ -273,6 +277,12 @@ export default function Editor({ params }: { params: { id: string } }) {
         runClientEngine();
     }, [runClientEngine]);
 
+    // Build financial data
+    const financialData = useMemo(() => {
+        if (!engineResult || !result?.index) return null;
+        return buildFinancialsFromEngine(engineResult, result.index, modelYears * 12);
+    }, [engineResult, result, modelYears]);
+
     const handleParse = async () => {
         setError(null);
         try {
@@ -422,6 +432,23 @@ export default function Editor({ params }: { params: { id: string } }) {
                     </div>
 
                     {error && <div className="text-red-600 text-sm">{error}</div>}
+
+                    {viewMode === 'editor' ? (
+                        <button
+                            onClick={() => setViewMode('financials')}
+                            className="px-4 py-2 font-semibold rounded transition-colors shadow-sm text-sm bg-purple-600 text-white hover:bg-purple-700"
+                        >
+                            View Financials →
+                        </button>
+                    ) : (
+                        <button
+                            onClick={() => setViewMode('editor')}
+                            className="px-4 py-2 font-semibold rounded transition-colors shadow-sm text-sm bg-gray-600 text-white hover:bg-gray-700"
+                        >
+                            ← Back to Editor
+                        </button>
+                    )}
+
                     <button
                         onClick={handleSave}
                         disabled={saving}
@@ -432,99 +459,112 @@ export default function Editor({ params }: { params: { id: string } }) {
                 </div>
             </div>
 
-            <div className="w-full max-w-[1600px] mb-4">
-                <details className="mb-4 bg-white rounded border border-gray-200">
-                    <summary className="p-2 cursor-pointer font-medium text-gray-600 hover:bg-gray-50">FM Code Editor</summary>
-                    <div className="p-4 flex flex-col gap-2">
-                        <textarea
-                            className="w-full h-40 p-4 font-mono text-sm border rounded shadow-sm focus:ring-2 focus:ring-blue-500 outline-none resize-y"
-                            value={code}
-                            onChange={(e) => setCode(e.target.value)}
-                            spellCheck={false}
-                        />
-                        <button
-                            onClick={handleParse}
-                            className="self-start px-4 py-2 bg-blue-600 text-white font-semibold rounded hover:bg-blue-700 transition-colors shadow-sm text-sm"
-                        >
-                            Parse & Build Graph
-                        </button>
+            {viewMode === 'editor' ? (
+                <>
+                    <div className="w-full max-w-[1600px] mb-4">
+                        <details className="mb-4 bg-white rounded border border-gray-200">
+                            <summary className="p-2 cursor-pointer font-medium text-gray-600 hover:bg-gray-50">FM Code Editor</summary>
+                            <div className="p-4 flex flex-col gap-2">
+                                <textarea
+                                    className="w-full h-40 p-4 font-mono text-sm border rounded shadow-sm focus:ring-2 focus:ring-blue-500 outline-none resize-y"
+                                    value={code}
+                                    onChange={(e) => setCode(e.target.value)}
+                                    spellCheck={false}
+                                />
+                                <button
+                                    onClick={handleParse}
+                                    className="self-start px-4 py-2 bg-blue-600 text-white font-semibold rounded hover:bg-blue-700 transition-colors shadow-sm text-sm"
+                                >
+                                    Parse & Build Graph
+                                </button>
+                            </div>
+                        </details>
                     </div>
-                </details>
-            </div>
 
-            <div className="w-full max-w-[1600px] flex flex-col gap-4 pb-20">
-                {result?.ast?.objects && assumptions ? (
-                    result.ast.objects.map((obj: any, index: number) => {
-                        const objName = obj.name;
-                        const aliases = result.index.outputsByObject.get(objName) || [];
-                        const typeName = obj.fnName;
-                        const channelDefs = typeName ? (objectSchema as any)[typeName]?.channels : {};
+                    <div className="w-full max-w-[1600px] flex flex-col gap-4 pb-20">
+                        <div className="flex gap-4">
+                            {/* Main Content */}
+                            <div className="flex-1 flex flex-col gap-4">
+                                {result?.ast?.objects && assumptions ? (
+                                    result.ast.objects.map((obj: any, index: number) => {
+                                        const objName = obj.name;
+                                        const aliases = result.index.outputsByObject.get(objName) || [];
+                                        const typeName = obj.fnName;
+                                        const channelDefs = typeName ? (objectSchema as any)[typeName]?.channels : {};
 
-                        const prevObj = index > 0 ? result.ast.objects[index - 1] : null;
-                        const showSection = obj.section && (!prevObj || obj.section !== prevObj.section);
+                                        const prevObj = index > 0 ? result.ast.objects[index - 1] : null;
+                                        const showSection = obj.section && (!prevObj || obj.section !== prevObj.section);
 
-                        return (
-                            <div key={objName} className="flex flex-col">
-                                {(!assumptions[objName]) ? null : (
-                                    <>
-                                        {showSection && (
-                                            <div className="w-full border-b-2 border-gray-200 mb-6 mt-4 pb-2">
-                                                <h2 className="text-2xl font-bold text-gray-800">{formatName(obj.section)}</h2>
+                                        return (
+                                            <div key={objName} className="flex flex-col">
+                                                {(!assumptions[objName]) ? null : (
+                                                    <>
+                                                        {showSection && (
+                                                            <div className="w-full border-b-2 border-gray-200 mb-6 mt-4 pb-2">
+                                                                <h2 className="text-2xl font-bold text-gray-800">{formatName(obj.section)}</h2>
+                                                            </div>
+                                                        )}
+                                                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 border-b border-gray-200 pb-4">
+                                                            <div className={leftColClass}>
+                                                                <ObjectAssumptions
+                                                                    objName={objName}
+                                                                    objAss={assumptions[objName]}
+                                                                    years={modelYears}
+                                                                    uiMode={assumptions[objName].uiMode as 'single' | 'annual' | 'growth'}
+                                                                    onChange={handleAssumptionChange}
+                                                                />
+                                                            </div>
+                                                            <div
+                                                                ref={(el) => { outputScrollRefs.current[index] = el; }}
+                                                                className={`${rightColClass} overflow-x-auto`}
+                                                                onScroll={(e) => {
+                                                                    if (isScrolling.current) return;
+                                                                    isScrolling.current = true;
+                                                                    const scrollLeft = e.currentTarget.scrollLeft;
+                                                                    outputScrollRefs.current.forEach((ref, i) => {
+                                                                        if (ref && i !== index) {
+                                                                            ref.scrollLeft = scrollLeft;
+                                                                        }
+                                                                    });
+                                                                    requestAnimationFrame(() => {
+                                                                        isScrolling.current = false;
+                                                                    });
+                                                                }}
+                                                            >
+                                                                <ObjectOutputs
+                                                                    aliases={aliases}
+                                                                    store={engineResult?.store}
+                                                                    overrides={overrides}
+                                                                    months={modelYears * 12}
+                                                                    channelDefs={channelDefs}
+                                                                    onOverride={handleOverride}
+                                                                    objAss={assumptions[objName]}
+                                                                    seasonalEnabled={assumptions[objName]?.seasonalEnabled ?? false}
+                                                                    objName={objName}
+                                                                    onAssumptionChange={handleAssumptionChange}
+                                                                    showMonthlyAssumptions={typeName ? (objectSchema as any)[typeName]?.showMonthlyAssumptions : false}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </>
+                                                )}
                                             </div>
-                                        )}
-                                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 border-b border-gray-200 pb-4">
-                                            <div className={leftColClass}>
-                                                <ObjectAssumptions
-                                                    objName={objName}
-                                                    objAss={assumptions[objName]}
-                                                    years={modelYears}
-                                                    uiMode={assumptions[objName].uiMode as 'single' | 'annual' | 'growth'}
-                                                    onChange={handleAssumptionChange}
-                                                />
-                                            </div>
-                                            <div
-                                                ref={(el) => { outputScrollRefs.current[index] = el; }}
-                                                className={`${rightColClass} overflow-x-auto`}
-                                                onScroll={(e) => {
-                                                    if (isScrolling.current) return;
-                                                    isScrolling.current = true;
-                                                    const scrollLeft = e.currentTarget.scrollLeft;
-                                                    outputScrollRefs.current.forEach((ref, i) => {
-                                                        if (ref && i !== index) {
-                                                            ref.scrollLeft = scrollLeft;
-                                                        }
-                                                    });
-                                                    requestAnimationFrame(() => {
-                                                        isScrolling.current = false;
-                                                    });
-                                                }}
-                                            >
-                                                <ObjectOutputs
-                                                    aliases={aliases}
-                                                    store={engineResult?.store}
-                                                    overrides={overrides}
-                                                    months={modelYears * 12}
-                                                    channelDefs={channelDefs}
-                                                    onOverride={handleOverride}
-                                                    objAss={assumptions[objName]}
-                                                    seasonalEnabled={assumptions[objName]?.seasonalEnabled ?? false}
-                                                    objName={objName}
-                                                    onAssumptionChange={handleAssumptionChange}
-                                                    showMonthlyAssumptions={typeName ? (objectSchema as any)[typeName]?.showMonthlyAssumptions : false}
-                                                />
-                                            </div>
-                                        </div>
-                                    </>
+                                        );
+                                    })
+                                ) : (
+                                    <div className="text-center text-gray-500 py-10">
+                                        {result ? "Loading assumptions..." : "Parse the model to see assumptions and outputs."}
+                                    </div>
                                 )}
                             </div>
-                        );
-                    })
-                ) : (
-                    <div className="text-center text-gray-500 py-10">
-                        {result ? "Loading assumptions..." : "Parse the model to see assumptions and outputs."}
+                        </div>
                     </div>
-                )}
-            </div>
+                </>
+            ) : (
+                <div className="w-full h-[calc(100vh-100px)] overflow-hidden">
+                    <FinancialsPanel financialData={financialData} />
+                </div>
+            )}
         </main>
     );
 }
