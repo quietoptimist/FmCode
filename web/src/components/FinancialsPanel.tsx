@@ -311,7 +311,7 @@ interface ContributorRowProps {
 function ContributorRow({ contributor, parentLevel, viewMode, periods }: ContributorRowProps) {
     const periodValues = useMemo(() => {
         if (viewMode === 'monthly') {
-            return Array.from(contributor.values);
+            return Array.from<number>(contributor.values);
         } else {
             const years = Math.ceil(contributor.values.length / 12);
             const annualValues: number[] = [];
