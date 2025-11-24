@@ -38,19 +38,6 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
                         {/* Collapsible Options */}
                         {optionsExpanded && (
                             <>
-                                {/* Seasonal Toggle */}
-                                {supportsSeasonal && (
-                                    <label className="flex items-center gap-1 text-xs font-medium text-gray-600 cursor-pointer select-none" title="Add seasonality by scaling assumptions in each calendar month relative to the average">
-                                        <input
-                                            type="checkbox"
-                                            checked={objAss.seasonalEnabled ?? false}
-                                            onChange={(e) => onChange(objName, 'meta', 'seasonalEnabled', 'seasonalEnabled', e.target.checked)}
-                                            className="w-3.5 h-3.5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                                        />
-                                        Seasonal
-                                    </label>
-                                )}
-
                                 {/* Date Range Toggle */}
                                 {(() => {
                                     const supportsDateRange = objAss.outputs && Object.values(objAss.outputs).some((out: any) =>

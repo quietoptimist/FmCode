@@ -156,9 +156,44 @@ export const fnRegistry = {
   },
 
   // ==================================
-  // StaffTeam — calculates staff costs from headCount × salary
+  // StaffDriven — calculates headcount from activity ÷ productivity
   // ==================================
-  StaffTeam(ctx, inputs, cfg) {
+  StaffDriven(ctx, inputs, cfg) {
+    const months = ctx.months;
+    const outAss = cfg.output || {};
+
+    // Extract the two assumptions
+    const productivity = outAss.productivity
+      ? outAss.productivity.value
+      : new Float64Array(months).fill(1);
+    const salary = outAss.salary
+      ? outAss.salary.value
+      : new Float64Array(months).fill(0);
+
+    // Get the input activity (first input)
+    const activity = inputs[0] || new Float64Array(months).fill(0);
+
+    // Calculate headcount and cost arrays
+    const headsSeries = new Float64Array(months);
+    const costSeries = new Float64Array(months);
+
+    for (let m = 0; m < months; m++) {
+      // Headcount = activity ÷ productivity
+      const headCount = productivity[m] > 0 ? activity[m] / productivity[m] : 0;
+      headsSeries[m] = headCount;
+      costSeries[m] = headCount * salary[m];
+    }
+
+    return {
+      heads: headsSeries,
+      cost: costSeries
+    };
+  },
+
+  // ==================================
+  // StaffTeams — calculates staff costs from headCount × salary
+  // ==================================
+  StaffTeams(ctx, inputs, cfg) {
     const months = ctx.months;
     const outAss = cfg.output || {};
 
@@ -180,8 +215,8 @@ export const fnRegistry = {
     }
 
     return {
-      cost: costSeries,
-      heads: headsSeries
+      heads: headsSeries,
+      cost: costSeries
     };
   },
 
@@ -209,8 +244,8 @@ export const fnRegistry = {
     }
 
     return {
-      cost: costSeries,
-      heads: headsSeries
+      heads: headsSeries,
+      cost: costSeries
     };
   },
 

@@ -106,6 +106,25 @@ export function ObjectOutputs({ aliases, store, overrides, months, channelDefs, 
                                     Assumptions
                                 </label>
                             )}
+                            {/* Seasonal Toggle */}
+                            {seasonalEnabled !== undefined && onAssumptionChange && objName && (() => {
+                                // Check if any output supports seasonal
+                                const supportsSeasonal = objAss?.outputs && Object.values(objAss.outputs).some((out: any) =>
+                                    Object.values(out).some((field: any) => field?.supports?.seasonal)
+                                );
+                                if (!supportsSeasonal) return null;
+                                return (
+                                    <label className="flex items-center gap-1 text-xs font-medium text-gray-600 cursor-pointer select-none" title="Add seasonality by scaling assumptions in each calendar month relative to the average">
+                                        <input
+                                            type="checkbox"
+                                            checked={seasonalEnabled ?? false}
+                                            onChange={(e) => onAssumptionChange(objName, 'meta', 'seasonalEnabled', 'seasonalEnabled', e.target.checked)}
+                                            className="w-3.5 h-3.5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                                        />
+                                        Seasonal
+                                    </label>
+                                );
+                            })()}
                         </>
                     )}
                 </div>

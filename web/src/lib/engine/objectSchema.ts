@@ -518,16 +518,72 @@ export const objectSchema = {
     }
   },
 
+  // ============================
+  // StaffDriven - teams of people with manually entered headcount and salary
+  // ============================
+  StaffDriven: {
+    impl: "StaffDriven",
+    showMonthlyAssumptions: true,
+    channels: {
+      heads: { label: "Staff Heads" },
+      cost: { label: "Staff Cost" }
+    },
+    assumptions: {
+      object: [],
+      output: [
+        {
+          name: "productivity",
+          label: "Productivity",
+          baseType: "number",
+          format: "number",
+          default: 1000,
+          supports: {
+            single: true,
+            monthly: true,
+            dateRange: true,
+            annual: true,
+            growth: false,
+            smoothing: true,
+            integers: true,
+            seasonal: true
+          },
+          ui: {
+            defaultMode: "dateRange"
+          }
+        },
+        {
+          name: "salary",
+          label: "Average Salary",
+          baseType: "number",
+          format: "currency",
+          default: 3000,
+          supports: {
+            single: true,
+            monthly: true,
+            dateRange: true,
+            annual: true,
+            growth: false,
+            smoothing: true,
+            integers: false,
+            seasonal: true
+          },
+          ui: {
+            defaultMode: "single"
+          }
+        }
+      ]
+    }
+  },
 
   // ============================
   // StaffTeams - teams of people with manually entered headcount and salary
   // ============================
-  StaffTeam: {
-    impl: "StaffTeam",
+  StaffTeams: {
+    impl: "StaffTeams",
     showMonthlyAssumptions: true,
     channels: {
-      cost: { label: "Staff Cost" },
-      heads: { label: "Staff Heads" }
+      heads: { label: "Staff Heads" },
+      cost: { label: "Staff Cost" }
     },
     assumptions: {
       object: [],
@@ -546,7 +602,7 @@ export const objectSchema = {
             growth: false,
             smoothing: true,
             integers: true,
-            seasonal: false
+            seasonal: true
           },
           ui: {
             defaultMode: "dateRange"
@@ -554,7 +610,7 @@ export const objectSchema = {
         },
         {
           name: "salary",
-          label: "Staff Salary",
+          label: "Average Salary",
           baseType: "number",
           format: "currency",
           default: 3000,
@@ -565,8 +621,8 @@ export const objectSchema = {
             annual: true,
             growth: false,
             smoothing: true,
-            integers: true,
-            seasonal: false
+            integers: false,
+            seasonal: true
           },
           ui: {
             defaultMode: "dateRange"
