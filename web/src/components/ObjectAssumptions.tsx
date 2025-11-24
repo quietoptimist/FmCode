@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { objectSchema } from '@/lib/engine/objectSchema';
 import { formatName } from '@/lib/formatters';
 
 interface ObjectAssumptionsProps {
@@ -180,6 +181,15 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
                                         const firstOutAss = objAss.outputs[firstAlias];
                                         const valueFieldName = Object.keys(firstOutAss).find(k => k !== 'startMonth');
                                         if (!valueFieldName) return 'Output';
+
+                                        // Try to get label from schema first for immediate reactivity
+                                        if (objAss.type && (objectSchema as any)[objAss.type]) {
+                                            const schemaDef = (objectSchema as any)[objAss.type];
+                                            const outputDef = schemaDef.assumptions?.output?.find((f: any) => f.name === valueFieldName);
+                                            // console.log('Debug Label:', { type: objAss.type, valueFieldName, schemaLabel: outputDef?.label });
+                                            if (outputDef?.label) return outputDef.label;
+                                        }
+
                                         return firstOutAss[valueFieldName]?.label || 'Output';
                                     })()}
                                 </th>

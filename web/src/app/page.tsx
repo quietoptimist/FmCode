@@ -26,7 +26,7 @@ export default function LandingPage() {
     <main className="flex min-h-screen flex-col items-center justify-center p-8 bg-gradient-to-b from-blue-900 to-black text-white">
       <h1 className="text-6xl font-bold mb-4">Numberly</h1>
       <p className="text-xl text-gray-300 mb-8 max-w-2xl text-center">
-        The next generation financial modeling engine. Build complex models with simple text.
+        Build custom Startup Financial Models from simple text descriptions.
       </p>
 
       <div className="flex gap-4">

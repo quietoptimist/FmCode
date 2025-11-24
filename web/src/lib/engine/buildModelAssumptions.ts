@@ -71,7 +71,6 @@ function buildAssumptionField(def: any, ctx: any, seasonalEnabled: boolean = fal
     label: def.label ?? def.name,
     baseType: def.baseType ?? "number",
     format: def.format,
-    isRate: def.isRate, // Propagate isRate flag
     supports: def.supports
   };
 }
@@ -259,7 +258,7 @@ export function updateAssumption(assumptions: any, objName: string, type: string
             for (const fName in outAss) {
               const field = outAss[fName];
               const def = {
-                baseType: field.baseType, isRate: field.isRate,
+                baseType: field.baseType,
                 supports: field.supports
               };
               field.value = materializeMonthly(def, field.raw, ctx, seasonalEnabled, value, dateRangeEnabled, integersEnabled);
@@ -284,7 +283,7 @@ export function updateAssumption(assumptions: any, objName: string, type: string
               const field = outAss[fName];
               // Re-materialize
               const def = {
-                baseType: field.baseType, isRate: field.isRate,
+                baseType: field.baseType,
                 supports: field.supports
               };
               const uiMode = obj.uiMode || 'single';
@@ -308,7 +307,7 @@ export function updateAssumption(assumptions: any, objName: string, type: string
             for (const fName in outAss) {
               const field = outAss[fName];
               const def = {
-                baseType: field.baseType, isRate: field.isRate,
+                baseType: field.baseType,
                 supports: field.supports
               };
               const uiMode = obj.uiMode || 'single';
@@ -332,7 +331,7 @@ export function updateAssumption(assumptions: any, objName: string, type: string
             for (const fName in outAss) {
               const field = outAss[fName];
               const def = {
-                baseType: field.baseType, isRate: field.isRate,
+                baseType: field.baseType,
                 supports: field.supports
               };
               const uiMode = obj.uiMode || 'single';
@@ -419,7 +418,6 @@ export function updateAssumption(assumptions: any, objName: string, type: string
   // Re-materialize value
   const def = {
     baseType: targetField.baseType,
-    isRate: targetField.isRate,
     supports: targetField.supports
   };
   const uiMode = newAssumptions[objName]?.uiMode || 'single';
@@ -446,7 +444,6 @@ export function recalculateAll(assumptions: any, ctx: any) {
         if (field && field.raw) {
           const def = {
             baseType: field.baseType,
-            isRate: field.isRate,
             supports: field.supports
           };
           field.value = materializeMonthly(def, field.raw, ctx, seasonalEnabled, uiMode, dateRangeEnabled, integersEnabled);
@@ -463,7 +460,6 @@ export function recalculateAll(assumptions: any, ctx: any) {
           if (field && field.raw) {
             const def = {
               baseType: field.baseType,
-              isRate: field.isRate,
               supports: field.supports
             };
             field.value = materializeMonthly(def, field.raw, ctx, seasonalEnabled, uiMode, dateRangeEnabled, integersEnabled);

@@ -88,11 +88,10 @@ export const objectSchema = {
       output: [
         {
           name: "factor",
-          label: "Driver factor",
+          label: "# per input",
           baseType: "number",
           format: "decimal",
           default: 2,
-          isRate: true,  // Don't divide by 12 - this is a monthly rate/multiplier
           supports: {
             single: true,
             annual: true,
@@ -123,7 +122,7 @@ export const objectSchema = {
       output: [
         {
           name: "amount",
-          label: "Monthly amount",
+          label: "Monthly Cost",
           baseType: "number",
           format: "currency",
           default: 1000,
@@ -185,18 +184,17 @@ export const objectSchema = {
     impl: "ScaleDrv",
     showMonthlyAssumptions: true,
     channels: {
-      val: { label: "Cost" }
+      val: { label: "Value" }
     },
     assumptions: {
       object: [],               // leave empty for now
       output: [
         {
           name: "factor",
-          label: "Cost per unit",
+          label: "number per input",
           baseType: "number",
-          format: "currency",
+          format: "number",
           default: 1,
-          isRate: true,  // Don't divide by 12 - this is a monthly rate/cost
           supports: {
             single: true,
             annual: true,
@@ -231,7 +229,6 @@ export const objectSchema = {
           baseType: "number",
           format: "currency",
           default: 1,
-          isRate: true,  // Don't divide by 12 - this is a monthly rate/cost
           supports: {
             single: true,
             annual: true,
@@ -266,7 +263,6 @@ export const objectSchema = {
           baseType: "number",
           format: "currency",
           default: 1,
-          isRate: true,  // Dont divide by 12 - this is a monthly rate
           supports: {
             single: true,
             annual: true,
@@ -301,7 +297,6 @@ export const objectSchema = {
           baseType: "number",
           format: "currency",
           default: 50,
-          isRate: true,  // Dont divide by 12 - this is a monthly rate
           supports: {
             single: true,
             annual: true,
@@ -336,7 +331,6 @@ export const objectSchema = {
           baseType: "number",
           format: "currency",
           default: 50,
-          isRate: true,  // Dont divide by 12 - this is a monthly rate
           supports: {
             single: true,
             annual: true,
@@ -371,7 +365,6 @@ export const objectSchema = {
           baseType: "number",
           format: "currency",
           default: 100,
-          isRate: true,  // Dont divide by 12 - this is a monthly rate
           supports: {
             single: true,
             annual: true,
@@ -406,7 +399,6 @@ export const objectSchema = {
           baseType: "number",
           format: "currency",
           default: 100,
-          isRate: true,  // Dont divide by 12 - this is a monthly rate
           supports: {
             single: true,
             annual: true,
@@ -441,7 +433,6 @@ export const objectSchema = {
           baseType: "number",
           format: "currency",
           default: 50,
-          isRate: true,  // Dont divide by 12 - this is a monthly rate
           supports: {
             single: true,
             annual: true,
@@ -477,7 +468,6 @@ export const objectSchema = {
           baseType: "number",
           format: "percent",
           default: 0.08,
-          isRate: true,  // Rate/percentage - don't divide by 12
           supports: {
             single: true,
             annual: true,
@@ -511,8 +501,7 @@ export const objectSchema = {
           label: "Delay (months)",
           baseType: "number",
           format: "integer",
-          default: 2,
-          isRate: true, // Don't divide by 12 - this is a scalar (months)
+          default: 1,
           supports: {
             single: true,
             monthly: true,     // let the user have per-month delays later
@@ -546,14 +535,32 @@ export const objectSchema = {
           name: "headCount",
           label: "Staff Heads",
           baseType: "number",
-          format: "integer",
+          format: "number",
           default: 1,
-          isRate: true, // Don't divide by 12 - this is a scalar count
           supports: {
-            single: false,
-            monthly: false,
+            single: true,
+            monthly: true,
             dateRange: true,
-            annual: false,
+            annual: true,
+            growth: false,
+            smoothing: false,
+            seasonal: false
+          },
+          ui: {
+            defaultMode: "dateRange"
+          }
+        },
+        {
+          name: "salary",
+          label: "Staff Salary",
+          baseType: "number",
+          format: "currency",
+          default: 5000,
+          supports: {
+            single: true,
+            monthly: true,
+            dateRange: true,
+            annual: true,
             growth: false,
             smoothing: false,
             seasonal: false
