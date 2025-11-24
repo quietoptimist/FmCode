@@ -172,28 +172,10 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
             {/* Output Level Assumptions Table */}
             {objAss.outputs && Object.keys(objAss.outputs).length > 0 && (
                 <div className="mt-2 overflow-x-auto">
-                    <table className="text-sm text-left">
+                    <table className="text-sm text-left w-full">
                         <thead className="text-xs text-gray-500 uppercase bg-gray-50">
                             <tr>
-                                <th className="px-2 py-1 font-medium">
-                                    {(() => {
-                                        const firstAlias = Object.keys(objAss.outputs)[0];
-                                        const firstOutAss = objAss.outputs[firstAlias];
-                                        const valueFieldName = Object.keys(firstOutAss).find(k => k !== 'startMonth');
-                                        if (!valueFieldName) return 'Output';
-
-                                        // Try to get label from schema first for immediate reactivity
-                                        if (objAss.type && (objectSchema as any)[objAss.type]) {
-                                            const schemaDef = (objectSchema as any)[objAss.type];
-                                            const outputDef = schemaDef.assumptions?.output?.find((f: any) => f.name === valueFieldName);
-                                            // console.log('Debug Label:', { type: objAss.type, valueFieldName, schemaLabel: outputDef?.label });
-                                            if (outputDef?.label) return outputDef.label;
-                                        }
-
-                                        return firstOutAss[valueFieldName]?.label || 'Output';
-                                    })()}
-                                </th>
-
+                                <th className="px-2 py-1 font-medium">Output</th>
                                 <th className="px-2 py-1 font-medium">
                                     {mode === 'single' ? (
                                         'Value'
@@ -221,72 +203,95 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
                             </tr>
                         </thead>
                         <tbody>
-                            {Object.entries(objAss.outputs).map(([alias, outAss]: [string, any]) => {
-                                // Find relevant fields
-                                const startMonthField = outAss['startMonth'];
-                                // Find the "main" value field (amount, factor, etc.) - usually the first one that isn't startMonth
-                                const valueFieldName = Object.keys(outAss).find(k => k !== 'startMonth');
-                                const valueField = valueFieldName ? outAss[valueFieldName] : null;
+                            {(() => {
+                                // Build map of fieldName -> [[alias, field], ...]
+                                const fieldGroups: Record<string, Array<[string, any]>> = {};
 
-                                return (
-                                    <tr key={alias} className="group hover:bg-gray-50">
-                                        <td className="px-2 py-0.5 font-medium text-gray-700 align-middle">{formatName(alias)}</td>
+                                for (const [alias, outAss] of Object.entries(objAss.outputs)) {
+                                    for (const [fieldName, field] of Object.entries(outAss as any)) {
+                                        if (fieldName === 'startMonth') continue;
+                                        if (!field || typeof field !== 'object') continue;
 
-                                        {/* Start Month */}
-                                        {/* Date Range */}
+                                        if (!fieldGroups[fieldName]) fieldGroups[fieldName] = [];
+                                        fieldGroups[fieldName].push([alias, field]);
+                                    }
+                                }
 
+                                // Render each field group
+                                return Object.entries(fieldGroups).map(([fieldName, aliasFields]) => {
+                                    const firstField = aliasFields[0][1];
 
-                                        {/* Value Inputs */}
-                                        <td className="px-2 py-0.5 align-middle">
-                                            {valueField && (
-                                                <ValueInput
-                                                    field={valueField}
-                                                    mode={mode}
-                                                    years={years}
-                                                    showLabels={false}
-                                                    onChange={(val, subField, index) => onChange(objName, 'output', alias, valueFieldName!, val, subField, index)}
-                                                />
-                                            )}
-                                        </td>
+                                    return (
+                                        <React.Fragment key={`field-${fieldName}`}>
+                                            {/* Section header with field label */}
+                                            <tr className="bg-blue-50">
+                                                <td colSpan={mode !== 'single' ? (objAss.dateRangeEnabled ? 4 : 3) : (objAss.dateRangeEnabled ? 3 : 2)} className="px-2 py-1 font-semibold text-blue-800 text-xs uppercase tracking-wide">
+                                                    {firstField?.label || fieldName}
+                                                </td>
+                                            </tr>
 
-                                        {/* Options (Smoothing) */}
-                                        {mode !== 'single' && (
-                                            <td className="px-2 py-0.5 align-middle text-center">
-                                                {valueField?.supports?.smoothing && (
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={valueField.raw.smoothing}
-                                                        onChange={(e) => onChange(objName, 'output', alias, valueFieldName!, e.target.checked, 'smoothing')}
-                                                        className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                                                    />
-                                                )}
-                                            </td>
-                                        )}
-                                        {/* Date Range */}
-                                        <td className="px-2 py-0.5 align-middle">
-                                            {objAss.dateRangeEnabled && valueField?.supports?.dateRange && (
-                                                <div className="flex items-center gap-1 text-xs">
-                                                    <input
-                                                        type="number"
-                                                        className="w-10 p-1 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 outline-none text-center"
-                                                        placeholder="1"
-                                                        value={valueField.raw.dateRange?.start ?? 1}
-                                                        onChange={(e) => onChange(objName, 'output', alias, valueFieldName!, { ...valueField.raw.dateRange, start: safeParseFloat(e.target.value) }, 'dateRange')}
-                                                    />
-                                                    <span className="text-gray-400">-</span>
-                                                    <input
-                                                        type="number"
-                                                        className="w-10 p-1 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 outline-none text-center"
-                                                        placeholder="End"
-                                                        value={valueField.raw.dateRange?.end ?? (years * 12)}
-                                                        onChange={(e) => onChange(objName, 'output', alias, valueFieldName!, { ...valueField.raw.dateRange, end: safeParseFloat(e.target.value) }, 'dateRange')}
-                                                    />
-                                                </div>
-                                            )}
-                                        </td>
-                                    </tr>
-                                );
-                            })}
+                                            {/* Rows for each alias with this field */}
+                                            {aliasFields.map(([alias, field]) => (
+                                                <tr key={`${fieldName}-${alias}`} className="group hover:bg-gray-50">
+                                                    <td className="px-2 py-0.5 font-medium text-gray-700 align-middle pl-6">
+                                                        {formatName(alias)}
+                                                    </td>
+
+                                                    {/* Value Inputs */}
+                                                    <td className="px-2 py-0.5 align-middle">
+                                                        {field && (
+                                                            <ValueInput
+                                                                field={field}
+                                                                mode={mode}
+                                                                years={years}
+                                                                showLabels={false}
+                                                                onChange={(val, subField, index) => onChange(objName, 'output', alias, fieldName, val, subField, index)}
+                                                            />
+                                                        )}
+                                                    </td>
+
+                                                    {/* Options (Smoothing) */}
+                                                    {mode !== 'single' && (
+                                                        <td className="px-2 py-0.5 align-middle text-center">
+                                                            {field?.supports?.smoothing && (
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={field.raw.smoothing}
+                                                                    onChange={(e) => onChange(objName, 'output', alias, fieldName, e.target.checked, 'smoothing')}
+                                                                    className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                                                                />
+                                                            )}
+                                                        </td>
+                                                    )}
+
+                                                    {/* Date Range */}
+                                                    <td className="px-2 py-0.5 align-middle">
+                                                        {objAss.dateRangeEnabled && field?.supports?.dateRange && (
+                                                            <div className="flex items-center gap-1 text-xs">
+                                                                <input
+                                                                    type="number"
+                                                                    className="w-10 p-1 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 outline-none text-center"
+                                                                    placeholder="1"
+                                                                    value={field.raw.dateRange?.start ?? 1}
+                                                                    onChange={(e) => onChange(objName, 'output', alias, fieldName, { ...field.raw.dateRange, start: safeParseFloat(e.target.value) }, 'dateRange')}
+                                                                />
+                                                                <span className="text-gray-400">-</span>
+                                                                <input
+                                                                    type="number"
+                                                                    className="w-10 p-1 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 outline-none text-center"
+                                                                    placeholder="End"
+                                                                    value={field.raw.dateRange?.end ?? (years * 12)}
+                                                                    onChange={(e) => onChange(objName, 'output', alias, fieldName, { ...field.raw.dateRange, end: safeParseFloat(e.target.value) }, 'dateRange')}
+                                                                />
+                                                            </div>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </React.Fragment>
+                                    );
+                                });
+                            })()}
                         </tbody>
                     </table>
                 </div>

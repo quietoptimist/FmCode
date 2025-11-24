@@ -206,43 +206,50 @@ export function ObjectOutputs({ aliases, store, overrides, months, channelDefs, 
                     {showMonthlyAssumptions && showAssumptions && objAss && (
                         <>
                             {(() => {
-                                let lastLabel = '';
-                                return aliases.map(alias => {
+                                // Build map of fieldName -> [[alias, field], ...]
+                                const fieldGroups: Record<string, Array<[string, any]>> = {};
+
+                                for (const alias of aliases) {
                                     const outAss = objAss?.outputs?.[alias];
-                                    if (!outAss) return null;
+                                    if (!outAss) continue;
 
-                                    // Find the main value field (usually 'amount' or 'factor')
-                                    const valueFieldName = Object.keys(outAss).find(k => k !== 'startMonth');
-                                    if (!valueFieldName) return null;
+                                    // Iterate ALL fields (not just first one)
+                                    for (const [fieldName, field] of Object.entries(outAss)) {
+                                        if (fieldName === 'startMonth') continue;
+                                        if (!field || typeof field !== 'object' || !('value' in field) || !field.value) continue;
 
-                                    const valueField = outAss[valueFieldName];
-                                    if (!valueField?.value) return null;
+                                        if (!fieldGroups[fieldName]) fieldGroups[fieldName] = [];
+                                        fieldGroups[fieldName].push([alias, field]);
+                                    }
+                                }
 
-                                    const showHeader = valueField.label !== lastLabel;
-                                    lastLabel = valueField.label;
+                                // Render each field group
+                                return Object.entries(fieldGroups).map(([fieldName, aliasFields]) => {
+                                    const firstField = aliasFields[0][1];
 
                                     return (
-                                        <React.Fragment key={`assumptions-${alias}`}>
-                                            {/* Section header - show field label only when it changes */}
-                                            {showHeader && (
-                                                <tr className="bg-green-50/50">
-                                                    <td className="p-1.5 font-bold text-green-800 sticky left-0 bg-green-50 z-10 border-b border-green-100 border-r shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)] whitespace-nowrap">
-                                                        {valueField.label}
-                                                    </td>
-                                                    <td colSpan={months} className="border-b border-green-100"></td>
-                                                </tr>
-                                            )}
-                                            {/* Month header for this assumption */}
-                                            <tr className="bg-green-50/30">
-                                                <td className="p-1.5 font-medium text-green-700 sticky left-0 bg-green-50/30 z-10 border-b border-green-100 border-r shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)] whitespace-nowrap text-sm">
-                                                    {formatName(alias)}
+                                        <React.Fragment key={`field-${fieldName}`}>
+                                            {/* Section header with field label */}
+                                            <tr className="bg-green-50/50">
+                                                <td className="p-1.5 font-bold text-green-800 sticky left-0 bg-green-50 z-10 border-b border-green-100 border-r shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)] whitespace-nowrap">
+                                                    {firstField.label}
                                                 </td>
-                                                {Array.from({ length: months }).map((_, i) => (
-                                                    <td key={i} className="p-1.5 min-w-[80px] text-right border-b border-green-100 text-xs text-green-600">
-                                                        {valueField.value[i]?.toLocaleString(undefined, { maximumFractionDigits: 2 }) || '0'}
-                                                    </td>
-                                                ))}
+                                                <td colSpan={months} className="border-b border-green-100"></td>
                                             </tr>
+
+                                            {/* Rows for each alias with this field */}
+                                            {aliasFields.map(([alias, field]) => (
+                                                <tr key={`${fieldName}-${alias}`} className="bg-green-50/30">
+                                                    <td className="p-1.5 font-medium text-green-700 sticky left-0 bg-green-50/30 z-10 border-b border-green-100 border-r shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)] whitespace-nowrap text-sm">
+                                                        {formatName(alias)}
+                                                    </td>
+                                                    {Array.from({ length: months }).map((_, i) => (
+                                                        <td key={i} className="p-1.5 min-w-[80px] text-right border-b border-green-100 text-xs text-green-600">
+                                                            {field.value[i]?.toLocaleString(undefined, { maximumFractionDigits: 2 }) || '0'}
+                                                        </td>
+                                                    ))}
+                                                </tr>
+                                            ))}
                                         </React.Fragment>
                                     );
                                 });

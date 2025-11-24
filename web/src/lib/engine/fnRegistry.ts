@@ -155,6 +155,65 @@ export const fnRegistry = {
     return { val: outSeries };
   },
 
+  // ==================================
+  // StaffTeam — calculates staff costs from headCount × salary
+  // ==================================
+  StaffTeam(ctx, inputs, cfg) {
+    const months = ctx.months;
+    const outAss = cfg.output || {};
+
+    // Extract the two assumptions
+    const headCount = outAss.headCount
+      ? outAss.headCount.value
+      : new Float64Array(months).fill(0);
+    const salary = outAss.salary
+      ? outAss.salary.value
+      : new Float64Array(months).fill(0);
+
+    // Calculate total cost and headcount arrays
+    const costSeries = new Float64Array(months);
+    const headsSeries = new Float64Array(months);
+
+    for (let m = 0; m < months; m++) {
+      headsSeries[m] = headCount[m];
+      costSeries[m] = headCount[m] * salary[m];
+    }
+
+    return {
+      cost: costSeries,
+      heads: headsSeries
+    };
+  },
+
+  // ==================================
+  // StaffRoles — for individual roles (CEO, CFO, etc.) where headcount is always 1
+  // ==================================
+  StaffRoles(ctx, inputs, cfg) {
+    const months = ctx.months;
+    const outAss = cfg.output || {};
+
+    // Only salary assumption - headcount is implicitly 1
+    const salary = outAss.salary
+      ? outAss.salary.value
+      : new Float64Array(months).fill(0);
+
+    // Calculate total cost and headcount arrays
+    const costSeries = new Float64Array(months);
+    const headsSeries = new Float64Array(months);
+
+    for (let m = 0; m < months; m++) {
+      // Cost is just the salary (headCount is always 1 when active)
+      costSeries[m] = salary[m];
+      // Heads is 1 when there's a salary, 0 otherwise
+      headsSeries[m] = salary[m] > 0 ? 1 : 0;
+    }
+
+    return {
+      cost: costSeries,
+      heads: headsSeries
+    };
+  },
+
   Setup(ctx) {
     return { val: new Float64Array(ctx.months) };
   },

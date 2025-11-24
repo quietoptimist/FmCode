@@ -518,11 +518,12 @@ export const objectSchema = {
     }
   },
 
+
   // ============================
-  // Staff - delay revenue outputs to account for payment delays
+  // StaffTeams - teams of people with manually entered headcount and salary
   // ============================
-  StaffRoles: {
-    impl: "StaffRoles",
+  StaffTeam: {
+    impl: "StaffTeam",
     showMonthlyAssumptions: true,
     channels: {
       cost: { label: "Staff Cost" },
@@ -543,7 +544,8 @@ export const objectSchema = {
             dateRange: true,
             annual: true,
             growth: false,
-            smoothing: false,
+            smoothing: true,
+            integers: true,
             seasonal: false
           },
           ui: {
@@ -555,14 +557,52 @@ export const objectSchema = {
           label: "Staff Salary",
           baseType: "number",
           format: "currency",
-          default: 5000,
+          default: 3000,
           supports: {
             single: true,
             monthly: true,
             dateRange: true,
             annual: true,
             growth: false,
-            smoothing: false,
+            smoothing: true,
+            integers: true,
+            seasonal: false
+          },
+          ui: {
+            defaultMode: "dateRange"
+          }
+        }
+      ]
+    }
+  },
+
+  // ============================
+  // StaffRoles - teams of people with manually entered headcount and salary
+  // ============================
+  StaffRoles: {
+    impl: "StaffRoles",
+    showMonthlyAssumptions: false,
+    channels: {
+      cost: { label: "Staff Cost" },
+      heads: { label: "Staff Heads" }
+    },
+    assumptions: {
+      object: [],
+      output: [
+        {
+          name: "salary",
+          label: "Staff Salary",
+          baseType: "number",
+          format: "currency",
+          default: 3000,
+          supports: {
+            single: true,
+            monthly: true,
+            dateRange: true,
+            annual: true,
+            growth: false,
+            smoothing: true,
+            integers: true,
             seasonal: false
           },
           ui: {
