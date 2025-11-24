@@ -85,7 +85,7 @@ export function ObjectOutputs({ aliases, store, overrides, months, channelDefs, 
                     {optionsExpanded && (
                         <>
                             {aliases.length > 1 && (
-                                <label className="flex items-center gap-1 text-xs font-medium text-gray-600 cursor-pointer select-none" title="Display row totals for each channel">
+                                <label className="flex items-center gap-1 text-xs font-medium text-gray-600 cursor-pointer select-none" title="Display row totals">
                                     <input
                                         type="checkbox"
                                         checked={showTotals}

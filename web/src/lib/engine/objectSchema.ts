@@ -9,7 +9,10 @@ export const objectSchema = {
     impl: "QuantStart",
     showMonthlyAssumptions: false,  // Assumptions = outputs, no need to show both
     channels: {
-      val: { label: "Value" }
+      val: {
+        label: "Value",
+        destinations: []  // Initial setup value
+      }
     },
     assumptions: {
       object: [],
@@ -45,7 +48,10 @@ export const objectSchema = {
     impl: "QuantStart",
     showMonthlyAssumptions: false,  // Assumptions = outputs, no need to show both
     channels: {
-      val: { label: "Monthly Quantity" }
+      val: {
+        label: "Monthly Quantity",
+        destinations: []  // KPI or custom mapping
+      }
     },
     assumptions: {
       object: [],
@@ -81,7 +87,10 @@ export const objectSchema = {
     impl: "ScaleDrv",
     showMonthlyAssumptions: true,  // Has driver inputs, show monthly assumptions
     channels: {
-      val: { label: "Value" }
+      val: {
+        label: "Value",
+        destinations: []  // Generic driver - mapping depends on usage context
+      }
     },
     assumptions: {
       object: [],
@@ -115,7 +124,10 @@ export const objectSchema = {
     impl: "QuantStart",
     showMonthlyAssumptions: false,
     channels: {
-      val: { label: "Value" }
+      val: {
+        label: "Value",
+        destinations: ["pnl.opex.sm", "cash.ops.out.opex"]  // Sales & marketing cost
+      }
     },
     assumptions: {
       object: [],
@@ -150,7 +162,10 @@ export const objectSchema = {
     impl: "QuantStart",
     showMonthlyAssumptions: false,
     channels: {
-      val: { label: "Value" }
+      val: {
+        label: "Value",
+        destinations: ["pnl.opex.ga", "cash.ops.out.opex"]
+      }
     },
     assumptions: {
       object: [],
@@ -184,7 +199,10 @@ export const objectSchema = {
     impl: "ScaleDrv",
     showMonthlyAssumptions: true,
     channels: {
-      val: { label: "Value" }
+      val: {
+        label: "Value",
+        destinations: []  // KPI or custom mapping
+      }
     },
     assumptions: {
       object: [],               // leave empty for now
@@ -218,7 +236,10 @@ export const objectSchema = {
     impl: "ScaleDrv",
     showMonthlyAssumptions: true,
     channels: {
-      val: { label: "Cost" }
+      val: {
+        label: "Cost",
+        destinations: ["pnl.cogs.direct", "cash.ops.out.cogs"]  // KPI or custom mapping
+      }
     },
     assumptions: {
       object: [],               // leave empty for now
@@ -252,7 +273,10 @@ export const objectSchema = {
     impl: "ScaleDrv",
     showMonthlyAssumptions: true,
     channels: {
-      val: { label: "Cost" }
+      val: {
+        label: "Cost",
+        destinations: ["pnl.opex.sm", "cash.ops.out.opex"]  // KPI or custom mapping
+      }
     },
     assumptions: {
       object: [],               // leave empty for now
@@ -286,7 +310,10 @@ export const objectSchema = {
     impl: "ScaleDrv",
     showMonthlyAssumptions: true,
     channels: {
-      val: { label: "Revenue" }
+      val: {
+        label: "Revenue",
+        destinations: ["pnl.revenue.new", "cash.ops.in.sales"]
+      }
     },
     assumptions: {
       object: [],
@@ -320,7 +347,10 @@ export const objectSchema = {
     impl: "ScaleDrv",
     showMonthlyAssumptions: true,
     channels: {
-      val: { label: "Revenue" }
+      val: {
+        label: "Revenue",
+        destinations: ["pnl.revenue.new", "balance.assets.current.ar"]
+      }
     },
     assumptions: {
       object: [],
@@ -354,7 +384,10 @@ export const objectSchema = {
     impl: "ScaleDrv",
     showMonthlyAssumptions: true,
     channels: {
-      val: { label: "Revenue" }
+      val: {
+        label: "Revenue",
+        destinations: ["pnl.revenue.recur", "cash.ops.in.sales"]
+      }
     },
     assumptions: {
       object: [],
@@ -388,7 +421,10 @@ export const objectSchema = {
     impl: "ScaleDrv",
     showMonthlyAssumptions: true,
     channels: {
-      val: { label: "Revenue" }
+      val: {
+        label: "Revenue",
+        destinations: ["pnl.revenue.recur","balance.assets.current.ar"]
+      }
     },
     assumptions: {
       object: [],
@@ -422,7 +458,10 @@ export const objectSchema = {
     impl: "ScaleDrv",
     showMonthlyAssumptions: true,
     channels: {
-      val: { label: "Revenue" }
+      val: {
+        label: "Revenue",
+        destinations: ["pnl.revenue.recur", "balance.assets.current.ar"]
+      }
     },
     assumptions: {
       object: [],
@@ -456,8 +495,14 @@ export const objectSchema = {
     impl: "SubRetain",
     showMonthlyAssumptions: true,
     channels: {
-      act: { label: "Active customers" },
-      chu: { label: "Churned customers" }
+      act: {
+        label: "Active Users",
+        destinations: []
+      },
+      chu: {
+        label: "Churned Users",
+        destinations: []  
+      }
     },
     assumptions: {
       object: [],
@@ -473,7 +518,7 @@ export const objectSchema = {
             annual: true,
             monthly: true,
             smoothing: true,
-            growth: false,       // churn growth is weird — leave off
+            growth: false,
             dateRange: true
           },
           ui: {
@@ -491,7 +536,10 @@ export const objectSchema = {
     impl: "Delay",
     showMonthlyAssumptions: true,
     channels: {
-      val: { label: "Delayed value" }
+      val: {
+        label: "Delayed value",
+        destinations: ["balance.assets.current.ar", "cash.ops.in.sales"]
+      }
     },
     assumptions: {
       object: [],
@@ -525,8 +573,14 @@ export const objectSchema = {
     impl: "StaffDriven",
     showMonthlyAssumptions: true,
     channels: {
-      heads: { label: "Staff Heads" },
-      cost: { label: "Staff Cost" }
+      heads: {
+        label: "Staff Heads",
+        destinations: ["memo.headcount.cogs"]  // Map to appropriate team
+      },
+      cost: {
+        label: "Staff Cost",
+        destinations: ["pnl.cogs.direct", "cash.ops.out.cogs"]  // Map to appropriate category
+      }
     },
     assumptions: {
       object: [],
@@ -545,7 +599,7 @@ export const objectSchema = {
             growth: false,
             smoothing: true,
             integers: true,
-            seasonal: true
+            seasonal: false
           },
           ui: {
             defaultMode: "dateRange"
@@ -565,7 +619,7 @@ export const objectSchema = {
             growth: false,
             smoothing: true,
             integers: false,
-            seasonal: true
+            seasonal: false
           },
           ui: {
             defaultMode: "single"
@@ -582,8 +636,14 @@ export const objectSchema = {
     impl: "StaffTeams",
     showMonthlyAssumptions: true,
     channels: {
-      heads: { label: "Staff Heads" },
-      cost: { label: "Staff Cost" }
+      heads: {
+        label: "Staff Heads",
+        destinations: ["memo.headcount.ga"]  // Map to appropriate team
+      },
+      cost: {
+        label: "Staff Cost",
+        destinations: ["pnl.opex.ga", "cash.ops.out.opex"]  // Map to appropriate category
+      }
     },
     assumptions: {
       object: [],
@@ -622,7 +682,7 @@ export const objectSchema = {
             growth: false,
             smoothing: true,
             integers: false,
-            seasonal: true
+            seasonal: false
           },
           ui: {
             defaultMode: "dateRange"
@@ -639,8 +699,14 @@ export const objectSchema = {
     impl: "StaffRoles",
     showMonthlyAssumptions: false,
     channels: {
-      cost: { label: "Staff Cost" },
-      heads: { label: "Staff Heads" }
+      cost: {
+        label: "Staff Cost",
+        destinations: ["pnl.opex.ga", "cash.ops.out.opex"]
+      },
+      heads: {
+        label: "Staff Heads",
+        destinations: ["memo.headcount.ga"]
+      }
     },
     assumptions: {
       object: [],
@@ -676,7 +742,10 @@ export const objectSchema = {
     impl: "Sum",
     showMonthlyAssumptions: false,  // Just sums inputs, no unique assumptions
     channels: {
-      val: { label: "Total" }
+      val: {
+        label: "Total",
+        destinations: []  // Aggregator
+      }
     },
     assumptions: {
       object: [],
