@@ -36,15 +36,41 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
 
                     <div className="flex items-center gap-4">
                         {/* Collapsible Options */}
-                        {optionsExpanded && (
-                            <>
-                                {/* Date Range Toggle */}
-                                {(() => {
-                                    const supportsDateRange = objAss.outputs && Object.values(objAss.outputs).some((out: any) =>
-                                        Object.values(out).some((field: any) => field.supports?.dateRange)
-                                    );
-                                    if (!supportsDateRange) return null;
-                                    return (
+                        {optionsExpanded && (() => {
+                            const typeName = objAss.type;
+                            const schema = typeName ? (objectSchema as any)[typeName] : null;
+                            const options = schema?.options || {};
+
+                            return (
+                                <>
+                                    {/* Start Toggle */}
+                                    {options.start && (
+                                        <label className="flex items-center gap-1 text-xs font-medium text-gray-600 cursor-pointer select-none" title="Enable start month for all outputs">
+                                            <input
+                                                type="checkbox"
+                                                checked={objAss.startEnabled ?? true}
+                                                onChange={(e) => onChange(objName, 'meta', 'startEnabled', 'startEnabled', e.target.checked)}
+                                                className="w-3.5 h-3.5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                                            />
+                                            Start
+                                        </label>
+                                    )}
+
+                                    {/* Smoothing Toggle - only show in multi-year modes */}
+                                    {options.smoothing && mode !== 'single' && (
+                                        <label className="flex items-center gap-1 text-xs font-medium text-gray-600 cursor-pointer select-none" title="Enable smoothing between years">
+                                            <input
+                                                type="checkbox"
+                                                checked={objAss.smoothingEnabled ?? false}
+                                                onChange={(e) => onChange(objName, 'meta', 'smoothingEnabled', 'smoothingEnabled', e.target.checked)}
+                                                className="w-3.5 h-3.5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                                            />
+                                            Smoothing
+                                        </label>
+                                    )}
+
+                                    {/* Date Range Toggle */}
+                                    {options.dateRange && (
                                         <label className="flex items-center gap-1 text-xs font-medium text-gray-600 cursor-pointer select-none" title="Zero monthly assumptions outside of a range of months">
                                             <input
                                                 type="checkbox"
@@ -54,16 +80,10 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
                                             />
                                             Fr-To Mth
                                         </label>
-                                    );
-                                })()}
+                                    )}
 
-                                {/* Integers Toggle */}
-                                {(() => {
-                                    const supportsIntegers = objAss.outputs && Object.values(objAss.outputs).some((out: any) =>
-                                        Object.values(out).some((field: any) => field.supports?.integers)
-                                    );
-                                    if (!supportsIntegers) return null;
-                                    return (
+                                    {/* Integers Toggle */}
+                                    {options.integers && (
                                         <label className="flex items-center gap-1 text-xs font-medium text-gray-600 cursor-pointer select-none" title="Turn fractional monthly assumptions into whole numbers">
                                             <input
                                                 type="checkbox"
@@ -73,54 +93,40 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
                                             />
                                             Integers
                                         </label>
-                                    );
-                                })()}
+                                    )}
 
-                                {/* Mode Switcher */}
-                                {(() => {
-                                    // Calculate supported modes
-                                    const supportsSingle = objAss.outputs && Object.values(objAss.outputs).some((out: any) =>
-                                        Object.values(out).some((field: any) => field.supports?.single)
-                                    );
-                                    const supportsAnnual = objAss.outputs && Object.values(objAss.outputs).some((out: any) =>
-                                        Object.values(out).some((field: any) => field.supports?.annual)
-                                    );
-                                    const supportsGrowth = objAss.outputs && Object.values(objAss.outputs).some((out: any) =>
-                                        Object.values(out).some((field: any) => field.supports?.growth)
-                                    );
+                                    {/* Mode Switcher */}
+                                    {(() => {
+                                        // Read available modes from schema
+                                        const availableModes = (options.modes || ['single']) as InputMode[];
 
-                                    const availableModes = [
-                                        supportsSingle ? 'single' : null,
-                                        supportsAnnual ? 'annual' : null,
-                                        supportsGrowth ? 'growth' : null
-                                    ].filter(Boolean) as InputMode[];
+                                        if (availableModes.length <= 1) return null;
 
-                                    if (availableModes.length <= 1) return null;
-
-                                    return (
-                                        <div className="relative">
-                                            <select
-                                                value={mode}
-                                                onChange={(e) => onChange(objName, 'meta', 'uiMode', 'uiMode', e.target.value)}
-                                                className="appearance-none bg-gray-50 border border-gray-200 text-gray-700 text-xs font-medium py-1 pl-3 pr-8 rounded leading-tight focus:outline-none focus:bg-white focus:border-blue-500"
-                                                title="Ways to enter assumptions"
-                                            >
-                                                {availableModes.map((m) => (
-                                                    <option key={m} value={m} className="capitalize">
-                                                        {m === 'annual' ? 'multiple' : m}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                                                <svg className="fill-current h-3 w-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                                                    <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                                                </svg>
+                                        return (
+                                            <div className="relative">
+                                                <select
+                                                    value={mode}
+                                                    onChange={(e) => onChange(objName, 'meta', 'uiMode', 'uiMode', e.target.value)}
+                                                    className="appearance-none bg-gray-50 border border-gray-200 text-gray-700 text-xs font-medium py-1 pl-3 pr-8 rounded leading-tight focus:outline-none focus:bg-white focus:border-blue-500"
+                                                    title="Ways to enter assumptions"
+                                                >
+                                                    {availableModes.map((m) => (
+                                                        <option key={m} value={m} className="capitalize">
+                                                            {m === 'annual' ? 'multiple' : m}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                                                    <svg className="fill-current h-3 w-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                                                        <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                                                    </svg>
+                                                </div>
                                             </div>
-                                        </div>
-                                    );
-                                })()}
-                            </>
-                        )}
+                                        );
+                                    })()}
+                                </>
+                            );
+                        })()}
 
                         {/* Toggle Button */}
                         <button
@@ -185,7 +191,7 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
                                         </div>
                                     )}
                                 </th>
-                                {mode !== 'single' && <th className="px-2 py-1 font-medium w-16">Smooth</th>}
+                                {mode !== 'single' && objAss.smoothingEnabled && <th className="px-2 py-1 font-medium w-16">Smooth</th>}
                                 {objAss.dateRangeEnabled && <th className="px-2 py-1 font-medium w-32">Fr-To Mth</th>}
                             </tr>
                         </thead>
@@ -197,6 +203,8 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
                                 for (const [alias, outAss] of Object.entries(objAss.outputs)) {
                                     for (const [fieldName, field] of Object.entries(outAss as any)) {
                                         if (fieldName === 'startMonth') continue;
+                                        // Skip start assumption if startEnabled is false
+                                        if (fieldName === 'start' && objAss.startEnabled === false) continue;
                                         if (!field || typeof field !== 'object') continue;
 
                                         if (!fieldGroups[fieldName]) fieldGroups[fieldName] = [];
@@ -212,7 +220,7 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
                                         <React.Fragment key={`field-${fieldName}`}>
                                             {/* Section header with field label */}
                                             <tr className="bg-blue-50">
-                                                <td colSpan={mode !== 'single' ? (objAss.dateRangeEnabled ? 4 : 3) : (objAss.dateRangeEnabled ? 3 : 2)} className="px-2 py-1 font-semibold text-blue-800 text-xs uppercase tracking-wide">
+                                                <td colSpan={mode !== 'single' ? (objAss.dateRangeEnabled ? (objAss.smoothingEnabled ? 4 : 3) : (objAss.smoothingEnabled ? 3 : 2)) : (objAss.dateRangeEnabled ? 3 : 2)} className="px-2 py-1 font-semibold text-blue-800 text-xs uppercase tracking-wide">
                                                     {firstField?.label || fieldName}
                                                 </td>
                                             </tr>
@@ -238,7 +246,7 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
                                                     </td>
 
                                                     {/* Options (Smoothing) */}
-                                                    {mode !== 'single' && (
+                                                    {mode !== 'single' && objAss.smoothingEnabled && (
                                                         <td className="px-2 py-0.5 align-middle text-center">
                                                             {field?.supports?.smoothing && (
                                                                 <input

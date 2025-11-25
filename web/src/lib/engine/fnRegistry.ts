@@ -17,8 +17,8 @@ export const fnRegistry = {
     const factor = outAss.factor
       ? outAss.factor.value
       : new Float64Array(months).fill(1);
-    const startMonthVal = outAss.startMonth
-      ? outAss.startMonth.value
+    const startMonthVal = outAss.start
+      ? outAss.start.value
       : 0;
     const startMonth = (startMonthVal instanceof Float64Array || Array.isArray(startMonthVal))
       ? startMonthVal[0]
@@ -31,8 +31,12 @@ export const fnRegistry = {
     const baseInput = inputs[0] || new Float64Array(months).fill(0);
     const outSeries = new Float64Array(months);
 
+    // Only apply start month if startEnabled is true (AND logic)
+    const startEnabled = cfg.startEnabled ?? true;
+    const effectiveStart = startEnabled ? startMonth : 0;
+
     for (let m = 0; m < months; m++) {
-      if (m < startMonth) {
+      if (m < effectiveStart) {
         outSeries[m] = 0;
         continue;
       }
@@ -54,12 +58,16 @@ export const fnRegistry = {
     const outName = (cfg.outputNames && cfg.outputNames[0]) ? cfg.outputNames[0] : "val";
     const outAss = cfg.output || {};
     const amount = outAss.amount ? outAss.amount.value : new Float64Array(months).fill(0);
-    const startMonthVal = outAss.startMonth ? outAss.startMonth.value : 0;
+    const startMonthVal = outAss.start ? outAss.start.value : 0;
     const startMonth = (startMonthVal instanceof Float64Array || Array.isArray(startMonthVal)) ? startMonthVal[0] : startMonthVal;
+
+    // Only apply start month if startEnabled is true (AND logic)
+    const startEnabled = cfg.startEnabled ?? true;
+    const effectiveStart = startEnabled ? startMonth : 0;
 
     const outSeries = new Float64Array(months);
     for (let m = 0; m < months; m++) {
-      if (m < startMonth) {
+      if (m < effectiveStart) {
         outSeries[m] = 0;
         continue;
       }
@@ -77,7 +85,7 @@ export const fnRegistry = {
     const outName = (cfg.outputNames && cfg.outputNames[0]) ? cfg.outputNames[0] : "val";
     const outAss = cfg.output || {};
     const churnMonthly = outAss.churnRate ? outAss.churnRate.value : new Float64Array(months).fill(0);
-    const startMonthVal = outAss.startMonth ? outAss.startMonth.value : 0;
+    const startMonthVal = outAss.start ? outAss.start.value : 0;
     const startMonth = (startMonthVal instanceof Float64Array || Array.isArray(startMonthVal)) ? startMonthVal[0] : startMonthVal;
 
     const newCust = inputs[0] || new Float64Array(months).fill(0);
@@ -85,9 +93,13 @@ export const fnRegistry = {
     const actSeries = new Float64Array(months);
     const chuSeries = new Float64Array(months);
 
+    // Only apply start month if startEnabled is true (AND logic)
+    const startEnabled = cfg.startEnabled ?? true;
+    const effectiveStart = startEnabled ? startMonth : 0;
+
     let prevActive = 0;
     for (let m = 0; m < months; m++) {
-      if (m < startMonth) {
+      if (m < effectiveStart) {
         actSeries[m] = 0;
         chuSeries[m] = 0;
         prevActive = 0;
@@ -170,6 +182,9 @@ export const fnRegistry = {
       ? outAss.salary.value
       : new Float64Array(months).fill(0);
 
+    const startMonthVal = outAss.start ? outAss.start.value : 0;
+    const startMonth = (startMonthVal instanceof Float64Array || Array.isArray(startMonthVal)) ? startMonthVal[0] : startMonthVal;
+
     // Get the input activity (first input)
     const activity = inputs[0] || new Float64Array(months).fill(0);
 
@@ -177,7 +192,16 @@ export const fnRegistry = {
     const headsSeries = new Float64Array(months);
     const costSeries = new Float64Array(months);
 
+    // Only apply start month if startEnabled is true (AND logic)
+    const startEnabled = cfg.startEnabled ?? true;
+    const effectiveStart = startEnabled ? startMonth : 0;
+
     for (let m = 0; m < months; m++) {
+      if (m < effectiveStart) {
+        headsSeries[m] = 0;
+        costSeries[m] = 0;
+        continue;
+      }
       // Headcount = activity ÷ productivity
       const headCount = productivity[m] > 0 ? activity[m] / productivity[m] : 0;
       headsSeries[m] = headCount;
@@ -205,11 +229,23 @@ export const fnRegistry = {
       ? outAss.salary.value
       : new Float64Array(months).fill(0);
 
+    const startMonthVal = outAss.start ? outAss.start.value : 0;
+    const startMonth = (startMonthVal instanceof Float64Array || Array.isArray(startMonthVal)) ? startMonthVal[0] : startMonthVal;
+
     // Calculate total cost and headcount arrays
     const costSeries = new Float64Array(months);
     const headsSeries = new Float64Array(months);
 
+    // Only apply start month if startEnabled is true (AND logic)
+    const startEnabled = cfg.startEnabled ?? true;
+    const effectiveStart = startEnabled ? startMonth : 0;
+
     for (let m = 0; m < months; m++) {
+      if (m < effectiveStart) {
+        headsSeries[m] = 0;
+        costSeries[m] = 0;
+        continue;
+      }
       headsSeries[m] = headCount[m];
       costSeries[m] = headCount[m] * salary[m];
     }
@@ -232,15 +268,26 @@ export const fnRegistry = {
       ? outAss.salary.value
       : new Float64Array(months).fill(0);
 
+    const startMonthVal = outAss.start ? outAss.start.value : 0;
+    const startMonth = (startMonthVal instanceof Float64Array || Array.isArray(startMonthVal)) ? startMonthVal[0] : startMonthVal;
+
     // Calculate total cost and headcount arrays
     const costSeries = new Float64Array(months);
     const headsSeries = new Float64Array(months);
 
+    // Only apply start month if startEnabled is true (AND logic)
+    const startEnabled = cfg.startEnabled ?? true;
+    const effectiveStart = startEnabled ? startMonth : 0;
+
     for (let m = 0; m < months; m++) {
-      // Cost is just the salary (headCount is always 1 when active)
+      if (m < effectiveStart) {
+        headsSeries[m] = 0;
+        costSeries[m] = 0;
+        continue;
+      }
+      // Headcount is always 1 for a role
+      headsSeries[m] = 1;
       costSeries[m] = salary[m];
-      // Heads is 1 when there's a salary, 0 otherwise
-      headsSeries[m] = salary[m] > 0 ? 1 : 0;
     }
 
     return {

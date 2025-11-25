@@ -63,7 +63,7 @@ function buildAssumptionField(def: any, ctx: any, seasonalEnabled: boolean = fal
     raw.annual = Array.from({ length: years }, () => def.default);
   }
 
-  const value = materializeMonthly(def, raw, ctx, seasonalEnabled, 'single', false, false); // Default to single mode on init, no date range/integers
+  const value = materializeMonthly(def, raw, ctx, seasonalEnabled, 'single', false, false, true); // Default to single mode on init, no date range/integers
 
   return {
     raw,
@@ -80,7 +80,7 @@ function buildAssumptionField(def: any, ctx: any, seasonalEnabled: boolean = fal
  * into a monthly array.
  * @param uiMode - The UI mode: 'single', 'annual', or 'growth'
  */
-function materializeMonthly(def: any, raw: any, ctx: any, seasonalEnabled: boolean, uiMode: string, dateRangeEnabled: boolean, integersEnabled: boolean) {
+function materializeMonthly(def: any, raw: any, ctx: any, seasonalEnabled: boolean, uiMode: string, dateRangeEnabled: boolean, integersEnabled: boolean, smoothingEnabled: boolean = true) {
   const months = ctx.months ?? 60;
   const years = ctx.years ?? Math.ceil(months / 12);
 
@@ -147,8 +147,8 @@ function materializeMonthly(def: any, raw: any, ctx: any, seasonalEnabled: boole
         }
       }
 
-      // 3b) smoothing between years
-      if (def.supports?.smoothing && raw.smoothing) {
+      // 3b) smoothing between years - use AND logic: smoothingEnabled at object level AND raw.smoothing at output level
+      if (smoothingEnabled && def.supports?.smoothing && raw.smoothing) {
         for (let y = 0; y < years - 1; y++) {
           const startIdx = y * 12;
           const endIdx = (y + 1) * 12;
@@ -261,7 +261,8 @@ export function updateAssumption(assumptions: any, objName: string, type: string
                 baseType: field.baseType,
                 supports: field.supports
               };
-              field.value = materializeMonthly(def, field.raw, ctx, seasonalEnabled, value, dateRangeEnabled, integersEnabled);
+              const smoothingEnabled = obj.smoothingEnabled ?? true;
+              field.value = materializeMonthly(def, field.raw, ctx, seasonalEnabled, value, dateRangeEnabled, integersEnabled, smoothingEnabled);
             }
           }
         }
@@ -287,7 +288,8 @@ export function updateAssumption(assumptions: any, objName: string, type: string
                 supports: field.supports
               };
               const uiMode = obj.uiMode || 'single';
-              field.value = materializeMonthly(def, field.raw, ctx, seasonalEnabled, uiMode, dateRangeEnabled, integersEnabled);
+              const smoothingEnabled = obj.smoothingEnabled ?? true;
+              field.value = materializeMonthly(def, field.raw, ctx, seasonalEnabled, uiMode, dateRangeEnabled, integersEnabled, smoothingEnabled);
             }
           }
         }
@@ -311,7 +313,8 @@ export function updateAssumption(assumptions: any, objName: string, type: string
                 supports: field.supports
               };
               const uiMode = obj.uiMode || 'single';
-              field.value = materializeMonthly(def, field.raw, ctx, seasonalEnabled, uiMode, dateRangeEnabled, integersEnabled);
+              const smoothingEnabled = obj.smoothingEnabled ?? true;
+              field.value = materializeMonthly(def, field.raw, ctx, seasonalEnabled, uiMode, dateRangeEnabled, integersEnabled, smoothingEnabled);
             }
           }
         }
@@ -335,7 +338,41 @@ export function updateAssumption(assumptions: any, objName: string, type: string
                 supports: field.supports
               };
               const uiMode = obj.uiMode || 'single';
-              field.value = materializeMonthly(def, field.raw, ctx, seasonalEnabled, uiMode, dateRangeEnabled, integersEnabled);
+              const smoothingEnabled = obj.smoothingEnabled ?? true;
+              field.value = materializeMonthly(def, field.raw, ctx, seasonalEnabled, uiMode, dateRangeEnabled, integersEnabled, smoothingEnabled);
+            }
+          }
+        }
+      }
+      return newAssumptions;
+    }
+    if (fieldName === 'startEnabled') {
+      if (newAssumptions[objName]) {
+        newAssumptions[objName].startEnabled = value;
+
+        // Re-materialize ALL outputs (start affects display but not calculation)
+        // We don't need to recalculate, just return to let UI update
+      }
+      return newAssumptions;
+    }
+    if (fieldName === 'smoothingEnabled') {
+      if (newAssumptions[objName]) {
+        newAssumptions[objName].smoothingEnabled = value;
+        const smoothingEnabled = value; // Update local var
+
+        // Re-materialize ALL outputs
+        const obj = newAssumptions[objName];
+        if (obj.outputs) {
+          for (const alias in obj.outputs) {
+            const outAss = obj.outputs[alias];
+            for (const fName in outAss) {
+              const field = outAss[fName];
+              const def = {
+                baseType: field.baseType,
+                supports: field.supports
+              };
+              const uiMode = obj.uiMode || 'single';
+              field.value = materializeMonthly(def, field.raw, ctx, seasonalEnabled, uiMode, dateRangeEnabled, integersEnabled, smoothingEnabled);
             }
           }
         }
@@ -422,7 +459,8 @@ export function updateAssumption(assumptions: any, objName: string, type: string
   };
   const uiMode = newAssumptions[objName]?.uiMode || 'single';
 
-  targetField.value = materializeMonthly(def, targetField.raw, ctx, seasonalEnabled, uiMode, dateRangeEnabled, integersEnabled);
+  const smoothingEnabled = newAssumptions[objName]?.smoothingEnabled ?? true;
+  targetField.value = materializeMonthly(def, targetField.raw, ctx, seasonalEnabled, uiMode, dateRangeEnabled, integersEnabled, smoothingEnabled);
 
   return newAssumptions;
 }
@@ -446,7 +484,8 @@ export function recalculateAll(assumptions: any, ctx: any) {
             baseType: field.baseType,
             supports: field.supports
           };
-          field.value = materializeMonthly(def, field.raw, ctx, seasonalEnabled, uiMode, dateRangeEnabled, integersEnabled);
+          const smoothingEnabled = obj.smoothingEnabled ?? true;
+          field.value = materializeMonthly(def, field.raw, ctx, seasonalEnabled, uiMode, dateRangeEnabled, integersEnabled, smoothingEnabled);
         }
       }
     }
@@ -462,7 +501,8 @@ export function recalculateAll(assumptions: any, ctx: any) {
               baseType: field.baseType,
               supports: field.supports
             };
-            field.value = materializeMonthly(def, field.raw, ctx, seasonalEnabled, uiMode, dateRangeEnabled, integersEnabled);
+            const smoothingEnabled = obj.smoothingEnabled ?? true;
+            field.value = materializeMonthly(def, field.raw, ctx, seasonalEnabled, uiMode, dateRangeEnabled, integersEnabled, smoothingEnabled);
           }
         }
       }

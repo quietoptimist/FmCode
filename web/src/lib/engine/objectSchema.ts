@@ -8,6 +8,12 @@ export const objectSchema = {
   QuantAnn: {
     impl: "QuantStart",
     showMonthlyAssumptions: false,  // Assumptions = outputs, no need to show both
+    options: {
+      modes: ['single', 'annual', 'growth'],
+      start: true,
+      smoothing: true,
+      integers: true
+    },
     channels: {
       val: {
         label: "Value",
@@ -29,12 +35,30 @@ export const objectSchema = {
             monthly: true,
             smoothing: true,
             growth: true,
-            dateRange: true,
+            dateRange: false,
             seasonal: true,
             integers: true
           },
           ui: {
             defaultMode: "annual"
+          }
+        },
+        {
+          name: "start",
+          label: "Start Month",
+          baseType: "number",
+          format: "integer",
+          default: 1,
+          supports: {
+            single: true,
+            monthly: false,
+            dateRange: false,
+            annual: false,
+            growth: false,
+            smoothing: false
+          },
+          ui: {
+            defaultMode: "single"
           }
         }
       ]
@@ -47,6 +71,12 @@ export const objectSchema = {
   QuantAnnSeas: {
     impl: "QuantStart",
     showMonthlyAssumptions: false,  // Assumptions = outputs, no need to show both
+    options: {
+      modes: ['single', 'annual', 'growth'],
+      start: true,
+      smoothing: true,
+      integers: true
+    },
     channels: {
       val: {
         label: "Monthly Quantity",
@@ -68,12 +98,30 @@ export const objectSchema = {
             monthly: true,
             smoothing: true,
             growth: true,
-            dateRange: true,
+            dateRange: false,
             seasonal: true,
             integers: true
           },
           ui: {
             defaultMode: "annual"
+          }
+        },
+        {
+          name: "start",
+          label: "Start Month",
+          baseType: "number",
+          format: "integer",
+          default: 1,
+          supports: {
+            single: true,
+            monthly: false,
+            dateRange: false,
+            annual: false,
+            growth: false,
+            smoothing: false
+          },
+          ui: {
+            defaultMode: "single"
           }
         }
       ]
@@ -86,6 +134,11 @@ export const objectSchema = {
   QuantDrv: {
     impl: "ScaleDrv",
     showMonthlyAssumptions: true,  // Has driver inputs, show monthly assumptions
+    options: {
+      modes: ['single', 'annual', 'growth'],
+      start: true,
+      smoothing: true
+    },
     channels: {
       val: {
         label: "Value",
@@ -107,10 +160,28 @@ export const objectSchema = {
             monthly: true,
             smoothing: true,
             growth: true,      // 👈 enable growth/inflation here
-            dateRange: true
+            dateRange: false
           },
           ui: {
             defaultMode: "annual"
+          }
+        },
+        {
+          name: "start",
+          label: "Start Month",
+          baseType: "number",
+          format: "integer",
+          default: 1,
+          supports: {
+            single: true,
+            monthly: false,
+            dateRange: false,
+            annual: false,
+            growth: false,
+            smoothing: false
+          },
+          ui: {
+            defaultMode: "single"
           }
         }
       ]
@@ -123,6 +194,11 @@ export const objectSchema = {
   CostAnnSM: {
     impl: "QuantStart",
     showMonthlyAssumptions: false,
+    options: {
+      modes: ['single', 'annual', 'growth'],
+      start: true,
+      smoothing: true
+    },
     channels: {
       val: {
         label: "Value",
@@ -144,10 +220,28 @@ export const objectSchema = {
             monthly: true,
             smoothing: true,
             growth: true,
-            dateRange: true
+            dateRange: false
           },
           ui: {
             defaultMode: "annual"
+          }
+        },
+        {
+          name: "start",
+          label: "Start Month",
+          baseType: "number",
+          format: "integer",
+          default: 1,
+          supports: {
+            single: true,
+            monthly: false,
+            dateRange: false,
+            annual: false,
+            growth: false,
+            smoothing: false
+          },
+          ui: {
+            defaultMode: "single"
           }
         }
       ]
@@ -161,6 +255,11 @@ export const objectSchema = {
   CostAnnGA: {
     impl: "QuantStart",
     showMonthlyAssumptions: false,
+    options: {
+      modes: ['single', 'annual', 'growth'],
+      start: true,
+      smoothing: true
+    },
     channels: {
       val: {
         label: "Value",
@@ -182,10 +281,28 @@ export const objectSchema = {
             monthly: true,
             smoothing: true,
             growth: true,     // you could turn this on if you want
-            dateRange: true
+            dateRange: false
           },
           ui: {
             defaultMode: "annual"
+          }
+        },
+        {
+          name: "start",
+          label: "Start Month",
+          baseType: "number",
+          format: "integer",
+          default: 1,
+          supports: {
+            single: true,
+            monthly: false,
+            dateRange: false,
+            annual: false,
+            growth: false,
+            smoothing: false
+          },
+          ui: {
+            defaultMode: "single"
           }
         }
       ]
@@ -198,6 +315,11 @@ export const objectSchema = {
   ScaleDrv: {
     impl: "ScaleDrv",
     showMonthlyAssumptions: true,
+    options: {
+      modes: ['single', 'annual', 'growth'],
+      start: true,
+      smoothing: true
+    },
     channels: {
       val: {
         label: "Value",
@@ -219,7 +341,25 @@ export const objectSchema = {
             monthly: true,
             smoothing: true,
             growth: true,
-            dateRange: true
+            dateRange: false
+          },
+          ui: {
+            defaultMode: "single"
+          }
+        },
+        {
+          name: "start",
+          label: "Start Month",
+          baseType: "number",
+          format: "integer",
+          default: 1,
+          supports: {
+            single: true,
+            monthly: false,
+            dateRange: false,
+            annual: false,
+            growth: false,
+            smoothing: false
           },
           ui: {
             defaultMode: "single"
@@ -235,6 +375,11 @@ export const objectSchema = {
   CostDrvDC: {
     impl: "ScaleDrv",
     showMonthlyAssumptions: true,
+    options: {
+      modes: ['single', 'annual', 'growth'],
+      start: true,
+      smoothing: true
+    },
     channels: {
       val: {
         label: "Cost",
@@ -256,7 +401,25 @@ export const objectSchema = {
             monthly: true,
             smoothing: true,
             growth: true,
-            dateRange: true
+            dateRange: false
+          },
+          ui: {
+            defaultMode: "single"
+          }
+        },
+        {
+          name: "start",
+          label: "Start Month",
+          baseType: "number",
+          format: "integer",
+          default: 1,
+          supports: {
+            single: true,
+            monthly: false,
+            dateRange: false,
+            annual: false,
+            growth: false,
+            smoothing: false
           },
           ui: {
             defaultMode: "single"
@@ -272,6 +435,11 @@ export const objectSchema = {
   CostDrvSM: {
     impl: "ScaleDrv",
     showMonthlyAssumptions: true,
+    options: {
+      modes: ['single', 'annual', 'growth'],
+      start: true,
+      smoothing: true
+    },
     channels: {
       val: {
         label: "Cost",
@@ -293,7 +461,25 @@ export const objectSchema = {
             monthly: true,
             smoothing: true,
             growth: true,
-            dateRange: true
+            dateRange: false
+          },
+          ui: {
+            defaultMode: "single"
+          }
+        },
+        {
+          name: "start",
+          label: "Start Month",
+          baseType: "number",
+          format: "integer",
+          default: 1,
+          supports: {
+            single: true,
+            monthly: false,
+            dateRange: false,
+            annual: false,
+            growth: false,
+            smoothing: false
           },
           ui: {
             defaultMode: "single"
@@ -309,6 +495,11 @@ export const objectSchema = {
   RevDrvNew: {
     impl: "ScaleDrv",
     showMonthlyAssumptions: true,
+    options: {
+      modes: ['single', 'annual', 'growth'],
+      start: true,
+      smoothing: true
+    },
     channels: {
       val: {
         label: "Revenue",
@@ -330,10 +521,28 @@ export const objectSchema = {
             monthly: true,
             smoothing: true,
             growth: true,        // inflation-like
-            dateRange: true
+            dateRange: false
           },
           ui: {
             defaultMode: "annual"
+          }
+        },
+        {
+          name: "start",
+          label: "Start Month",
+          baseType: "number",
+          format: "integer",
+          default: 1,
+          supports: {
+            single: true,
+            monthly: false,
+            dateRange: false,
+            annual: false,
+            growth: false,
+            smoothing: false
+          },
+          ui: {
+            defaultMode: "single"
           }
         }
       ]
@@ -346,6 +555,11 @@ export const objectSchema = {
   RevDrvNewDel: {
     impl: "ScaleDrv",
     showMonthlyAssumptions: true,
+    options: {
+      modes: ['single', 'annual', 'growth'],
+      start: true,
+      smoothing: true
+    },
     channels: {
       val: {
         label: "Revenue",
@@ -367,10 +581,28 @@ export const objectSchema = {
             monthly: true,
             smoothing: true,
             growth: true,        // inflation-like
-            dateRange: true
+            dateRange: false
           },
           ui: {
             defaultMode: "annual"
+          }
+        },
+        {
+          name: "start",
+          label: "Start Month",
+          baseType: "number",
+          format: "integer",
+          default: 1,
+          supports: {
+            single: true,
+            monthly: false,
+            dateRange: false,
+            annual: false,
+            growth: false,
+            smoothing: false
+          },
+          ui: {
+            defaultMode: "single"
           }
         }
       ]
@@ -383,6 +615,11 @@ export const objectSchema = {
   RevDrv: {
     impl: "ScaleDrv",
     showMonthlyAssumptions: true,
+    options: {
+      modes: ['single', 'annual', 'growth'],
+      start: true,
+      smoothing: true
+    },
     channels: {
       val: {
         label: "Revenue",
@@ -404,10 +641,28 @@ export const objectSchema = {
             monthly: true,
             smoothing: true,
             growth: true,
-            dateRange: true
+            dateRange: false
           },
           ui: {
             defaultMode: "annual"
+          }
+        },
+        {
+          name: "start",
+          label: "Start Month",
+          baseType: "number",
+          format: "integer",
+          default: 1,
+          supports: {
+            single: true,
+            monthly: false,
+            dateRange: false,
+            annual: false,
+            growth: false,
+            smoothing: false
+          },
+          ui: {
+            defaultMode: "single"
           }
         }
       ]
@@ -420,10 +675,15 @@ export const objectSchema = {
   RevDrvDel: {
     impl: "ScaleDrv",
     showMonthlyAssumptions: true,
+    options: {
+      modes: ['single', 'annual', 'growth'],
+      start: true,
+      smoothing: true
+    },
     channels: {
       val: {
         label: "Revenue",
-        destinations: ["pnl.revenue.recur","balance.assets.current.ar"]
+        destinations: ["pnl.revenue.recur", "balance.assets.current.ar"]
       }
     },
     assumptions: {
@@ -441,10 +701,28 @@ export const objectSchema = {
             monthly: true,
             smoothing: true,
             growth: true,
-            dateRange: true
+            dateRange: false
           },
           ui: {
             defaultMode: "annual"
+          }
+        },
+        {
+          name: "start",
+          label: "Start Month",
+          baseType: "number",
+          format: "integer",
+          default: 1,
+          supports: {
+            single: true,
+            monthly: false,
+            dateRange: false,
+            annual: false,
+            growth: false,
+            smoothing: false
+          },
+          ui: {
+            defaultMode: "single"
           }
         }
       ]
@@ -457,6 +735,11 @@ export const objectSchema = {
   RevDrvDCPrem: {
     impl: "ScaleDrv",
     showMonthlyAssumptions: true,
+    options: {
+      modes: ['single', 'annual', 'growth'],
+      start: true,
+      smoothing: true
+    },
     channels: {
       val: {
         label: "Revenue",
@@ -478,10 +761,28 @@ export const objectSchema = {
             monthly: true,
             smoothing: true,
             growth: true,        // inflation-like
-            dateRange: true
+            dateRange: false
           },
           ui: {
             defaultMode: "annual"
+          }
+        },
+        {
+          name: "start",
+          label: "Start Month",
+          baseType: "number",
+          format: "integer",
+          default: 1,
+          supports: {
+            single: true,
+            monthly: false,
+            dateRange: false,
+            annual: false,
+            growth: false,
+            smoothing: false
+          },
+          ui: {
+            defaultMode: "single"
           }
         }
       ]
@@ -494,6 +795,11 @@ export const objectSchema = {
   SubRetain: {
     impl: "SubRetain",
     showMonthlyAssumptions: true,
+    options: {
+      modes: ['single', 'annual'],
+      start: true,
+      smoothing: true
+    },
     channels: {
       act: {
         label: "Active Users",
@@ -501,7 +807,7 @@ export const objectSchema = {
       },
       chu: {
         label: "Churned Users",
-        destinations: []  
+        destinations: []
       }
     },
     assumptions: {
@@ -519,7 +825,25 @@ export const objectSchema = {
             monthly: true,
             smoothing: true,
             growth: false,
-            dateRange: true
+            dateRange: false
+          },
+          ui: {
+            defaultMode: "single"
+          }
+        },
+        {
+          name: "start",
+          label: "Start Month",
+          baseType: "number",
+          format: "integer",
+          default: 1,
+          supports: {
+            single: true,
+            monthly: false,
+            dateRange: false,
+            annual: false,
+            growth: false,
+            smoothing: false
           },
           ui: {
             defaultMode: "single"
@@ -535,6 +859,9 @@ export const objectSchema = {
   DelRev: {
     impl: "Delay",
     showMonthlyAssumptions: true,
+    options: {
+      modes: ['single']
+    },
     channels: {
       val: {
         label: "Delayed value",
@@ -572,6 +899,12 @@ export const objectSchema = {
   StaffDriven: {
     impl: "StaffDriven",
     showMonthlyAssumptions: true,
+    options: {
+      modes: ['single', 'annual'],
+      start: true,
+      smoothing: true,
+      integers: true
+    },
     channels: {
       heads: {
         label: "Staff Heads",
@@ -594,7 +927,7 @@ export const objectSchema = {
           supports: {
             single: true,
             monthly: true,
-            dateRange: true,
+            dateRange: false,
             annual: true,
             growth: false,
             smoothing: true,
@@ -614,12 +947,30 @@ export const objectSchema = {
           supports: {
             single: true,
             monthly: true,
-            dateRange: true,
+            dateRange: false,
             annual: true,
             growth: false,
             smoothing: true,
             integers: false,
             seasonal: false
+          },
+          ui: {
+            defaultMode: "single"
+          }
+        },
+        {
+          name: "start",
+          label: "Start Month",
+          baseType: "number",
+          format: "integer",
+          default: 1,
+          supports: {
+            single: true,
+            monthly: false,
+            dateRange: false,
+            annual: false,
+            growth: false,
+            smoothing: false
           },
           ui: {
             defaultMode: "single"
@@ -635,6 +986,13 @@ export const objectSchema = {
   StaffTeam: {
     impl: "StaffTeam",
     showMonthlyAssumptions: true,
+    options: {
+      modes: ['single', 'annual'],
+      start: true,
+      smoothing: true,
+      integers: true,
+      seasonal: true
+    },
     channels: {
       heads: {
         label: "Staff Heads",
@@ -657,7 +1015,7 @@ export const objectSchema = {
           supports: {
             single: true,
             monthly: true,
-            dateRange: true,
+            dateRange: false,
             annual: true,
             growth: false,
             smoothing: true,
@@ -677,7 +1035,7 @@ export const objectSchema = {
           supports: {
             single: true,
             monthly: true,
-            dateRange: true,
+            dateRange: false,
             annual: true,
             growth: false,
             smoothing: true,
@@ -686,6 +1044,24 @@ export const objectSchema = {
           },
           ui: {
             defaultMode: "dateRange"
+          }
+        },
+        {
+          name: "start",
+          label: "Start Month",
+          baseType: "number",
+          format: "integer",
+          default: 1,
+          supports: {
+            single: true,
+            monthly: false,
+            dateRange: false,
+            annual: false,
+            growth: false,
+            smoothing: false
+          },
+          ui: {
+            defaultMode: "single"
           }
         }
       ]
@@ -698,6 +1074,12 @@ export const objectSchema = {
   StaffRole: {
     impl: "StaffRole",
     showMonthlyAssumptions: false,
+    options: {
+      modes: ['single', 'annual'],
+      start: true,
+      smoothing: true,
+      integers: true
+    },
     channels: {
       cost: {
         label: "Staff Cost",
@@ -720,7 +1102,7 @@ export const objectSchema = {
           supports: {
             single: true,
             monthly: true,
-            dateRange: true,
+            dateRange: false,
             annual: true,
             growth: false,
             smoothing: true,
@@ -729,6 +1111,24 @@ export const objectSchema = {
           },
           ui: {
             defaultMode: "dateRange"
+          }
+        },
+        {
+          name: "start",
+          label: "Start Month",
+          baseType: "number",
+          format: "integer",
+          default: 1,
+          supports: {
+            single: true,
+            monthly: false,
+            dateRange: false,
+            annual: false,
+            growth: false,
+            smoothing: false
+          },
+          ui: {
+            defaultMode: "single"
           }
         }
       ]
@@ -741,6 +1141,9 @@ export const objectSchema = {
   Sum: {
     impl: "Sum",
     showMonthlyAssumptions: false,  // Just sums inputs, no unique assumptions
+    options: {
+      modes: ['single']
+    },
     channels: {
       val: {
         label: "Total",
