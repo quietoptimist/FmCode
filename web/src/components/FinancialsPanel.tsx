@@ -10,7 +10,6 @@ interface FinancialsPanelProps {
 export function FinancialsPanel({ financialData, startMonth = 0 }: FinancialsPanelProps) {
     const [viewMode, setViewMode] = useState<'monthly' | 'annual'>('annual');
     const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
-    const [activeStatement, setActiveStatement] = useState<'pnl' | 'cash' | 'balance' | 'memo'>('pnl');
 
     if (!financialData) {
         return (
@@ -36,29 +35,25 @@ export function FinancialsPanel({ financialData, startMonth = 0 }: FinancialsPan
         : Array.from({ length: periods }, (_, i) => `Y${i + 1}`);
 
     // Get the active statement
-    const statement = defaultFinancialTemplate.statements[activeStatement];
+
+
+    const isItemVisible = (item: FinancialLineItem) => {
+        if (item.level === 0) return true;
+        const parts = item.code.split('.');
+        for (let i = parts.length - 1; i > 0; i--) {
+            const parentCode = parts.slice(0, i).join('.');
+            if (financialData.lineItems.has(parentCode) && !expandedSections.has(parentCode)) {
+                return false;
+            }
+        }
+        return true;
+    };
 
     return (
         <div className="h-full flex flex-col bg-white border-l border-gray-200">
             {/* Header */}
-            <div className="flex-none p-4 border-b border-gray-200">
-                <h2 className="text-xl font-bold text-gray-900 mb-3">Financial Statements</h2>
-
-                {/* Statement Tabs */}
-                <div className="flex gap-2 mb-3">
-                    {(['pnl', 'cash', 'balance', 'memo'] as const).map((stmt) => (
-                        <button
-                            key={stmt}
-                            onClick={() => setActiveStatement(stmt)}
-                            className={`px-3 py-1.5 text-sm font-medium rounded ${activeStatement === stmt
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                }`}
-                        >
-                            {stmt === 'pnl' ? 'P&L' : stmt === 'cash' ? 'Cash' : stmt === 'balance' ? 'Balance' : 'Memo'}
-                        </button>
-                    ))}
-                </div>
+            <div className="flex-none p-4 border-b border-gray-200 flex justify-between items-center">
+                <h2 className="text-xl font-bold text-gray-900">Financial Statements</h2>
 
                 {/* View Mode Toggle */}
                 <div className="flex gap-2">
@@ -83,102 +78,110 @@ export function FinancialsPanel({ financialData, startMonth = 0 }: FinancialsPan
                 </div>
             </div>
 
-            {/* Statement Table */}
-            <div className="flex-1 overflow-auto">
-                <table className="text-sm border-collapse min-w-full w-auto">
-                    <thead className="sticky top-0 bg-gray-50 border-b border-gray-200 z-20">
-                        <tr>
-                            <th className="text-left p-2 font-semibold text-gray-700 sticky left-0 bg-gray-50 z-30 border-r border-gray-200 min-w-[250px]">
-                                {statement.name}
-                            </th>
-                            {periodLabels.map((label, i) => (
-                                <th key={i} className="text-right p-2 font-semibold text-gray-700 min-w-[100px] w-[120px]">
-                                    {label}
-                                </th>
-                            ))}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {statement.lineItems.map((item) => (
-                            <React.Fragment key={item.code}>
-                                <FinancialLineRow
-                                    item={item}
-                                    financialData={financialData}
-                                    viewMode={viewMode}
-                                    periods={periods}
-                                    expandedSections={expandedSections}
-                                    toggleSection={toggleSection}
-                                />
-                                {/* Contributor rows - show when parent is expanded */}
-                                {expandedSections.has(item.code) && financialData.contributors.has(item.code) && (() => {
-                                    const contributors = financialData.contributors.get(item.code)!;
+            {/* Statements List */}
+            <div className="flex-1 overflow-auto p-4 space-y-20">
+                {(['pnl', 'cash', 'balance', 'memo'] as const).map((stmtKey) => {
+                    const statement = defaultFinancialTemplate.statements[stmtKey];
+                    return (
+                        <div key={stmtKey} className="space-y-2">
+                            <h3 className="text-lg font-semibold text-gray-800 sticky left-0">{statement.name}</h3>
+                            <table className="text-sm border-collapse w-auto">
+                                <thead className="sticky top-0 bg-gray-50 border-b border-gray-200 z-20">
+                                    <tr>
+                                        <th className="text-left p-2 font-semibold text-gray-700 sticky left-0 bg-gray-50 z-30 border-r border-gray-200 min-w-[250px]">
+                                            Line Item
+                                        </th>
+                                        {periodLabels.map((label, i) => (
+                                            <th key={i} className="text-right p-2 font-semibold text-gray-700 min-w-[100px] w-[120px]">
+                                                {label}
+                                            </th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {statement.lineItems.map((item) => (
+                                        <React.Fragment key={item.code}>
+                                            <FinancialLineRow
+                                                item={item}
+                                                financialData={financialData}
+                                                viewMode={viewMode}
+                                                periods={periods}
+                                                expandedSections={expandedSections}
+                                                toggleSection={toggleSection}
+                                            />
+                                            {/* Contributor rows - show when parent is expanded */}
+                                            {expandedSections.has(item.code) && isItemVisible(item) && financialData.contributors.has(item.code) && (() => {
+                                                const contributors = financialData.contributors.get(item.code)!;
 
-                                    // Group contributors by objectName (object type)
-                                    const groupedByObject = new Map<string, typeof contributors>();
-                                    contributors.forEach(contrib => {
-                                        if (!groupedByObject.has(contrib.objectName)) {
-                                            groupedByObject.set(contrib.objectName, []);
-                                        }
-                                        groupedByObject.get(contrib.objectName)!.push(contrib);
-                                    });
+                                                // Group contributors by objectName (object type)
+                                                const groupedByObject = new Map<string, typeof contributors>();
+                                                contributors.forEach(contrib => {
+                                                    if (!groupedByObject.has(contrib.objectName)) {
+                                                        groupedByObject.set(contrib.objectName, []);
+                                                    }
+                                                    groupedByObject.get(contrib.objectName)!.push(contrib);
+                                                });
 
-                                    const objectGroups = Array.from(groupedByObject.entries());
+                                                const objectGroups = Array.from(groupedByObject.entries());
 
-                                    return objectGroups.map(([objectName, objContributors], groupIdx) => {
-                                        const hasMultipleOutputs = objContributors.length > 1;
-                                        const groupKey = `${item.code}-${objectName}`;
-                                        const isGroupExpanded = expandedSections.has(groupKey);
+                                                return objectGroups.map(([objectName, objContributors], groupIdx) => {
+                                                    const hasMultipleOutputs = objContributors.length > 1;
+                                                    const groupKey = `${item.code}-${objectName}`;
+                                                    const isGroupExpanded = expandedSections.has(groupKey);
 
-                                        return (
-                                            <React.Fragment key={groupKey}>
-                                                {/* Spacing between groups */}
-                                                {groupIdx > 0 && (
-                                                    <tr className="h-2">
-                                                        <td colSpan={periods + 1} className="bg-white"></td>
-                                                    </tr>
-                                                )}
+                                                    return (
+                                                        <React.Fragment key={groupKey}>
+                                                            {/* Spacing between groups */}
+                                                            {groupIdx > 0 && (
+                                                                <tr className="h-2">
+                                                                    <td colSpan={periods + 1} className="bg-white"></td>
+                                                                </tr>
+                                                            )}
 
-                                                {/* Multiple outputs: collapsible group header */}
-                                                {hasMultipleOutputs ? (
-                                                    <>
-                                                        <ObjectGroupHeader
-                                                            objectName={objectName}
-                                                            contributors={objContributors}
-                                                            parentLevel={item.level}
-                                                            viewMode={viewMode}
-                                                            periods={periods}
-                                                            isExpanded={isGroupExpanded}
-                                                            onToggle={() => toggleSection(groupKey)}
-                                                        />
-                                                        {/* Individual outputs when expanded */}
-                                                        {isGroupExpanded && objContributors.map((contributor, idx) => (
-                                                            <ContributorRow
-                                                                key={`${groupKey}-${idx}`}
-                                                                contributor={contributor}
-                                                                parentLevel={item.level + 1}
-                                                                viewMode={viewMode}
-                                                                periods={periods}
-                                                            />
-                                                        ))}
-                                                    </>
-                                                ) : (
-                                                    /* Single output: show directly */
-                                                    <ContributorRow
-                                                        key={`${groupKey}-0`}
-                                                        contributor={objContributors[0]}
-                                                        parentLevel={item.level}
-                                                        viewMode={viewMode}
-                                                        periods={periods}
-                                                    />
-                                                )}
-                                            </React.Fragment>
-                                        );
-                                    });
-                                })()}
-                            </React.Fragment>
-                        ))}
-                    </tbody>
-                </table>
+                                                            {/* Multiple outputs: collapsible group header */}
+                                                            {hasMultipleOutputs ? (
+                                                                <>
+                                                                    <ObjectGroupHeader
+                                                                        objectName={objectName}
+                                                                        contributors={objContributors}
+                                                                        parentLevel={item.level}
+                                                                        viewMode={viewMode}
+                                                                        periods={periods}
+                                                                        isExpanded={isGroupExpanded}
+                                                                        onToggle={() => toggleSection(groupKey)}
+                                                                    />
+                                                                    {/* Individual outputs when expanded */}
+                                                                    {isGroupExpanded && objContributors.map((contributor, idx) => (
+                                                                        <ContributorRow
+                                                                            key={`${groupKey}-${idx}`}
+                                                                            contributor={contributor}
+                                                                            parentLevel={item.level + 1}
+                                                                            viewMode={viewMode}
+                                                                            periods={periods}
+                                                                        />
+                                                                    ))}
+                                                                </>
+                                                            ) : (
+                                                                /* Single output: show directly */
+                                                                <ContributorRow
+                                                                    key={`${groupKey}-0`}
+                                                                    contributor={objContributors[0]}
+                                                                    parentLevel={item.level}
+                                                                    viewMode={viewMode}
+                                                                    periods={periods}
+                                                                />
+                                                            )}
+                                                        </React.Fragment>
+                                                    );
+                                                });
+                                            })()}
+                                        </React.Fragment>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    );
+                })}
             </div>
         </div>
     );

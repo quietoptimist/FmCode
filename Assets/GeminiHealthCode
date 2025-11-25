@@ -1,0 +1,66 @@
+SetupAndFunding:
+    Setup         = Setup()                       // Set model start date
+    EquityFunding = FundEquity() => startingCash  // Initial cash from founders/investors
+
+CustomerAcquisition:
+    NewUsers = QuantAnnSeas() => socialNewUsers   // Annual forecast with Q1 seasonality spike
+    TierMix  = Split(NewUsers.val) => newFree, newBoosted, newUnlimited // Mix of new users by tier
+
+Subscriptions:
+    Subscribers = SubMth(...TierMix.val) => freeSubs, boostedSubs, unlimitedSubs // Monthly subscriptions with churn
+
+SupplementDemand:
+    SuppBuyers = QuantDrv(Subscribers.act) => suppBuyers // % of active subscribers who buy supplements
+    SuppDemand = QuantDrvMul(suppBuyers.val) => packsNeeded // Buyers typically purchase 2 packs
+
+SupplyChain:
+    Inventory = SupplyMths(packsNeeded.val) => supplementPacks // Order packs, manage inventory and lead times
+
+Revenues:
+    SupplementRevenue = RevDrv(Inventory.nsell) => packsRev // Revenue from packs actually sold (accounting for stock)
+
+People:
+    Leadership = StaffRole() => ceo, cfo, headMarketing, opsManager // Specific leadership and ops roles
+    DevTeam    = StaffTeamRD() => developers // Small team of developers
+    TotalHeads = Sum(Leadership.heads, DevTeam.heads) // Aggregated headcount for driving office/equipment costs
+
+Costs:
+    AppVariableCosts = CostDrvDC(Subscribers.rev, Subscribers.act) => appStoreFees, hostingAndInference // Fees % of rev, hosting scales with actives
+    FulfillmentCosts = CostDrvDC(suppBuyers.val) => packingCost, shippingCost // Packing and shipping per order
+    StaffOverheads   = CostDrvGA(TotalHeads.val) => servicedOfficeRent, softwareSubs // Office and software scale with headcount
+    FixedOverheads   = CostAnnGA() => insurance, travel, storageSpaceFee // Fixed monthly/annual costs
+
+Capex:
+    StaffEquipment  = CapexEquip(TotalHeads.val) => laptops, mobilePhones // Equipment for every staff member
+    FulfillmentPrep = CapexMth() => labelPrinter, barcodeScanner // One-off purchase for fulfillment setup
+
+Results:
+    Tax       = ResTax() => Tax // Corporation tax calculation
+    Valuation = ResDcf()        // Valuation using DCF
+
+// -------- Dashboard TABLES --------
+
+CashFlow:
+    KpiSourcesAndUses = DashTableSum(output_cash_ops, output_total_investments, output_total_financing) 
+    KpiCashBalance    = DashTableCum(output_cum_cash)       
+
+IncomeStatement:
+    KpiIncome = DashTableSum(output_total_revenue, output_total_cogs, output_total_cust_acquis, output_total_overheads, output_ebitda, output_net_profit)
+
+KeyMetrics:
+    KpiSubscribers = DashTableCum(Subscribers.act) // Total active subscribers
+    KpiHeadcount   = DashTableCum(TotalHeads.val) // Total staff count
+
+// -------- Dashboard CHARTS --------
+
+CashFlowCharts:
+    SourcesAndUses = DashChartSum(output_cash_ops, output_total_investments, output_total_financing)
+    CashBalance    = DashChartCum(output_cum_cash)
+
+IncomeStatementCharts:
+    ChartRevenues = DashChartSum(output_total_revenue)
+    ChartExpenses = DashChartSum(output_total_cogs, output_total_cust_acquis, output_total_overheads)
+    ChartProfit   = DashChartSum(output_net_profit)
+
+SubscriberCharts:
+    ChartActives = DashChartCum(...Subscribers.act) // Stacked area of actives by tier

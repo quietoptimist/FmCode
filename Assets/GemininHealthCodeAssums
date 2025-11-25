@@ -1,0 +1,115 @@
+FM
+    // BusinessName: Healthy Habits App
+    // BusinessType: B2C Subscription App & E-commerce
+    // DateTime: 2025-11-25
+    // Note: Using experimental 'Constructor Style' syntax for assumptions.
+
+    SetupAndFunding:
+        Setup         = Setup()                       // Set model start date
+        EquityFunding = FundEquity() => startingCash(val: 500000)  // Seed funding round
+
+    CustomerAcquisition:
+        // "Most customers join in Q1" -> 12k users/yr, heavily weighted to Jan-Mar
+        NewUsers = QuantAnnSeas() => socialNewUsers(annual: 12000, seasonality: "Q1_Heavy")
+        
+        // "Three tiers... Free, Boosted, Unlimited"
+        TierMix  = Split(NewUsers.val) => newFree(mix: 60%), newBoosted(mix: 30%), newUnlimited(mix: 10%)
+
+    Subscriptions:
+        // "Pay monthly... not locked in... churn each month"
+        // Free tier generates no revenue but incurs hosting costs
+        Subscribers = SubMth(...TierMix.val) => 
+            freeSubs(price: 0.00, churn: 15%), 
+            boostedSubs(price: 9.99, churn: 8%), 
+            unlimitedSubs(price: 24.99, churn: 5%)
+
+    SupplementDemand:
+        // "Small % of active customers buy... typically buy 2 packs"
+        SuppBuyers = QuantDrv(Subscribers.act)  => suppBuyers(factor: 0.05) // 5% conversion rate
+        SuppDemand = QuantDrvMul(suppBuyers.val) => packsNeeded(factor: 2.0) // 2 packs per order
+
+    SupplyChain:
+        // "Lead times can be over a month"
+        Inventory = SupplyMths(packsNeeded.val) => supplementPacks(leadTime: 2, moq: 500, cost: 8.00)
+
+    Revenues:
+        // Revenue from packs actually shipped
+        SupplementRevenue = RevDrv(Inventory.nsell) => packsRev(price: 25.00)
+
+    People:
+        // "Small team... CFO and me (CEO)"
+        Leadership = StaffRole() => 
+            ceo(salary: 120000, start: 1), 
+            cfo(salary: 110000, start: 1), 
+            headMarketing(salary: 90000, start: 3), 
+            opsManager(salary: 60000, start: 1) // "Someone to order and ship"
+
+        // "Small team of developers"
+        DevTeam    = StaffTeamRD() => developers(salary: 100000, heads: 3)
+        
+        // Aggregating headcount for office/equipment drivers
+        TotalHeads = Sum(Leadership.heads, DevTeam.heads)
+
+    Costs:
+        // "App store fees % of rev... Hosting grows with active users"
+        AppVariableCosts = CostDrvDC(Subscribers.rev, Subscribers.act) => 
+            appStoreFees(factor: 0.15), // 15% blended fee
+            hostingAndInference(factor: 0.25) // $0.25 per user/mo
+
+        // "Pay for packing and shipping each supplement order"
+        FulfillmentCosts = CostDrvDC(suppBuyers.val) => 
+            packingCost(factor: 2.50), 
+            shippingCost(factor: 5.50)
+
+        // "Rent serviced office... scales with total number of staff"
+        StaffOverheads   = CostDrvGA(TotalHeads.val) => 
+            servicedOfficeRent(factor: 600), // $600 per desk
+            softwareSubs(factor: 100)        // $100 per head
+
+        // "Not many other costs... insurance, travel, storage"
+        FixedOverheads   = CostAnnGA() => 
+            insurance(annual: 3000), 
+            travel(annual: 12000), 
+            storageSpaceFee(annual: 2400) // "Monthly fee for storage space"
+
+    Capex:
+        // "Laptops and mobile phones for every member of staff"
+        StaffEquipment  = CapexEquip(TotalHeads.val) => 
+            laptops(price: 2000, life: 36), 
+            mobilePhones(price: 800, life: 24)
+
+        // "Label printer and barcode scanner... one-off"
+        FulfillmentPrep = CapexMth() => 
+            labelPrinter(val: 300, month: 1), 
+            barcodeScanner(val: 200, month: 1)
+
+    Results:
+        Tax       = ResTax() => Tax(rate: 0.25)
+        Valuation = ResDcf()        
+
+    // -------- Dashboard TABLES --------
+
+    CashFlow:
+        KpiSourcesAndUses = DashTableSum(output_cash_ops, output_total_investments, output_total_financing) 
+        KpiCashBalance    = DashTableCum(output_cum_cash)       
+
+    IncomeStatement:
+        KpiIncome = DashTableSum(output_total_revenue, output_total_cogs, output_total_cust_acquis, output_total_overheads, output_ebitda, output_net_profit)
+
+    KeyMetrics:
+        KpiSubscribers = DashTableCum(Subscribers.act) 
+        KpiHeadcount   = DashTableCum(TotalHeads.val) 
+
+    // -------- Dashboard CHARTS --------
+
+    CashFlowCharts:
+        SourcesAndUses = DashChartSum(output_cash_ops, output_total_investments, output_total_financing)
+        CashBalance    = DashChartCum(output_cum_cash)
+
+    IncomeStatementCharts:
+        ChartRevenues = DashChartSum(output_total_revenue)
+        ChartExpenses = DashChartSum(output_total_cogs, output_total_cust_acquis, output_total_overheads)
+        ChartProfit   = DashChartSum(output_net_profit)
+
+    SubscriberCharts:
+        ChartActives = DashChartCum(...Subscribers.act)
