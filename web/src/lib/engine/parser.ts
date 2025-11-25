@@ -3,18 +3,40 @@
  * FM Parser (2-pass: parse → index → link)
  * Order-agnostic, supports spread args “…ObjectName.field”
  * and forward references to objects defined later in the file.
+ * 
+ * UPDATED: Supports metadata headers, multi-line objects, and assumption values.
  */
 
 /** =============================
  * Utilities
  * ============================== */
 const sectionRe = /^\s*([A-Za-z][A-Za-z0-9_]*)\s*:\s*$/;
-const objRe = /^\s*([A-Za-z][A-Za-z0-9_]*)\s*=\s*([A-Za-z][A-Za-z0-9_]*)\s*\((.*?)\)\s*(?:=>\s*(.*?))?\s*(?:\/\/(.*))?$/;
+// Regex for object definition. 
+// Note: We will run this on "normalized" single lines.
+// Captures: 1=ObjName, 2=FnName, 3=Args, 4=Outputs(optional), 5=Comment(optional)
+const objRe = /^\s*([A-Za-z][A-Za-z0-9_]*)\s*=\s*([A-Za-z][A-Za-z0-9_]*)\s*\((.*?)\)\s*(?:(?:=>|>)\s*(.*?))?\s*(?:\/\/(.*))?$/;
 
-function splitCSV(s) {
+// Helper to split by comma but respect parentheses (for assumption args)
+function splitRespectingParens(s) {
   if (!s) return [];
-  // args/outputs are simple comma lists (no nested parens/quotes in FM)
-  return s.split(',').map(x => x.trim()).filter(Boolean);
+  const parts = [];
+  let current = '';
+  let depth = 0;
+
+  for (let i = 0; i < s.length; i++) {
+    const char = s[i];
+    if (char === '(') depth++;
+    else if (char === ')') depth--;
+
+    if (char === ',' && depth === 0) {
+      parts.push(current.trim());
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  if (current.trim()) parts.push(current.trim());
+  return parts;
 }
 
 function parseArg(token) {
@@ -35,6 +57,45 @@ function parseArg(token) {
   return { kind: 'literal', value: token, raw: token };
 }
 
+function parseAssumptions(argsStr) {
+  if (!argsStr) return {};
+  const assumptions = {};
+  const parts = argsStr.split(',').map(p => p.trim());
+
+  parts.forEach(part => {
+    const [key, val] = part.split(':').map(s => s.trim());
+    if (key && val) {
+      // Try to parse number, percent, or string
+      if (val.endsWith('%')) {
+        assumptions[key] = parseFloat(val) / 100;
+      } else if (!isNaN(parseFloat(val))) {
+        assumptions[key] = parseFloat(val);
+      } else {
+        // Remove quotes if present
+        assumptions[key] = val.replace(/^["']|["']$/g, '');
+      }
+    }
+  });
+  return assumptions;
+}
+
+function parseOutputs(outStr) {
+  if (!outStr) return [];
+  const rawOutputs = splitRespectingParens(outStr);
+
+  return rawOutputs.map(raw => {
+    // Check for Alias(args...)
+    const m = raw.match(/^([A-Za-z0-9_]+)\s*(?:\((.*)\))?$/);
+    if (m) {
+      const name = m[1];
+      const argsStr = m[2];
+      const assumptions = argsStr ? parseAssumptions(argsStr) : {};
+      return { name, assumptions };
+    }
+    return { name: raw, assumptions: {} };
+  });
+}
+
 /** =============================
  * 1) Parse (structure only)
  * ============================== */
@@ -42,57 +103,286 @@ function parseFM(source) {
   const lines = source.split(/\r?\n/);
   const sections = [];
   const objects = []; // flat list
-  let current = null;
+  const metadata = {};
 
-  lines.forEach((raw, idx) => {
-    const lineNo = idx + 1;
-    const trimmed = raw.trim();
+  let currentSection = null;
+  let pendingComments = [];
 
-    if (!trimmed) return;
-    if (trimmed.startsWith('//')) return;
+  // Pre-process: Normalize lines (handle multi-line objects)
+  const normalizedLines = [];
+  let buffer = '';
+  let bufferStartLine = 0;
 
-    const s = trimmed.match(sectionRe);
-    if (s) {
-      current = { name: s[1], line: lineNo, objects: [] };
-      sections.push(current);
-      return;
+  // Metadata scanning state
+  let scanningMetadata = true;
+
+  for (let i = 0; i < lines.length; i++) {
+    let line = lines[i].trim();
+    const originalLine = lines[i]; // Keep original for indentation check if needed
+
+    if (!line) {
+      // Blank line
+      if (buffer) {
+        // Flush buffer if we were building an object
+        normalizedLines.push({ text: buffer, line: bufferStartLine });
+        buffer = '';
+      }
+      pendingComments = []; // Clear pending comments on blank lines
+      continue;
     }
 
-    const m = trimmed.match(objRe);
-    if (m) {
-      if (!current) {
-        throw new Error(`Object found before any section (line ${lineNo}): "${trimmed}"`);
+    // Metadata extraction (only at top of file)
+    if (scanningMetadata) {
+      if (line.startsWith('//')) {
+        const metaMatch = line.match(/^\/\/\s*([A-Za-z0-9_]+)\s*:\s*(.*)$/);
+        if (metaMatch) {
+          metadata[metaMatch[1]] = metaMatch[2].trim();
+          continue; // Consumed as metadata
+        }
+        // If it's a comment but not key:value, it might be a normal comment. 
+        // But usually metadata block is contiguous. We'll treat it as a comment.
+      } else {
+        // First non-comment line stops metadata scanning
+        scanningMetadata = false;
       }
-      const [, objName, fnName, argStr, outStr, comment] = m;
+    }
+
+    // Section Header
+    if (line.match(sectionRe)) {
+      if (buffer) {
+        normalizedLines.push({ text: buffer, line: bufferStartLine });
+        buffer = '';
+      }
+      normalizedLines.push({ text: line, line: i + 1, isSection: true });
+      pendingComments = []; // Clear comments before section
+      continue;
+    }
+
+    // Comment handling
+    if (line.startsWith('//')) {
+      pendingComments.push(line.substring(2).trim());
+      continue;
+    }
+
+    // Object Definition (potentially multi-line)
+    // Check if this line continues the previous one
+    // Continuation if: buffer exists AND (buffer ends with continuation char OR current line starts with continuation logic?)
+    // Actually user said: "when the following line continues... vs starting new object"
+    // Simple heuristic: If buffer exists, append.
+    // Wait, we need to know when an object ENDS.
+    // Heuristic: If a line contains '=', it starts a new object (unless it's inside parens? No, FM syntax is simple).
+    // So if we have a buffer, and the NEW line starts with "Name =", flush the buffer.
+
+    const isNewObject = line.match(/^\s*[A-Za-z][A-Za-z0-9_]*\s*=/);
+
+    if (isNewObject) {
+      if (buffer) {
+        normalizedLines.push({ text: buffer, line: bufferStartLine });
+      }
+      buffer = line;
+      bufferStartLine = i + 1;
+    } else {
+      // Continuation line
+      if (buffer) {
+        // Strip trailing comments from the PREVIOUS buffer content if we are appending?
+        // User said: "stripping them from the end of a line when the comment follows a continuation character"
+        // Actually, simpler: Strip trailing comment from THIS line before appending.
+        const commentIdx = line.indexOf('//');
+        let content = line;
+        if (commentIdx !== -1) {
+          content = line.substring(0, commentIdx).trim();
+        }
+        buffer += ' ' + content;
+      } else {
+        // Orphan line? Or maybe a syntax error. 
+        // Or maybe the file started with a continuation (invalid).
+        // We'll treat it as a line to process, maybe it throws later.
+        normalizedLines.push({ text: line, line: i + 1 });
+      }
+    }
+  }
+
+  if (buffer) {
+    normalizedLines.push({ text: buffer, line: bufferStartLine });
+  }
+
+  // Now parse the normalized lines
+  // Reset pending comments as we might have consumed them during normalization? 
+  // Actually, the pendingComments logic above was slightly flawed because we were iterating lines.
+  // Let's redo the loop structure slightly to handle comments correctly with the normalization.
+
+  // RESTARTING LOOP LOGIC FOR CLEANER IMPLEMENTATION
+  // We need to associate comments with the *next* object.
+
+  // Let's clear arrays and do it in one pass if possible, or stick to the normalization plan.
+  // The normalization plan is safer. Let's refine the normalization loop above.
+
+  // Actually, let's just parse the normalizedLines array now.
+  // But we lost the "pendingComments" association.
+  // Let's store comments in the normalizedLines structure.
+
+  // RE-RE-THINK:
+  // We can't easily normalize without knowing if a line is a comment or code.
+  // Let's do a single pass state machine.
+
+  const finalSections = [];
+  const finalObjects = [];
+  currentSection = null;
+  let currentComments = [];
+
+  // Re-scan lines for the actual parsing pass
+  // We need to handle the "buffer" logic dynamically.
+
+  buffer = '';
+  bufferStartLine = 0;
+
+  // Reset metadata scanning
+  scanningMetadata = true;
+  const finalMetadata = {};
+
+  for (let i = 0; i < lines.length; i++) {
+    let line = lines[i].trim();
+    const lineNo = i + 1;
+
+    if (!line) {
+      if (buffer) {
+        processBuffer(buffer, bufferStartLine, currentComments);
+        buffer = '';
+        currentComments = []; // Comments consumed by the object
+      } else {
+        currentComments = []; // Abandon comments on blank lines (orphaned)
+      }
+      continue;
+    }
+
+    // Metadata extraction (only at top of file)
+    if (scanningMetadata) {
+      if (line === 'FM') continue; // Ignore FM header
+      if (line.startsWith('//')) {
+        const metaMatch = line.match(/^\/\/\s*([A-Za-z0-9_]+)\s*:\s*(.*)$/);
+        if (metaMatch) {
+          finalMetadata[metaMatch[1]] = metaMatch[2].trim();
+          continue;
+        }
+        // Fallthrough to normal comment handling if not key:value
+      } else {
+        // First non-comment line (that isn't FM) stops metadata scanning
+        scanningMetadata = false;
+      }
+    }
+
+    // Section
+    if (line.match(sectionRe)) {
+      if (buffer) {
+        processBuffer(buffer, bufferStartLine, currentComments);
+        buffer = '';
+        currentComments = [];
+      }
+      const s = line.match(sectionRe);
+      currentSection = { name: s[1], line: lineNo, objects: [] };
+      finalSections.push(currentSection);
+      currentComments = [];
+      continue;
+    }
+
+    // Comment
+    if (line.startsWith('//')) {
+      currentComments.push(line.substring(2).trim());
+      continue;
+    }
+
+    // Object Start
+    if (line.match(/^\s*[A-Za-z][A-Za-z0-9_]*\s*=/)) {
+      if (buffer) {
+        processBuffer(buffer, bufferStartLine, currentComments);
+        // Note: currentComments should have been cleared by processBuffer if it used them.
+        // But wait, comments precede the object. 
+        // If we had a buffer, the comments we just collected belong to the NEW object?
+        // No, comments usually immediately precede.
+        // If we are flushing a buffer, that buffer *already* had its comments associated when it started.
+        // So we don't pass `currentComments` to the *old* buffer flush.
+        // We pass `currentComments` to the *new* buffer start.
+      }
+
+      // Start new buffer
+      buffer = line;
+      bufferStartLine = lineNo;
+      // We attach the comments we've collected so far to this new object.
+      // Store them in a temp property on the buffer? No, just keep them until flush?
+      // No, if we encounter more comments while building the multi-line object, they are likely inline/assumption comments.
+      // So we should capture the "preceding comments" now.
+      // Let's store them in a side-variable `bufferComments`.
+      // But wait, `processBuffer` needs to know them.
+    } else {
+      // Continuation
+      if (buffer) {
+        // Strip trailing comment
+        const commentIdx = line.indexOf('//');
+        let content = line;
+        if (commentIdx !== -1) {
+          content = line.substring(0, commentIdx).trim();
+        }
+        buffer += ' ' + content;
+      } else {
+        // Syntax error or stray line
+        // throw new Error(`Unexpected line ${lineNo}: "${line}"`);
+      }
+    }
+  }
+
+  // Flush final buffer
+  if (buffer) {
+    processBuffer(buffer, bufferStartLine, currentComments);
+  }
+
+  function processBuffer(text, lineNo, comments) {
+    const m = text.match(objRe);
+    if (m) {
+      if (!currentSection) {
+        throw new Error(`Object found before any section (line ${lineNo}): "${text}"`);
+      }
+      const [, objName, fnName, argStr, outStr, trailingComment] = m;
+
       const args = splitCSV(argStr).map(parseArg);
-      const outputs = splitCSV(outStr);
+      const parsedOutputs = parseOutputs(outStr);
+      const outputNames = parsedOutputs.map(o => o.name);
+
+      // Merge comments: Preceding + Trailing
+      let finalComment = comments.join('\n');
+      if (trailingComment) {
+        finalComment = finalComment ? finalComment + '\n' + trailingComment.trim() : trailingComment.trim();
+      }
+
       const node = {
-        id: `${current.name}.${objName}`,
+        id: `${currentSection.name}.${objName}`,
         name: objName,
         fnName,
-        args,           // unresolved (may include spreads)
-        outputs,        // alias names (0..N)
-        section: current.name,
-        comment: comment?.trim(),
-        line: lineNo
+        args,
+        outputs: outputNames,
+        outputAssumptions: parsedOutputs, // Store full structure
+        section: currentSection.name,
+        comment: finalComment,
+        line: lineNo,
+        metadata: finalMetadata // Attach global metadata to every object? Or just return it separately?
+        // The request said "capture that information and display it at the top of the model page".
+        // Usually the parser returns { sections, objects, metadata }.
       };
-      current.objects.push(node);
-      objects.push(node);
-      return;
+      currentSection.objects.push(node);
+      finalObjects.push(node);
     }
+  }
 
-    // If you hit this, surface a helpful message:
-    throw new Error(`Unrecognized line ${lineNo}: "${trimmed}"`);
-  });
+  return { sections: finalSections, objects: finalObjects, metadata: finalMetadata };
+}
 
-  return { sections, objects };
+function splitCSV(s) {
+  if (!s) return [];
+  // args are simple comma lists (no nested parens/quotes in FM args usually, unless spread)
+  return s.split(',').map(x => x.trim()).filter(Boolean);
 }
 
 /** =============================
  * 2) Index (forward-ref friendly)
- * - objectsByName:  ObjectName → node
- * - aliases:        aliasName → { objectName, node }
- * - outputsByObject:ObjectName → [alias1, alias2, ...]
  * ============================== */
 function buildIndex(ast) {
   const objectsByName = new Map();
@@ -127,14 +417,10 @@ function buildIndex(ast) {
 
 /** =============================
  * 3) Link (expand spreads + validate refs)
- * - Replace each spread with a list of concrete refs to that
- *   object's output aliases, all pointing to the requested field.
- * - Allow forward references (index already knows every object).
  * ============================== */
 function linkFM(ast, index) {
   const { objectsByName, aliases, outputsByObject } = index;
 
-  // Helper: does a base name exist as object or alias?
   function hasSymbol(base) {
     return objectsByName.has(base) || aliases.has(base);
   }
@@ -172,17 +458,15 @@ function linkFM(ast, index) {
         linkedArgs.push(arg); // literals pass through
       }
     }
-    // return a shallow copy with resolved args
     return { ...node, args: linkedArgs };
   });
 
-  // Return a linked AST (sections carry linked objects too)
   const sections = ast.sections.map(sec => ({
     ...sec,
     objects: linkedObjects.filter(n => n.section === sec.name)
   }));
 
-  return { sections, objects: linkedObjects };
+  return { sections, objects: linkedObjects, metadata: ast.metadata };
 }
 
 /** =============================
@@ -194,4 +478,3 @@ export function parseAndLinkFM(source) {
   const linked = linkFM(ast, index);
   return { ast: linked, index };
 }
-

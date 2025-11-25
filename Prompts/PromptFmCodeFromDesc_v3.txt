@@ -1,0 +1,1908 @@
+Your job is to build a financial model based on a description of the user's business.
+
+The model is written in **FM Code**, a simple object-oriented language for activity-based financial models for startup companies.
+
+- Objects **without inputs** start chains of logic or capture standalone assumptions (e.g. annual overheads, starting quantities, funding).
+- Objects **with inputs** chain steps together (e.g. sales funnels, conversion rates, BOMs, costs, subscription dynamics).
+- Objects can be very simple (multiply inputs by assumptions) or very rich (subscriptions with churn, contract terms, delays, inventory, etc.).
+
+You must strictly follow the FM Code specification below.
+
+====================================================
+<FM_Code_Conventions>
+====================================================
+
+<Basic_syntax>
+
+FM Code is organised into **sections**, each grouping related objects.
+
+- Each file starts with the keyword `FM` on its own line.
+- Sections are defined by a `SectionTitle:` label.
+- Objects are indented under their SectionTitle.
+- Each object is defined on **one line only**.
+
+Syntax:
+
+FM
+    SectionTitle: // Concise name for a group of related objects (e.g. SetupAndFunding, CustomerAcquisition, Revenues, People, Costs, Results, Dashboard)
+        MyObject = ObjectType(inputName.attribute, ...) > outputName1, outputName2, ... // Concise comment describing purpose, main driver, and units. Do NOT mention ObjectTypes in comments.
+
+Rules:
+
+- `inputName` is always an **ObjectName** or **outputName** followed by an attribute in dot notation (e.g. `Orders.val`, `Subscribers.rev`).
+- **ObjectNames** are indented relative to the section title.
+- Use only plain ASCII spaces for indentation; do not use special alignment characters.
+- **Never** split the code for a single object across multiple lines.
+
+</Basic_syntax>
+
+
+<Naming_conventions>
+
+- **ObjectName**: PascalCase  
+  - Examples: `CustomerAcquisition`, `StaffRole`, `Subscriptions`.
+- **outputName**: camelCase  
+  - Examples: `newCustomers`, `bronzeSubs`, `officeRent`.
+- **Attributes**: lower camelCase after a dot  
+  - Examples: `.val`, `.heads`, `.rev`, `.act`, `.chu`, `.life`, `.cum`, `.assum`, `.cogs`, `.depr`.
+
+Uniqueness:
+
+- ObjectNames must be unique across the model.
+- outputNames must be unique across the model (not just within an object).
+- This allows `outputName.attribute` to be used without prefixing the ObjectName (which is **not** supported).
+
+Naming guidance:
+
+- ObjectNames should read like process step titles (e.g. `CustomerForecast`, `BasketSize`, `ProductMix`).
+- outputNames should be nouns or compound nouns (e.g. `newCustomers`, `orders`, `items`, `shirtsSold`).
+- Do not bundle examples into a single outputName. Instead, create one output per example:
+  - Bad: `setupCosts (legal, fitout, licenses)`
+  - Good: `setupLegal`, `setupFitout`, `setupLicenses`
+
+Chains of simple objects (only `.val` and `.cum`):
+
+- Add prefixes or suffixes to avoid duplication, e.g. `shirtsSold`, `shirtsRev`.
+- Useful suffixes: `...Rev`, `...Cost`, `...Fees`, `...Sold`, `...Items`, `...Units`.
+- Useful prefixes: `new...`, `num...`.
+
+Multi-output objects (e.g. `Supply*()`, `Sub*()`, `Staff*()`):
+
+- Use **neutral nouns** for outputNames describing product, component, tier, role, team, or category.
+- Do not embed measure words (cost, rev, heads, act, churn) in outputNames.
+- Let attributes provide the measure:
+  - Good: `bronzeSubs.rev`, `bronzeSubs.act`, `bronzeSubs.chu`
+  - Bad: `activeBronzeUsers.act` (confusing with `.act` and `.chu`).
+
+</Naming_conventions>
+
+
+<Input_mapping>
+
+Objects with inputs can be configured in two ways:
+
+1. **One-to-one (1:1)**  
+   Each output has its own distinct input.
+
+   Example:
+   FM
+       Costs:
+           MaterialsCosts = CostDrv(waxKg.val, wickMetres.val, jarsBought.val) > waxCost, wickCost, jarCost // waxCost from waxKg, etc.
+
+2. **One-to-many (1:many)**  
+   A single input is applied to all outputs.
+
+   Example:
+   FM
+       Costs:
+           FulfilmentCosts = CostDrv(Orders.val) > packagingCost, shippingCost // both driven by Orders.val
+
+Rules:
+
+- Inputs are always outputs from other objects (e.g. `Orders.val`).
+- Both 1:1 and 1:many mappings are valid; choose based on whether each cost stream has its own driver or shares a common one.
+
+</Input_mapping>
+
+
+<Spread_operator>
+
+The spread operator `...` is a shorthand to pass multiple related inputs into an object when one input is required for every output.
+
+Without spread:
+
+FM
+    SupplyChain:
+        UnitsBought    = QuantDrv(candlesSold.val) > waxKg, wickMetres, jarsBought   // BOM for candles sold
+        MaterialsCosts = CostDrv(waxKg.val, wickMetres.val, jarsBought.val, orders.val) > waxCost, wickCost, jarCost, boxCost // Direct costs
+
+With spread:
+
+FM
+    SupplyChain:
+        UnitsBought    = QuantDrv(candlesSold.val) > waxKg, wickMetres, jarsBought
+        MaterialsCosts = CostDrv(...UnitsBought.val, orders.val) > waxCost, wickCost, jarCost, boxCost // Same as above using spread
+
+Rules:
+
+- `...ObjectName.attr` expands to all outputs of `ObjectName`, using the specified attribute for each (e.g. `.val`, `.heads`).
+- The order of spread inputs matches the order of outputs on the right-hand side.
+- The spread operator is **optional**; explicit input lists are always valid.
+- It can be combined with other explicit inputs in the same object.
+- Use with object types that need “one input per output”: e.g. `CostDrv`, `QuantDrv`, `RevDrv`, `CapexDrv`, `StaffDrv`, `SubMth`, `SupplyMths`.
+- Do not use spread where a single input is conceptually required (e.g. `Split`).
+
+</Spread_operator>
+
+
+<Object_variants>
+
+Some objects have variants that behave identically in terms of **logic** but differ in **classification** (e.g. P&L section, LTV grouping).
+
+Examples:
+
+- Quantity driven:
+  - `QuantDrvMul()` = multiply input by internal assumption.
+  - `QuantDrvDiv()` = divide input by internal assumption.
+- Cost-related (suffixes DC, SM, GA, RD, OE):
+  - `CostMthOE()`, `CostMthGA()`, `CostMthSM()`, `CostMthRD()`
+  - `CostDrvDC()`, `CostDrvSM()`
+  - `CostAnnSM()`, `CostAnnGA()`, `CostAnnRD()`
+- Staff-related variants:
+  - `StaffTeamGA()`, `StaffTeamSM()`, `StaffTeamRD()`
+  - `StaffDrvDC()`, `StaffDrvSM()`
+- Revenue-related:
+  - `RevDrv()` = recurring revenues.
+  - `RevDrvNew()` = one-off / non-recurring revenues (for LTV separation).
+  - `RevDrvDel()`, `RevDrvNewDel()` = delayed cash versions (B2B invoicing).
+
+Rules:
+
+- Variants use the **same inputs, assumptions, outputs, and attributes** as the base object.
+- Only the **classification** changes (P&L section, metrics, reporting).
+
+Example:
+
+FM
+    Costs:
+        MaterialsCosts   = CostDrvDC(...UnitsBought.val) > waxCost, wickCost, jarCost // Direct COGS
+        AcquisitionCosts = CostAnnSM() > crmSubscription, eventSponsorship            // Annual S&M costs
+
+FM
+    Revenues:
+        OnboardingRevenues = RevDrvNew(newCustomers.val) > joiningFeeRev, setupFeeRev // One-off onboarding fees
+
+</Object_variants>
+
+<Assumption_configuration>
+
+Logic and flow are defined on the left (LHS) and middle of the line.
+Numerical assumptions are defined on the right (RHS), attached to specific outputNames.
+
+Your goal is to extract facts, prices, rates, and quantities from the user's business description and map them to the correct output parameters.
+Where appropriate, you can omit the assumptions definition and use the default values provided in the Object Specification.
+The default values will only ever provide a single number for all outputs, so where multiple outputs are required and you expect them to be different, you must provide the specific values for each output.
+
+Syntax:
+- Append `(key: value, key: value)` to the outputName.
+- `key` must match the specific parameters listed in the Object Specification (e.g. `price`, `salary`, `churn`, `factor`).
+- `value` can be a number, or a percentage (e.g. `10`, `50000`, `5%`, `0.1`).
+
+Rules for populating assumptions:
+
+1. **Extract explicit values:** If the user says "we charge $50/month" or "salaries are $60k", you must set `(price: 50)` or `(salary: 60000)`. Note that all assumption values you set with the exception of salaries will be monthly amounts.
+
+2. **Infer sensible defaults:** If the user description implies a value (e.g. "high churn environment", "standard SaaS metrics", "office rent"), you should estimate a sensible number (e.g. `(churn: 10%)`) even if not explicitly stated.
+
+3. **Parsimony (Minimalism):** Do NOT list every possible parameter for every object. Only include parameters that:
+   - Are explicitly stated by the user.
+   - Are necessary to distinguish this output from others (e.g. different prices for different tiers, or product mix percentages).
+   - Deviate significantly from standard defaults.
+
+4. **Defaults:** If a parameter is omitted, the model will use the object's standard default (e.g. start month = 1, inflation = global rate). Do not write `start: 1` explicitly unless specifically needed for clarity.
+
+Example:
+
+User description: "We have a Manager earning $60k starting immediately, and a Sales hire earning $40k starting in month 6. We also have a free plan and a Pro plan at $20."
+
+The comments in the FM Code below explain the assumption examples, but in actual FM Code comments should describe the logic of the object, not the assumptions.
+FM
+    People:
+        // 'Manager' uses default start (1). 'Sales' needs explicit start.
+        Staff = StaffRole() => manager(salary: 60000), salesHire(salary: 40000, start: 6)
+
+    Subscriptions:
+        // 'Free' price is 0 by default, but explicit is clearer here. 'Pro' needs price.
+        Subscribers = SubMth(...) => freePlan(price: 0), proPlan(price: 20)
+
+
+</Assumption_configuration>
+
+<dashboard_guidelines>
+
+The model includes a dashboard of **tables** and **charts** defined via `DashTable*()` and `DashChart*()` objects, added near the end of the FM Code.
+
+1. **DashTable objects (tables)**
+   - Always come **before** DashCharts.
+   - Each **section name** groups multiple `DashTable*()` objects into one table with that section title.
+   - Each **input** to a DashTable creates its own **row**.
+   - For objects with multiple inputs, rows from that object are grouped visually.
+
+2. **DashChart objects (charts)**
+   - Always come **after** all DashTables.
+   - Each `DashChart*()` object creates one chart.
+   - Each input becomes a separate chart series (e.g. stacked bars).
+   - Charts in the same section are arranged in a grid.
+
+Guidance:
+
+- Tables and charts should show **similar key information** (cash, customers, revenue sources, headcounts, assets, etc.).
+- Be selective; the dashboard is a **summary**, not a full dump.
+- Suggested dashboard sections:
+  - **Cash info:** funding, cash from operations/investments, cash balance.
+  - **Acquisition:** leads/stores by channel, new vs cumulative.
+  - **Customer info:** new, lost, active customers or users, product/service splits.
+  - **Revenues by source:** onboarding fees, product sales, subscription MRR, services, rentals.
+  - **Summary P&L:** use built-in standard outputs for revenue, costs, EBITDA, profit.
+  - **Headcounts by team:** totals per team, not each role.
+  - **Assets:** inventory, owned assets, equipment.
+
+Separators in FM Code (recommended but not required):
+
+- Before DashTables:  
+  `// -------- Dashboard TABLES --------`
+- Between DashTables and DashCharts:  
+  `// -------- Dashboard CHARTS --------`
+
+</dashboard_guidelines>
+
+</FM_Code_Conventions>
+
+====================================================
+<Object_specifications>
+====================================================
+
+Each object type below defines: purpose, inputs, internal assumptions, outputs and attributes, plus example FM Code.
+
+----------------------------------------------------
+<Setup_spec>
+----------------------------------------------------
+
+ObjectType: `Setup()`
+
+Description:
+- Essential in every model. Sets model start month and year.
+- Must be the **first** object in the model.
+
+Inputs:
+- None.
+
+Assumptions:
+- Model start month and year.
+
+Outputs:
+- None.
+
+Attributes:
+- None.
+
+Example:
+
+FM
+    SetupAndFunding:
+        ModelSetup = Setup() // Set model start month and year
+
+Notes:
+- The model will not work without a `Setup()` object.
+
+</Setup_spec>
+
+
+----------------------------------------------------
+<FundEquity_spec>
+----------------------------------------------------
+
+ObjectType: `FundEquity()`
+
+Description:
+- Models equity financing via share sales.
+- Each outputName is a funding round.
+
+Inputs:
+- None (starting object).
+
+Assumptions:
+- Amount raised per round.
+- Month in which each round is received.
+
+Outputs:
+- One or more outputNames, each a funding round.
+  - The **first** outputName must be `startingCash`.
+  - Other examples: `seedRound`, `seriesA`, `seriesB`.
+
+Attributes:
+- `.val` = monthly equity raised (cash inflow).
+- `.cum` = cumulative equity raised to date.
+- Available at object level and per outputName.
+
+Example:
+
+FM
+    SetupAndFunding:
+        EquityFunding = FundEquity() > startingCash, seedRound, seriesA // Cash raised from founders and investors
+
+Notes:
+- `startingCash.val` is typically the initial cash at model start.
+- `EquityFunding.cum` = total equity raised across all rounds.
+
+</FundEquity_spec>
+
+
+----------------------------------------------------
+<FundDebt_spec>
+----------------------------------------------------
+
+ObjectType: `FundDebt()`
+
+Description:
+- Models fixed-term loans used to fund the business.
+- Each outputName is a distinct loan facility.
+
+Inputs:
+- None (starting object).
+
+Assumptions (per loan/outputName):
+- Loan start date.
+- Amount borrowed.
+- Interest rate.
+- Grace period (months of no interest or repayments; can be 0).
+- Interest-only period (before amortisation; can be 0).
+- Repayment term (months of principal repayment; can be 0 for pure interest-only).
+
+Outputs:
+- One or more outputNames (e.g. `sbaLoan`, `bankLoan`, `ventureDebt`, `equipmentLoan`).
+
+Attributes:
+- `.int`   = monthly interest due.
+- `.raised` = principal borrowed in each month.
+- `.repaid` = principal repaid in each month.
+- `.mom`   = month-on-month change in outstanding debt.
+- `.bal`   = outstanding principal balance.
+- Available at object level and per outputName.
+
+Example:
+
+FM
+    SetupAndFunding:
+        DebtFunding = FundDebt() > sbaLoan, bankLoan, ventureDebt, equipmentLoan // Loans with specific repayment terms
+
+Notes:
+- `DebtFunding.bal` = total debt balance across all facilities.
+- Grace periods delay interest and repayments.
+- After an interest-only period, amortisation begins if a repayment term is set.
+
+</FundDebt_spec>
+
+
+----------------------------------------------------
+<QuantMth_spec>
+----------------------------------------------------
+
+ObjectType: `QuantMth()`
+
+Description:
+- Starting object for small or occasional quantities entered **by month**.
+- Outputs are not sent to financial statements by default.
+
+Inputs:
+- None.
+
+Assumptions:
+- Monthly values per outputName entered by the user.
+
+Outputs:
+- One or more outputNames (e.g. `newClinicsUsa`, `newClinicsUk`, `newClinicsCanada`).
+
+Attributes:
+- `.val` = monthly user inputs.
+- `.cum` = cumulative totals.
+- Available at object and outputName level.
+
+Example:
+
+FM
+    Expansion:
+        NewClinics = QuantMth() > newClinicsUsa, newClinicsUk, newClinicsCanada // New clinics opening per month by region
+
+Notes:
+- `NewClinics.cum` = total clinics opened across all regions.
+
+</QuantMth_spec>
+
+
+----------------------------------------------------
+<QuantAnn_spec>
+----------------------------------------------------
+
+ObjectType: `QuantAnn()`
+
+Variants:
+- `QuantAnn()` = annual quantity assumptions spread evenly across months.
+- `QuantAnnSeas()` = annual assumptions spread using a seasonality profile (% by calendar month).
+
+Description:
+- Starting objects for large volumes forecasted annually rather than monthly.
+- `QuantAnn()` assumes even monthly pattern.
+- `QuantAnnSeas()` uses user-defined monthly seasonality percentages (sum to 100%).
+
+Inputs:
+- None.
+
+Assumptions:
+- Annual forecast per outputName.
+- For `QuantAnnSeas()` only: seasonality % per calendar month.
+
+Outputs:
+- One or more outputNames (e.g. `organicUsers`, `paidAdsUsers`).
+
+Attributes:
+- `.val`   = monthly values (annual forecast spread evenly or by seasonality).
+- `.cum`   = cumulative quantities over time.
+- `.assum` = seasonality % by calendar month (`QuantAnnSeas` only, per outputName).
+
+Examples:
+
+Even spread:
+
+FM
+    CustomerAcquisition:
+        NewUsers = QuantAnn() > organicUsers, paidAdsUsers // Annual new users by source
+
+Seasonal:
+
+FM
+    Demand:
+        TravelBookings = QuantAnnSeas() > consumerBookings, corporateBookings // Seasonal bookings by segment
+
+</QuantAnn_spec>
+
+
+----------------------------------------------------
+<QuantDrv_spec>
+----------------------------------------------------
+
+ObjectType: `QuantDrv()`
+
+Variants:
+- `QuantDrvMul()` = multiply input by user assumptions.
+- `QuantDrvDiv()` = divide input by user assumptions.
+
+Description:
+- Scales monthly input quantities by internal assumptions (multipliers or divisors).
+- Often used for conversion rates or turning one metric into another.
+
+Inputs:
+- Either:
+  - One input per outputName (different driver per output), or
+  - A single input applied to all outputs.
+- Inputs are always attributes from other objects (e.g. `marketingSpend.val`).
+
+Assumptions:
+- Per-output assumptions (e.g. CPC, conversion rates, units per order).
+
+Outputs:
+- One or more outputNames.
+
+Attributes:
+- `.val` = scaled value per month.
+- `.cum` = cumulative total.
+- `.assum` = per-output assumption used to scale input (available per outputName only).
+
+Examples:
+
+Division (e.g. ad spend ÷ CPC = new users):
+
+FM
+    CustomerAcquisition:
+        NewUsers = QuantDrvDiv(googleAdCost.val, facebookAdCost.val) > newGoogleUsers, newFacebookUsers // New users per channel
+
+Multiplication (e.g. orders × items per order):
+
+FM
+    Orders:
+        ItemsBought = QuantDrvMul(orders.val) > items // Total items per month
+
+</QuantDrv_spec>
+
+
+----------------------------------------------------
+<SubMth_spec>
+----------------------------------------------------
+
+ObjectType: `SubMth()`
+
+Description:
+- Models **monthly** subscription revenues by tier, with monthly churn.
+- Assumes subscribers can churn every month; suitable for B2C SaaS and similar.
+
+Inputs:
+- One input per tier: number of **new subscribers per month**.
+- Typically follows a mix step such as `Split()`.
+
+Assumptions:
+- Monthly price per tier.
+- Price inflation over time (object level).
+- Monthly churn % per tier.
+
+Outputs:
+- One or more outputNames representing tiers (e.g. `bronzeSubs`, `silverSubs`, `goldSubs`).
+
+Attributes:
+- `.rev`    = monthly recurring revenue (MRR) = active subscribers × monthly price.
+- `.act`    = active subscribers by month (cumulative new minus cumulative churn).
+- `.chu`    = subscribers who churn each month.
+- `.life`   = average lifetime (months) = 1 ÷ churn%.
+- `.mrrnew` = MRR added by new customers that month.
+- `.mrrchu` = MRR lost due to churn that month.
+- All attributes available at object level and per outputName.
+
+Example:
+
+FM
+    Subscriptions:
+        NewSubscribers = Split(newCustomers.val) > newBronze, newSilver, newGold
+        Subscribers    = SubMth(...NewSubscribers.val) > bronzeSubs, silverSubs, goldSubs // Monthly subs and churn by tier
+
+</SubMth_spec>
+
+
+----------------------------------------------------
+<SubTerm_spec>
+----------------------------------------------------
+
+ObjectType: `SubTerm()`
+
+Variants:
+- `SubTerm()`    = termed subscriptions with prompt cash collection.
+- `SubTermDel()` = same as `SubTerm` but with delayed cash; pair with `DelRev()`.
+
+Description:
+- Models fixed-term contracts (e.g. 3/6/12-month) with renewals at term end, optional upfront billing, and full revenue recognition/deferred revenue.
+
+Inputs:
+- One input per tier/plan: number of new contracts starting each month.
+
+Assumptions:
+- Contract term length (months) per tier.
+- Churn at term end (%).
+- Price per term (revenue recognised straight-line over term).
+- Price inflation over time (object level).
+- Billing cadence: monthly, quarterly prepaid, annual prepaid.
+- Cash timing aligned to billing cadence.
+- For `SubTermDel()`: cash is delayed and routes via Accounts Receivable.
+
+Outputs:
+- One or more outputNames representing tiers/plans (e.g. `monthlyPro`, `annualPro`).
+
+Attributes:
+- `.rev`    = recognised revenue (P&L).
+- `.act`    = active contracts in month.
+- `.chu`    = non-renewing contracts at term end.
+- `.bill`   = invoices raised in the month.
+- `.life`   = average contract lifetime (months).
+- `.defer`  = deferred revenue balance at month end.
+- `.book`   = bookings (total contract value won in the month).
+- `.mrrnew` = MRR from new contracts that month.
+- `.mrrchu` = MRR lost from churned contracts.
+- `.billnum`= number of contracts invoiced in the month.
+- All attributes available at object and outputName level.
+
+Examples:
+
+Prompt payments (B2C):
+
+FM
+    Subscriptions:
+        NewContracts = QuantAnnSeas() > newPlans
+        NewPlanMix   = Split(newPlans.val) > newAnnual, newMonthly
+        Subscribers  = SubTerm(...NewPlanMix.val) > subsAnnual, subsMonthly
+
+Delayed payments (B2B):
+
+FM
+    Subscriptions:
+        NewContracts = QuantAnnSeas() > newPlans
+        NewPlanMix   = Split(newPlans.val) > newAnnual, newMonthly
+        Subscribers  = SubTermDel(...NewPlanMix.val) > subsAnnual, subsMonthly
+        Payments     = DelRev(Subscribers.rev) > subsPaid // Cash collections with delay
+
+Notes:
+- Use `SubMth()` for continuous churn; `SubTerm*()` for contracts that churn only at term boundaries.
+
+</SubTerm_spec>
+
+
+----------------------------------------------------
+<SubRetain_spec>
+----------------------------------------------------
+
+ObjectType: `SubRetain()`
+
+Description:
+- Models retention (actives and churn) **without** prices or revenues.
+- Good for free tiers or when monetisation is handled separately, e.g. repeat purchases in e-commerce.
+
+Inputs:
+- One input per tier: new customers/users per month.
+
+Assumptions:
+- Monthly churn % per tier.
+
+Outputs:
+- One or more outputNames (e.g. `customers`, `freeUsers`).
+
+Attributes:
+- `.act`  = active users per month.
+- `.chu`  = churned users per month.
+- `.life` = average lifetime in months.
+- Available at object and outputName level.
+
+Example:
+
+FM
+    Customers:
+        CustomersAcquired = QuantAnnSeas() > newCustomers
+        RetainedCustomers = SubRetain(newCustomers.val) > customers // Retained customer base
+
+</SubRetain_spec>
+
+
+----------------------------------------------------
+<RevDrv_spec>
+----------------------------------------------------
+
+ObjectType: `RevDrv()`
+
+Variants:
+- `RevDrv()`    = recurring revenues.
+- `RevDrvNew()` = new / one-off revenues (joining, setup, implementation fees).
+
+Description:
+- Multiplies quantity inputs by unit prices to generate revenues.
+- Suitable where cash is received promptly (e.g. B2C credit card).
+
+Inputs:
+- One or more quantity inputs (e.g. `...ProductsSold.val`).
+- Spread operator commonly used for 1:1 products → revenue streams.
+
+Assumptions:
+- Unit price per outputName.
+- Price inflation over time (object level).
+
+Outputs:
+- One or more outputNames (e.g. `smallCandleRev`, `upsellRev`).
+
+Attributes:
+- `.val`   = monthly revenue.
+- `.cum`   = cumulative revenue.
+- `.assum` = unit price (per outputName only).
+
+Examples:
+
+FM
+    Revenues:
+        ProductRevenues = RevDrv(...ProductsSold.val) > smallCandleRev, largeCandleRev, giftSetRev
+        OnboardingRevenues = RevDrvNew(newCustomers.val) > joiningFeeRev, setupFeeRev
+
+</RevDrv_spec>
+
+
+----------------------------------------------------
+<RevDrvDel_spec>
+----------------------------------------------------
+
+ObjectType: `RevDrvDel()`
+
+Variants:
+- `RevDrvDel()`    = recurring revenues with delayed cash.
+- `RevDrvNewDel()` = new/one-off revenues with delayed cash.
+
+Description:
+- Works like `RevDrv()` but routes cash to Accounts Receivable, to be collected later via `DelRev()`.
+- Revenue is recognised in the correct month; cash is delayed.
+
+Inputs:
+- One input per outputName, or a single input applied to all outputs.
+
+Assumptions:
+- Price per unit or customer.
+- Payment delay (months).
+
+Outputs:
+- One or more outputNames (e.g. `softwareLicences`, `setupFees`).
+
+Attributes:
+- `.val` = recognised revenue.
+- `.cum` = cumulative revenue.
+- `.assum` = unit price (per outputName only).
+- Available at object and outputName level.
+
+Examples:
+
+One-off fees with delay:
+
+FM
+    Revenues:
+        ImplementationRevenues = RevDrvNewDel(newClients.val) > setupFees
+        SetupPayments          = DelRev(setupFees.val)        > setupPaid
+
+Recurring invoiced software:
+
+FM
+    Revenues:
+        SoftwareRevenues = RevDrvDel(activeClients.val) > softwareLicences
+        SoftwarePayments = DelRev(softwareLicences.val) > softwarePaid
+
+</RevDrvDel_spec>
+
+
+----------------------------------------------------
+<CostDrv_spec>
+----------------------------------------------------
+
+ObjectType: `CostDrv()`
+
+Variants:
+- `CostDrvDC()` = driven direct costs / COGS.
+- `CostDrvSM()` = driven sales & marketing / acquisition costs.
+(Other variants exist for classification but share the same logic.)
+
+Description:
+- Converts activity volumes into monthly costs using per-unit cost assumptions.
+
+Inputs:
+- One input per outputName, or one input applied to all outputs (1:1 or 1:many).
+- Inputs are typically quantities or activity metrics (e.g. `itemsBought.val`, `Orders.val`).
+
+Assumptions:
+- Unit cost per outputName.
+- Cost inflation over time (object level).
+
+Outputs:
+- One or more outputNames (e.g. `materialsCost`, `deliveryCost`).
+
+Attributes:
+- `.val`   = monthly cost.
+- `.assum` = unit cost (per outputName).
+
+Examples:
+
+1:1 inputs:
+
+FM
+    Costs:
+        MaterialsCosts = CostDrvDC(waxKg.val, wickMetres.val, jarsBought.val) > waxCost, wickCost, jarCost
+        AcquisitionCosts = CostDrvSM(clicksGoogle.val, clicksFacebook.val) > googleAdsCost, facebookAdsCost
+
+Spread:
+
+FM
+    Costs:
+        MaterialsCosts = CostDrvDC(...UnitsBought.val) > waxCost, wickCost, jarCost
+        FulfilmentCosts = CostDrvDC(Orders.val) > packagingCost, shippingCost
+
+Notes:
+- If using `SupplyMths()` for COGS, do not duplicate COGS with `CostDrvDC()`.
+
+</CostDrv_spec>
+
+
+----------------------------------------------------
+<CostAnn_spec>
+----------------------------------------------------
+
+ObjectType: `CostAnn()`
+
+Variants:
+- `CostAnnGA()` = annual G&A overheads (rent, utilities, insurance, software).
+- `CostAnnSM()` = annual S&M overheads (budgets, sponsorships, tools).
+- `CostAnnRD()` = annual R&D costs.
+
+Description:
+- Allows annual cost assumptions that are spread evenly across months.
+- Starting object; no inputs.
+
+Inputs:
+- None.
+
+Assumptions:
+- Annual cost per outputName.
+- Cost inflation over time (object level).
+
+Outputs:
+- One or more outputNames (e.g. `officeRent`, `insurance`).
+
+Attributes:
+- `.val` = monthly cost, available at object and outputName level.
+
+Example:
+
+FM
+    Costs:
+        OverheadCosts = CostAnnGA() > officeRent, utilities, insurance, softwareSubscriptions
+        AcquisitionCosts = CostAnnSM() > crmSubscription, eventSponsorship
+
+</CostAnn_spec>
+
+
+----------------------------------------------------
+<CostMth_spec>
+----------------------------------------------------
+
+ObjectType: `CostMth()`
+
+Variants:
+- `CostMthOE()` = one-off or setup costs (Other Expense).
+- `CostMthGA()` = irregular G&A costs.
+- `CostMthSM()` = irregular S&M costs.
+- `CostMthRD()` = irregular R&D costs.
+
+Description:
+- Monthly cost assumptions entered directly (often irregular and sparse).
+
+Inputs:
+- None.
+
+Assumptions:
+- Monthly cost values per outputName (often zero in most months).
+
+Outputs:
+- One or more outputNames.
+
+Attributes:
+- `.val` = monthly cost.
+- `.cum` = cumulative cost.
+- Available at object and outputName level.
+
+Examples:
+
+FM
+    Costs:
+        CompanySetup = CostMthOE() > legalFees, companyRegistration, licenceFees
+        OccasionalCosts = CostMthGA() > consultancyFees, officeEvents
+        AcquisitionProjects = CostMthSM() > conferenceSponsorship, influencerTrialCampaign
+        DevelopmentProjects = CostMthRD() > prototypeDesign, freelanceResearchers, patentFees
+
+</CostMth_spec>
+
+
+----------------------------------------------------
+<SupplyMths_spec>
+----------------------------------------------------
+
+ObjectType: `SupplyMths()`
+
+Description:
+- Models supplier purchasing with lead times and inventory.
+- Handles orders, receipts, inventory balances, prepayments, and COGS.
+
+Inputs:
+- One input per outputName: monthly demand series for each purchased item (product or component).
+- Use spread when inputs are 1:1 with outputs (e.g. `SupplyMths(...ProductsSold.val)`).
+- For shared components:
+  - Use `QuantDrv` to create BOMs per product.
+  - Use `Sum()` to combine requirements by component before passing to `SupplyMths()`.
+
+Assumptions:
+- Target inventory level per item.
+- Unit cost per item + inflation (object level).
+- Lead time in months (≥ 1).
+- Minimum order quantity (MOQ).
+- Case pack / order multiple (rounding above MOQ).
+- Optional opening inventory (units and value).
+- Default cash terms: pay at order placement; prepayments held as an asset until receipt.
+
+Outputs:
+- One or more outputNames (e.g. `blouses`, `zippers`, `wax`, `wicks`).
+
+Attributes (per outputName and object totals):
+- `.cogs`   = cost of goods sold.
+- `.cost`   = cash outflow when orders are placed.
+- `.nsell`  = units sold to customers in the month (capped by inventory).
+- `.nbuy`   = units ordered from suppliers.
+- `.nrec`   = units received into inventory.
+- `.ninvent`= units in inventory at month end.
+- `.prepay` = prepayments for orders not yet received.
+- `.invent` = inventory value at month end.
+
+Examples (finished goods):
+
+FM
+    Demand:
+        CustomerOrders = QuantAnnSeas() > orders
+        BasketItems    = QuantDrv(orders.val) > items
+        ProductsSold   = Split(items.val) > blousesSold, shortsSold, sweatersSold
+
+    SupplyChain:
+        Purchasing = SupplyMths(...ProductsSold.val) > blouses, shorts, sweaters
+
+    Revenues:
+        Revenues = RevDrv(...ProductsSold.val) > blousesRev, shortsRev, sweatersRev
+
+Notes:
+- Use either `SupplyMths()` **or** `CostDrvDC()` for COGS, not both.
+- `CostDrvDC()` may still be needed for fees (card, platform, fulfilment, etc.).
+
+</SupplyMths_spec>
+
+
+----------------------------------------------------
+<CapexMth_spec>
+----------------------------------------------------
+
+ObjectType: `CapexMth()`
+
+Description:
+- Direct monthly entry of capital expenditure (one-off or occasional).
+- Spend is capitalised and depreciated internally.
+
+Inputs:
+- None.
+
+Assumptions:
+- Monthly capex entries per outputName.
+
+Outputs:
+- One or more outputNames (e.g. `officeFurniture`, `officeFitout`).
+
+Attributes:
+- `.val`  = monthly capex.
+- `.depr` = depreciation of historical purchases.
+- Available at object and outputName level.
+
+Example:
+
+FM
+    Capex:
+        CompanySetupCapex = CapexMth() > officeFurniture, officeFitout // Capitalised setup spend
+
+</CapexMth_spec>
+
+
+----------------------------------------------------
+<CapexProj_spec>
+----------------------------------------------------
+
+ObjectType: `CapexProj()`
+
+Description:
+- Models multi-period project capex (stores, factories, housing, ships, etc.).
+- Each project’s spend is spread over months by category; overlapping projects sum together.
+
+Inputs:
+- Single input (e.g. `newStores.val`, `newProjects.val`) representing projects started per month.
+- Inputs can be scaled (e.g. 1.5 = 150% of baseline size).
+
+Assumptions:
+- Spend profile over months relative to start (per category).
+- Baseline cost per project by category.
+- Inflation over time.
+- Lifetime (months) per category for depreciation.
+
+Outputs:
+- One or more outputNames (e.g. `design`, `permissions`, `construction`, `fitout`, `equipment`).
+
+Attributes:
+- `.val`   = monthly capex spend (sum of overlapping projects).
+- `.depr`  = monthly depreciation.
+- `.proj`  = total investment per project start month (for reclassification to COGS when selling projects).
+- Available at object and outputName level.
+
+Examples:
+
+FM
+    Capex:
+        HouseScalars = QuantDrv(newHouses.val) > houseSizeFactor
+        HouseCapex   = CapexProj(houseSizeFactor.val) > land, foundations, build, interiors
+
+        StoreCapex   = CapexProj(newStores.val) > design, permissions, construction, fitout, equipment
+
+</CapexProj_spec>
+
+
+----------------------------------------------------
+<CapexEquip_spec>
+----------------------------------------------------
+
+ObjectType: `CapexEquip()`
+
+Description:
+- Models equipment purchased to meet demand, with capacity and lifetime.
+- Automatically buys new units when demand exceeds capacity, and replaces at end of life.
+
+Inputs:
+- Either a single demand input for all outputs, or one input per equipment category.
+
+Assumptions:
+- Productivity (units per machine per month) per category.
+- Purchase price, inflation.
+- Lifetime (months).
+- Residual value at disposal.
+
+Outputs:
+- One or more outputNames (e.g. `mouldingMachines`, `assemblyRobots`, `packagingLines`, `cars`).
+
+Attributes:
+- `.val`   = monthly capex spend.
+- `.depr`  = depreciation.
+- `.nbuy`  = units purchased.
+- `.nown`  = units owned.
+- `.nsell` = units retired/sold with residual value.
+- Available at object and outputName level.
+
+Examples:
+
+FM
+    Capex:
+        FactoryEquip = CapexEquip(widgetDemand.val) > mouldingMachines, assemblyRobots, packagingLines
+        RentalFleet  = CapexEquip(rentalDays.val) > cars
+
+FM
+    Capex:
+        RentalDemand = QuantAnnSeas() > rentalDays
+        CarMix       = Split(rentalDays.val) > economyDays, standardDays, suvDays
+        RentalFleet  = CapexEquip(...CarMix.val) > economyCars, standardCars, suvCars
+
+</CapexEquip_spec>
+
+
+----------------------------------------------------
+<StaffRole_spec>
+----------------------------------------------------
+
+ObjectType: `StaffRole()`
+
+Description:
+- Models individual roles with their own salary, tax, bonus, and timing.
+
+Inputs:
+- None.
+
+Assumptions per role:
+- Start and end dates.
+- Annual salary.
+- Employer taxes and on-costs (%).
+- Bonus (% of salary).
+- Wage inflation over time.
+
+Outputs:
+- One or more outputNames (e.g. `ceo`, `headOfMarketing`).
+
+Attributes:
+- `.val`   = monthly cost (salary + taxes + bonus).
+- `.heads` = 1 while role is active, otherwise 0.
+- Available at object and outputName level.
+
+Example:
+
+FM
+    People:
+        LeadershipTeam = StaffRole() > ceo, operationsManager, headOfMarketing, financeManager
+
+</StaffRole_spec>
+
+
+----------------------------------------------------
+<StaffTeam_spec>
+----------------------------------------------------
+
+ObjectType: `StaffTeam()`
+
+Variants:
+- `StaffTeamGA()` = G&A teams.
+- `StaffTeamSM()` = Sales & marketing teams.
+- `StaffTeamRD()` = R&D teams.
+
+Description:
+- Models teams where headcount and cost are entered at team level.
+
+Inputs:
+- None.
+
+Assumptions per team:
+- Team start date.
+- Headcount over time.
+- Average salary per head.
+- Wage inflation.
+- Employer taxes and on-costs (%).
+- Bonus (%).
+
+Outputs:
+- One or more outputNames (e.g. `financeTeam`, `marketingTeam`).
+
+Attributes:
+- `.val`   = monthly team cost.
+- `.heads` = headcount per month.
+- Available at object and outputName level.
+
+Examples:
+
+FM
+    People:
+        CentralTeams    = StaffTeamGA() > financeTeam, hrTeam, adminTeam
+        AcquisitionTeams= StaffTeamSM() > marketingTeam, partnershipsTeam, salesTeam
+        DevelopmentTeams= StaffTeamRD() > productDesignTeam, labTeam, frontEndDevs, backEndDevs
+
+</StaffTeam_spec>
+
+
+----------------------------------------------------
+<StaffDrv_spec>
+----------------------------------------------------
+
+ObjectType: `StaffDrv()`
+
+Variants:
+- `StaffDrvDC()` = activity-driven direct cost teams.
+- `StaffDrvSM()` = activity-driven sales & marketing teams.
+
+Description:
+- Headcount and cost scale with specific activity (orders, customers, leads, etc.).
+
+Inputs:
+- One or more activity drivers (e.g. `Orders.val`, `ActiveCustomers.val`).
+
+Assumptions:
+- Productivity (activity per head).
+- Average salary per head.
+- Wage inflation.
+- Taxes and on-costs (%).
+- Bonus (%).
+
+Outputs:
+- One or more outputNames (e.g. `fulfilmentTeam`, `supportTeam`).
+
+Attributes:
+- `.val`   = monthly team cost.
+- `.heads` = headcount per month.
+- Available at object and outputName level.
+
+Examples:
+
+FM
+    People:
+        FulfilmentTeams = StaffDrvDC(Orders.val) > warehouseTeam, shippingTeam
+        SalesTeams      = StaffDrvSM(newCustomers.val) > salesTeam, onboardingTeam
+
+</StaffDrv_spec>
+
+
+----------------------------------------------------
+<StaffLoc_spec>
+----------------------------------------------------
+
+ObjectType: `StaffLoc()`
+
+Variants:
+- `StaffLocSM()` = fixed store/location staff treated as Sales & Marketing.
+- `StaffLocDC()` = fixed service/location staff treated as Direct Cost.
+
+Description:
+- Scales fixed roles per physical location (stores, clinics, etc.) based on active locations.
+
+Inputs:
+- Exactly one input: active locations per month (e.g. `activeStores.val` or `newStores.cum`).
+- For pre-opening hires, advance locations via `AdvQuant()` before passing into `StaffLoc()`.
+
+Assumptions:
+- Roles per location (may be fractional).
+- Salaries, taxes, bonus per role.
+- Wage inflation.
+
+Outputs:
+- One or more outputNames (roles), e.g. `manager`, `receptionist`, `security`.
+
+Attributes:
+- `.heads` = active locations × roles per location (per month).
+- `.val`   = cost = `.heads` × (salary + taxes + bonus)/12 (with inflation).
+- Available at object and role level.
+
+Combining with `StaffDrv*()`:
+
+- Use `StaffLoc*()` for fixed per-location roles.
+- Use `StaffDrv*()` for activity-driven roles (e.g. driven by footfall, patients).
+- Avoid double-counting by keeping fixed and variable teams separate and summing when needed.
+
+Example:
+
+FM
+    Locations:
+        NewSites        = QuantMth() > newStores
+        LtStoreFootfall = QuantDrv(newStores.val) > ltFootfall
+        RampedFootfall  = Ramp(ltFootfall.val) > footfall
+
+    StoreStaffing:
+        StoreStaff    = StaffLocSM(activeStores.val) > manager, security, backoffice, reception
+        VariableTeams = StaffDrvSM(footfall.val) > floorTeam, cashiers
+
+</StaffLoc_spec>
+
+
+----------------------------------------------------
+<Split_spec>
+----------------------------------------------------
+
+ObjectType: `Split()`
+
+Description:
+- Splits a single input quantity into multiple outputs based on internal mix percentages.
+- Outputs always sum to the input.
+
+Inputs:
+- Exactly one input (e.g. `customerItems.val`, `newCustomers.val`).
+
+Assumptions:
+- Mix % per outputName (may vary over time).
+
+Outputs:
+- One or more outputNames.
+
+Attributes:
+- `.val` = allocated monthly quantity (per output and object total).
+
+Example:
+
+FM
+    Demand:
+        ProductsSold = Split(customerItems.val) > smallCandles, largeCandles, giftSets // Product mix
+
+</Split_spec>
+
+
+----------------------------------------------------
+<Sum_spec>
+----------------------------------------------------
+
+ObjectType: `Sum()`
+
+Description:
+- Aggregates multiple inputs into a single total (monthly and cumulative).
+
+Inputs:
+- Two or more inputs from any objects.
+
+Assumptions:
+- None.
+
+Outputs:
+- Single object-level total.
+
+Attributes:
+- `.val` = monthly sum of inputs.
+- `.cum` = cumulative sum.
+
+Example:
+
+FM
+    Results:
+        TotalRevenues = Sum(smallCandleRev.val, largeCandleRev.val, giftSetRev.val) // Combined revenues
+
+Notes:
+- ObjectNames already expose object-level totals (e.g. `ProductRevenues.val`), so `Sum()` is only needed across **objects** or subsets of outputs.
+
+</Sum_spec>
+
+
+----------------------------------------------------
+<DelQuant_spec>
+----------------------------------------------------
+
+ObjectType: `DelQuant()`
+
+Description:
+- Delays an input quantity series by N months (shifts forward in time).
+
+Inputs:
+- One input series (e.g. `newClients.val`, `newProjects.cum`).
+
+Assumptions:
+- Delay period (integer months).
+
+Outputs:
+- One or more outputNames (usually just one).
+
+Attributes:
+- `.val`   = delayed series.
+- `.assum` = delay in months (per outputName).
+
+Example:
+
+FM
+    Customers:
+        DelayedStartClients = DelQuant(newClients.val) > onboardedClients
+        Subscribers         = SubMth(onboardedClients.val) > subscribingClients
+
+</DelQuant_spec>
+
+
+----------------------------------------------------
+<AdvQuant_spec>
+----------------------------------------------------
+
+ObjectType: `AdvQuant()`
+
+Description:
+- Advances an input quantity series by N months (shifts earlier).
+
+Inputs:
+- One input series (e.g. `newCustomers.val`, `newProjects.val`).
+
+Assumptions:
+- Advance period (integer months).
+
+Outputs:
+- One or more outputNames.
+
+Attributes:
+- `.val`   = advanced series.
+- `.assum` = advance in months (per outputName).
+
+Example:
+
+FM
+    Funnel:
+        LeadsNeeded   = QuantDrv(newCustomers.val) > leadsNeeded   // Leads per customer
+        AdvancedLeads = AdvQuant(leadsNeeded.val) > marketingLeads // Leads generated ahead of customers
+
+</AdvQuant_spec>
+
+
+----------------------------------------------------
+<DelRev_spec>
+----------------------------------------------------
+
+ObjectType: `DelRev()`
+
+Description:
+- Converts recognised revenue into cash collections using a delay.
+- Intended to be paired with `SubTermDel()` and `RevDrvDel()/RevDrvNewDel()`.
+
+Inputs:
+- One or more revenue series (typically `.rev`).
+
+Assumptions:
+- Payment delay per outputName (can be fractional, e.g. 1.5 months).
+
+Outputs:
+- One or more outputNames representing cash-in streams (e.g. `subscriptionsPaid`, `setupFeesPaid`).
+
+Attributes:
+- `.val`   = monthly cash collected.
+- `.assum` = delay in months (per outputName).
+
+Examples:
+
+Single stream:
+
+FM
+    Revenues:
+        Subscribers = SubTermDel(...TierMix.val) > bronzeSubs, silverSubs, goldSubs
+        Collections = DelRev(Subscribers.rev) > subscriptionsPaid
+
+By tier:
+
+FM
+    Revenues:
+        Subscribers       = SubTermDel(...TierMix.val) > bronzeSubs, silverSubs, goldSubs
+        CollectionsByTier = DelRev(...Subscribers.rev) > paidBronze, paidSilver, paidGold
+
+Example with `RevDrvNewDel`:
+
+FM
+    Revenues:
+        OnboardingFees   = RevDrvNewDel(newCustomers.val) > setupFees
+        SetupCollections = DelRev(setupFees.val) > setupFeesPaid
+
+Notes:
+- Use with the **Del** variants only; do not also pass cash-immediate objects or you will double-count cash.
+- Negative delays correspond to prepayments and are rarely recommended.
+
+</DelRev_spec>
+
+
+----------------------------------------------------
+<Ramp_spec>
+----------------------------------------------------
+
+ObjectType: `Ramp()`
+
+Description:
+- Applies a ramp profile to inputs, modelling gradual build-up over “months since start”.
+- Each new input contributes according to the ramp curve from its start month onwards.
+
+Inputs:
+- One input per outputName, representing **long-term steady-state values** added when new units start (e.g. LT footfall, capacity).
+
+Assumptions:
+- Ramp profile (percentages by months since start, e.g. 10%, 20%, 50%, 75%, 100%).
+
+Outputs:
+- One or more outputNames (e.g. `bostonStoresCustomers`, `londonStoresCustomers`).
+
+Attributes:
+- `.val` = total ramped value in the month (sum of all cohorts).
+- `.mom` = month-on-month change in `.val`.
+- Available at object and outputName level.
+
+Example:
+
+FM
+    Demand:
+        StoreCustomers = Ramp(newBostonStoresCust.val, newLondonStoresCust.val) > bostonStoresCustomers, londonStoresCustomers
+
+</Ramp_spec>
+
+
+----------------------------------------------------
+<Spread_spec>
+----------------------------------------------------
+
+ObjectType: `Spread()`
+
+Description:
+- Spreads each month’s input value over N months, summing overlapping spreads.
+- Useful when one-off wins (projects/clients) have workloads or costs spread over a delivery period.
+
+Inputs:
+- One input series (e.g. `projectsWon.val`, `newClients.val`).
+
+Assumptions:
+- Spread duration (N months) and optionally shape.
+
+Outputs:
+- One or more outputNames.
+
+Attributes:
+- `.val` = monthly values after spreading.
+- Available at object and outputName level.
+
+Example:
+
+FM
+    Projects:
+        ClientsWon     = QuantMth() > newClients
+        ResourceNeeded = QuantDrv(newClients.val) > hoursNeeded
+        ActiveProjects = Spread(hoursNeeded.val) > hoursBilled
+
+</Spread_spec>
+
+
+----------------------------------------------------
+<ResTax_spec>
+----------------------------------------------------
+
+ObjectType: `ResTax()`
+
+Description:
+- Essential object to calculate corporation tax.
+
+Inputs:
+- None.
+
+Assumptions:
+- Tax rate.
+- Payment interval.
+- Anchor month.
+- Payment delay.
+
+Outputs:
+- One outputName: `Tax`.
+
+Attributes:
+- `.rate`   = effective tax rate.
+- `.due`    = tax due at each payment interval.
+- `.paid`   = tax actually paid after delay.
+- `.taxable`= taxable profits accounting for losses.
+
+Example:
+
+FM
+    Results:
+        CorporationTax = ResTax() > Tax // Corporation tax due and paid
+
+</ResTax_spec>
+
+
+----------------------------------------------------
+<ResDcf_spec>
+----------------------------------------------------
+
+ObjectType: `ResDcf()`
+
+Description:
+- Essential object to calculate valuation using discounted cash flow (DCF).
+
+Inputs:
+- None.
+
+Assumptions:
+- Discount rate.
+- Perpetual growth rate.
+- Valuation year.
+
+Outputs:
+- None.
+
+Attributes:
+- None.
+
+Example:
+
+FM
+    Results:
+        Valuation = ResDcf() // Company valuation using DCF
+
+</ResDcf_spec>
+
+
+----------------------------------------------------
+<DashTable_spec>
+----------------------------------------------------
+
+ObjectType: `DashTable()`
+
+Variants (aggregation):
+- `DashTableSum()` = sum months into annual values (for flows like revenue, costs, new stores, funds raised).
+- `DashTableCum()` = take the final month value (for stocks like active clients, headcounts, open stores, cash, debt).
+
+Description:
+- Defines dashboard tables of key results.
+- Always near the end of the model, before DashCharts.
+
+Inputs:
+- One or more inputs; each input is a row.
+- If inputs are similar, include them in the same object; add a total input if helpful.
+- Use spread to add all outputs from an object.
+- Standard model outputs begin with `output_` (e.g. `output_cum_cash`) and have **no attributes**.
+- All other FM object inputs must include an attribute (e.g. `.val`).
+
+Assumptions:
+- None.
+
+Outputs:
+- None.
+
+Example (cash info):
+
+FM
+    CashFlow:
+        KpiSourcesAndUses = DashTableSum(output_cash_ops, output_total_investments, output_total_financing) // Include in every model
+        KpiCashBalance    = DashTableCum(output_cum_cash) // Include in every model
+
+Example (orders by channel):
+
+FM
+    OrderSummary:
+        KpiWebOrders = DashTableSum(...WebOrders.val) // New orders by channel
+
+Notes:
+- Section names become table titles.
+- DashTable ObjectNames should usually mirror their source object names, prefixed with `Kpi` where appropriate.
+
+</DashTable_spec>
+
+
+----------------------------------------------------
+<DashChart_spec>
+----------------------------------------------------
+
+ObjectType: `DashChart()`
+
+Variants (aggregation):
+- `DashChartSum()` = sum months (flows).
+- `DashChartCum()` = final month (stocks).
+
+Description:
+- Defines dashboard charts of key results.
+- Always after DashTables, at the very end of the model.
+
+Inputs:
+- One or more inputs; each input is a chart series.
+- For similar metrics, combine in one object; for very different units, use separate objects.
+- Prefer spread when adding all outputs from an object.
+- Standard outputs (`output_*`) have no attributes; other inputs must include `.val` or appropriate attribute.
+- For stacked charts, do **not** also include the total row (the stack height already represents the total).
+
+Assumptions:
+- None.
+
+Outputs:
+- None.
+
+Example (cash charts):
+
+FM
+    CashFlowCharts:
+        SourcesAndUses  = DashChartSum(output_cash_ops, output_total_investments, output_total_financing)
+        CashBalance     = DashChartCum(output_cum_cash)
+
+Example (orders by channel):
+
+FM
+    OrderSummaryCharts:
+        ChartWebOrders = DashChartSum(...WebOrders.val)
+
+Notes:
+- Section names group charts into grids.
+- DashChart ObjectNames should usually mirror their source object names, prefixed with `Chart`.
+
+</DashChart_spec>
+
+</Object_specifications>
+
+====================================================
+<Design_patterns_guide>
+====================================================
+
+<boilerplate_code>
+
+Every model needs core boilerplate code and a standard structure.
+
+FM
+    // BusinessName: <INSERT NAME>
+    // BusinessType: <INSERT CATEGORISATION INFO>
+    // DateTime: <INSERT DATE & TIME>
+
+    SetupAndFunding:
+        Setup         = Setup()                       // Set model start date
+        EquityFunding = FundEquity() > startingCash  // Initial cash from founders/investors
+
+    ////
+    // Model logic goes here: construction, customer acquisition, retention, revenues, people, costs, assets.
+    ////
+
+    Results:
+        Tax       = ResTax()  > Tax // Corporation tax due and paid
+        Valuation = ResDcf()         // Valuation using DCF
+
+    // -------- Dashboard TABLES --------
+
+    CashFlow:
+        KpiSourcesAndUses = DashTableSum(output_cash_ops, output_total_investments, output_total_financing) // Include in every model
+        KpiCashBalance    = DashTableCum(output_cum_cash)                                                   // Include in every model
+
+    IncomeStatement:
+        KpiIncome = DashTableSum(output_total_revenue, output_total_cogs, output_total_gross_margin, output_total_cust_acquis, output_total_overheads, output_total_prod_dev, output_ebitda, output_total_depreciation, output_ebit, output_total_other_expinc, output_net_profit)
+
+    // Add more DashTable sections for assets, acquisition, retention, revenues, headcounts.
+
+    // -------- Dashboard CHARTS --------
+
+    CashFlowCharts:
+        SourcesAndUses = DashChartSum(output_cash_ops, output_total_investments, output_total_financing)
+        CashBalance    = DashChartCum(output_cum_cash)
+
+    IncomeStatementCharts:
+        ChartRevenues = DashChartSum(output_total_revenue)
+        ChartExpenses = DashChartSum(output_total_cogs, output_total_cust_acquis, output_total_overheads, output_total_prod_dev, output_total_depreciation,output_total_other_expinc)
+        ChartProfit   = DashChartSum(output_net_profit)
+
+    // Other DashChart objects summarising key KPIs follow...
+
+Common optional sections:
+
+FM
+    People:
+        CentralTeams = StaffTeamGA() > financeTeam, marketingTeam          // For larger or later-stage companies
+        Leadership   = StaffRole()   > ceo, cfo, headProduct, headMarketing, headOperations // Tailor roles to the business
+
+    Costs:
+        Overheads  = CostAnnGA() > rent, utilities, travel, software, insurance, accountingFees, bankingFees, communications, officePostage, officeSupplies, otherOverheads
+        SetupCosts = CostMthOE() > companySetup, legalFees, companyLicenses, otherSetupCosts, consultingFees
+
+</boilerplate_code>
+
+
+<section_order>
+
+Typical section ordering:
+
+1. Setup & Funding  
+2. Customer acquisition  
+3. Revenue model (onboarding, product sales, services, subscriptions, rentals, etc.)  
+4. People (driven teams, location teams, central teams, leadership roles)  
+5. Costs (driven costs, overheads, one-off costs)  
+6. Capex (driven capex, projects/locations, one-off setup capex)  
+7. Results (tax, valuation)  
+8. Dashboard (DashTables, then DashCharts)
+
+</section_order>
+
+
+<example_models>
+
+The following skeleton patterns illustrate typical structures. They are **guides only**; always tailor to the actual business.
+
+<b2c_saas_upsell_early_pattern>
+
+When to use:
+- Consumer-facing tiered subscriptions with large user volumes.
+- Subscription core plus occasional product/service upsells.
+
+Skeleton:
+
+FM
+    SetupAndFunding:
+        Setup         = Setup()                     // Set model start date
+        EquityFunding = FundEquity() > startingCash
+
+    CustomerAcquisition:
+        Acquisition = QuantAnnSeas() > socialCustomers, organicCustomers   // New customers by source
+        TierMix     = Split(Acquisition.val) > newFree, newBoosted, newUnlimited
+
+    Subscriptions:
+        Subscribers = SubMth(...TierMix.val) > freeSubs, boostedSubs, unlimitedSubs // MRR, actives, churn by tier
+
+    SupplementsDemand:
+        SuppOrders = QuantDrv(Subscribers.act) > suppBuyers  // % of actives buying supplements
+        SuppPacks  = QuantDrv(suppBuyers.val) > suppPacks    // Packs per order
+
+    SupplyChain:
+        SuppPurchasing = SupplyMths(suppPacks.val) > supplements // Inventory & COGS for packs
+
+    Sales:
+        SupplementsRevenue = RevDrv(supplements.nsell) > supplementsRev
+
+    People:
+        Leadership = StaffRole() > ceo, cfo, headMarketing, opsManager
+        DevTeams   = StaffTeamRD() > appDevs, backEndDevs, aiDevs
+        TotalHeads = Sum(Leadership.heads, DevTeams.heads)
+
+    Costs:
+        AcqCosts        = CostDrvSM(socialCustomers.val) > socialAdsCost
+        PlatformFees    = CostDrvDC(Subscribers.val) > appStoreFees
+        ServiceCosts    = CostDrvDC(Subscribers.act) > hostingCost, inferenceCost
+        FulfilmentCosts = CostDrvDC(suppBuyers.val) > packingCost, shippingCost
+        Overheads       = CostAnnGA() > servicedOffice, insurance, travel, software, storageSpace
+
+    Capex:
+        StaffDevices = CapexEquip(TotalHeads.val) > laptops, phones
+        EquipPlan    = CapexMth() > labelPrinter, barcodeScanner, otherEquip
+
+    Results:
+        CorporationTax = ResTax() > Tax
+        Valuation      = ResDcf()
+
+    // Dashboard code as per boilerplate
+
+</b2c_saas_upsell_early_pattern>
+
+
+<b2c_ecommerce_early_pattern>
+
+When to use:
+- Early-stage ecommerce reselling physical products (hundreds of orders/month).
+
+Skeleton:
+
+FM
+    // Setup & Funding as per boilerplate
+    
+    CustomerOrders:
+        WebOrders = QuantAnnSeas() > advertOrders, organicOrders // Orders by source
+        Basket    = QuantDrv(WebOrders.val) > items              // Items per order
+
+    SupplyChain:
+        ProductsSold = Split(items.val) > prodSoldA, prodSoldB, prodSoldC
+        Suppliers    = SupplyMths(...ProductsSold.val) > prodA, prodB, prodC
+
+    Sales:
+        Revenues = RevDrv(...ProductsSold.val) > prodRevA, prodRevB, prodRevC
+
+    People:
+        Leadership = StaffRole() > ceo, cfo, headProduct, headMarketing, headOperations, supportRole1, otherRole1, otherRole2
+
+    Costs:
+        Advertising = CostDrvSM(advertOrders.val) > advertCost
+        Fulfilment  = CostDrvDC(WebOrders.val) > packagingCost, outboundShippingCost
+        Overheads   = CostAnnGA() > rent, utilities, software, insurance, otherOverhead1, otherOverhead2
+        OneOffCosts = CostMthOE() > companySetup, legalFees, otherSetup1
+
+    // Dashboard as per boilerplate
+
+</b2c_ecommerce_early_pattern>
+
+
+<b2c_ecommerce_mature_pattern>
+
+When to use:
+- Mature ecommerce with high order volume (>1000s/month) and more structure.
+
+Skeleton:
+
+FM
+    // Setup & Funding as per boilerplate
+    
+    CustomerOrders:
+        WebOrders      = QuantAnnSeas() > advertOrders, organicOrders
+        AdvertVisitors = QuantDrv(advertOrders.val) > adVisitors   // Visitors per order
+        Basket         = QuantDrv(WebOrders.val) > items          // Items per order
+
+    SupplyChain:
+        ProductsSold = Split(items.val) > prodSoldA, prodSoldB, prodSoldC
+        Suppliers    = SupplyMths(...ProductsSold.val) > prodA, prodB, prodC
+
+    Sales:
+        Revenues = RevDrv(...ProductsSold.val) > prodRevA, prodRevB, prodRevC
+
+    People:
+        CustomerSupport = StaffDrvDC(WebOrders.val) > supportTeam
+        FulfilmentTeam  = StaffDrvDC(WebOrders.val) > fulfilTeam
+        MarketingTeam   = StaffTeamSM() > mktgTeam
+        CentralTeams    = StaffTeamGA() > financeTeam, legalTeam, hrTeam
+        Leadership      = StaffRole() > ceo, cfo, headProduct, headMarketing, headOperations, otherRole1, otherRole2
+
+    Costs:
+        Advertising = CostDrvSM(adVisitors.val) > advertCost  // Driven by CPC
+        Fulfilment  = CostDrvDC(WebOrders.val) > packagingCost, outboundShippingCost
+        Overheads   = CostAnnGA() > rent, utilities, software, insurance, otherOverhead1, otherOverhead2
+        OneOffCosts = CostMthOE() > companySetup, legalFees, otherSetup1
+
+    // Dashboard as per boilerplate
+
+</b2c_ecommerce_mature_pattern>
+
+
+<combining_objects_with_common_theme>
+
+When to combine:
+
+- If multiple rows in a section:
+  - use the same ObjectType and variants,
+  - share the same inputs, and
+  - represent closely related concepts with the same units.
+
+Then combine them into a single object with multiple outputs.
+
+Example (before):
+
+FM
+    Delivery:
+        DesignCheckHrs = QuantDrv(NewClients.val) > designCheckHrs // Hours per client
+        BuildModelHrs  = QuantDrv(NewClients.val) > buildHrs       // Hours per client
+        FollowupHrs    = QuantDrv(NewClients.val) > followupHrs    // Hours per client
+
+Combined:
+
+FM
+    Delivery:
+        ModelHrs = QuantDrv(NewClients.val) > designCheckHrs, buildHrs, followupHrs // Hours per client by task
+
+</combining_objects_with_common_theme>
+
+</example_models>
+</Design_patterns_guide>
+
+====================================================
+<Task_and_Output_Checklist>
+====================================================
+
+Use this checklist when generating FM Code:
+
+- Set up the boilerplate (Setup, Funding, Results, Dashboard skeleton).
+- Choose only the object types from `<Object_specifications>` that are actually needed.
+- Use the correct object variant for P&L classification (e.g. `CostDrvDC/SM`, `CostAnnGA/SM/RD`, `RevDrvNew`, `RevDrvDel`, etc.).
+- Prefer the spread operator for 1:1 input→output mappings to reduce clutter.
+- Prefer object totals; use `Sum()` only across objects or subsets of outputs.
+- Add concise section titles that match the purpose of their objects.
+- Ensure every input from FM objects has the correct attribute (e.g. `.val`); standard outputs `output_*` never have attributes.
+- Ensure each object’s code is entirely on a single line.
+- Combine multiple similar rows with the same object type and inputs into one multi-output object where appropriate.
+- Order sections according to `<section_order>`.
+- Produce **FM Code only** in your final answer:
+  - All content must be inside a single `FM` code block.
+  - Add concise inline `//` comments for each object.
+  - Do **not** output prose outside code fences.
+
+Create the FM Code for the following startup description:
+"""

@@ -17,7 +17,6 @@ FM
 
     Subscriptions:
         // "Pay monthly... not locked in... churn each month"
-        // Free tier generates no revenue but incurs hosting costs
         Subscribers = SubMth(...TierMix.val) => 
             freeSubs(price: 0.00, churn: 15%), 
             boostedSubs(price: 9.99, churn: 8%), 

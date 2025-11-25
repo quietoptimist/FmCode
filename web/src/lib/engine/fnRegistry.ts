@@ -193,7 +193,7 @@ export const fnRegistry = {
   // ==================================
   // StaffTeams — calculates staff costs from headCount × salary
   // ==================================
-  StaffTeams(ctx, inputs, cfg) {
+  StaffTeam(ctx, inputs, cfg) {
     const months = ctx.months;
     const outAss = cfg.output || {};
 
@@ -223,7 +223,7 @@ export const fnRegistry = {
   // ==================================
   // StaffRoles — for individual roles (CEO, CFO, etc.) where headcount is always 1
   // ==================================
-  StaffRoles(ctx, inputs, cfg) {
+  StaffRole(ctx, inputs, cfg) {
     const months = ctx.months;
     const outAss = cfg.output || {};
 

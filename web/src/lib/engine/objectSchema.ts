@@ -632,8 +632,8 @@ export const objectSchema = {
   // ============================
   // StaffTeams - teams of people with manually entered headcount and salary
   // ============================
-  StaffTeams: {
-    impl: "StaffTeams",
+  StaffTeam: {
+    impl: "StaffTeam",
     showMonthlyAssumptions: true,
     channels: {
       heads: {
@@ -695,8 +695,8 @@ export const objectSchema = {
   // ============================
   // StaffRoles - teams of people with manually entered headcount and salary
   // ============================
-  StaffRoles: {
-    impl: "StaffRoles",
+  StaffRole: {
+    impl: "StaffRole",
     showMonthlyAssumptions: false,
     channels: {
       cost: {
