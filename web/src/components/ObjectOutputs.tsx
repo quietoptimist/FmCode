@@ -234,7 +234,7 @@ export function ObjectOutputs({ aliases, store, overrides, months, channelDefs, 
 
                                     // Iterate ALL fields (not just first one)
                                     for (const [fieldName, field] of Object.entries(outAss)) {
-                                        if (fieldName === 'startMonth') continue;
+                                        if (fieldName === 'startMonth' || fieldName === 'start' || fieldName === 'end') continue;
                                         if (!field || typeof field !== 'object' || !('value' in field) || !field.value) continue;
 
                                         if (!fieldGroups[fieldName]) fieldGroups[fieldName] = [];

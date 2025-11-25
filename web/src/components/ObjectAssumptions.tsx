@@ -43,55 +43,42 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
 
                             return (
                                 <>
-                                    {/* Start Toggle */}
-                                    {options.start && (
-                                        <label className="flex items-center gap-1 text-xs font-medium text-gray-600 cursor-pointer select-none" title="Enable start month for all outputs">
-                                            <input
-                                                type="checkbox"
-                                                checked={objAss.startEnabled ?? true}
-                                                onChange={(e) => onChange(objName, 'meta', 'startEnabled', 'startEnabled', e.target.checked)}
-                                                className="w-3.5 h-3.5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                                            />
-                                            Start
-                                        </label>
-                                    )}
-
                                     {/* Smoothing Toggle - only show in multi-year modes */}
                                     {options.smoothing && mode !== 'single' && (
-                                        <label className="flex items-center gap-1 text-xs font-medium text-gray-600 cursor-pointer select-none" title="Enable smoothing between years">
+                                        <label className="flex items-center gap-1 text-xs font-medium text-gray-600 cursor-pointer select-none">
                                             <input
                                                 type="checkbox"
-                                                checked={objAss.smoothingEnabled ?? false}
+                                                checked={objAss.smoothingEnabled ?? true}
                                                 onChange={(e) => onChange(objName, 'meta', 'smoothingEnabled', 'smoothingEnabled', e.target.checked)}
                                                 className="w-3.5 h-3.5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
                                             />
-                                            Smoothing
+                                            Smooth
                                         </label>
                                     )}
 
                                     {/* Date Range Toggle */}
                                     {options.dateRange && (
-                                        <label className="flex items-center gap-1 text-xs font-medium text-gray-600 cursor-pointer select-none" title="Zero monthly assumptions outside of a range of months">
+                                        <label className="flex items-center gap-1 text-xs font-medium text-gray-600 cursor-pointer select-none">
                                             <input
                                                 type="checkbox"
-                                                checked={objAss.dateRangeEnabled ?? false}
+                                                checked={objAss.dateRangeEnabled ?? true}
                                                 onChange={(e) => onChange(objName, 'meta', 'dateRangeEnabled', 'dateRangeEnabled', e.target.checked)}
                                                 className="w-3.5 h-3.5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
                                             />
-                                            Fr-To Mth
+                                            Fr-To
                                         </label>
                                     )}
 
                                     {/* Integers Toggle */}
                                     {options.integers && (
-                                        <label className="flex items-center gap-1 text-xs font-medium text-gray-600 cursor-pointer select-none" title="Turn fractional monthly assumptions into whole numbers">
+                                        <label className="flex items-center gap-1 text-xs font-medium text-gray-600 cursor-pointer select-none">
                                             <input
                                                 type="checkbox"
                                                 checked={objAss.integersEnabled ?? false}
                                                 onChange={(e) => onChange(objName, 'meta', 'integersEnabled', 'integersEnabled', e.target.checked)}
                                                 className="w-3.5 h-3.5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
                                             />
-                                            Integers
+                                            Whole
                                         </label>
                                     )}
 
@@ -168,31 +155,31 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
                     <table className="text-sm text-left w-full">
                         <thead className="text-xs text-gray-500 uppercase bg-gray-50">
                             <tr>
-                                <th className="px-2 py-1 font-medium">Output</th>
+                                <th className="px-2 py-1 font-medium min-w-[140px]">Output</th>
                                 <th className="px-2 py-1 font-medium">
                                     {mode === 'single' ? (
                                         'Value'
                                     ) : mode === 'annual' ? (
                                         <div className="flex gap-2">
                                             {Array.from({ length: years }).map((_, i) => (
-                                                <div key={i} className="w-20 text-[10px] text-gray-500 uppercase">
+                                                <div key={i} className="w-20 text-[10px] text-gray-500 uppercase text-center flex justify-center">
                                                     Y{i + 1}
                                                 </div>
                                             ))}
                                         </div>
                                     ) : (
                                         <div className="flex gap-2">
-                                            <div className="w-20 text-[10px] text-gray-500 uppercase">Base (Y1)</div>
+                                            <div className="w-20 text-[10px] text-gray-500 uppercase text-center flex justify-center">Base (Y1)</div>
                                             {Array.from({ length: years - 1 }).map((_, i) => (
-                                                <div key={i} className="w-20 text-[10px] text-gray-500 uppercase">
+                                                <div key={i} className="w-20 text-[10px] text-gray-500 uppercase text-center flex justify-center">
                                                     Gr% (Y{i + 2})
                                                 </div>
                                             ))}
                                         </div>
                                     )}
                                 </th>
-                                {mode !== 'single' && objAss.smoothingEnabled && <th className="px-2 py-1 font-medium w-16">Smooth</th>}
-                                {objAss.dateRangeEnabled && <th className="px-2 py-1 font-medium w-32">Fr-To Mth</th>}
+                                {mode !== 'single' && (objAss.smoothingEnabled ?? true) && <th className="px-2 py-1 font-medium w-16">Smooth</th>}
+                                {objAss.dateRangeEnabled && <th className="px-2 py-1 font-medium w-32">From-To Month</th>}
                             </tr>
                         </thead>
                         <tbody>
@@ -203,8 +190,8 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
                                 for (const [alias, outAss] of Object.entries(objAss.outputs)) {
                                     for (const [fieldName, field] of Object.entries(outAss as any)) {
                                         if (fieldName === 'startMonth') continue;
-                                        // Skip start assumption if startEnabled is false
-                                        if (fieldName === 'start' && objAss.startEnabled === false) continue;
+                                        // Skip start/end assumptions from main rows - they appear in the date range column
+                                        if (fieldName === 'start' || fieldName === 'end') continue;
                                         if (!field || typeof field !== 'object') continue;
 
                                         if (!fieldGroups[fieldName]) fieldGroups[fieldName] = [];
@@ -220,7 +207,7 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
                                         <React.Fragment key={`field-${fieldName}`}>
                                             {/* Section header with field label */}
                                             <tr className="bg-blue-50">
-                                                <td colSpan={mode !== 'single' ? (objAss.dateRangeEnabled ? (objAss.smoothingEnabled ? 4 : 3) : (objAss.smoothingEnabled ? 3 : 2)) : (objAss.dateRangeEnabled ? 3 : 2)} className="px-2 py-1 font-semibold text-blue-800 text-xs uppercase tracking-wide">
+                                                <td colSpan={mode !== 'single' ? (objAss.dateRangeEnabled ? ((objAss.smoothingEnabled ?? true) ? 4 : 3) : ((objAss.smoothingEnabled ?? true) ? 3 : 2)) : (objAss.dateRangeEnabled ? 3 : 2)} className="px-2 py-1 font-semibold text-blue-800 text-xs uppercase tracking-wide">
                                                     {firstField?.label || fieldName}
                                                 </td>
                                             </tr>
@@ -228,7 +215,7 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
                                             {/* Rows for each alias with this field */}
                                             {aliasFields.map(([alias, field]) => (
                                                 <tr key={`${fieldName}-${alias}`} className="group hover:bg-gray-50">
-                                                    <td className="px-2 py-0.5 font-medium text-gray-700 align-middle pl-6">
+                                                    <td className="px-2 py-0.5 font-medium text-gray-700 align-middle pl-6 min-w-[140px] whitespace-nowrap">
                                                         {formatName(alias)}
                                                     </td>
 
@@ -245,13 +232,13 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
                                                         )}
                                                     </td>
 
-                                                    {/* Options (Smoothing) */}
-                                                    {mode !== 'single' && objAss.smoothingEnabled && (
-                                                        <td className="px-2 py-0.5 align-middle text-center">
+                                                    {/* Smoothing Checkbox */}
+                                                    {mode !== 'single' && (objAss.smoothingEnabled ?? true) && (
+                                                        <td className="px-2 py-0.5 text-center align-middle">
                                                             {field?.supports?.smoothing && (
                                                                 <input
                                                                     type="checkbox"
-                                                                    checked={field.raw.smoothing}
+                                                                    checked={field.raw.smoothing ?? true}
                                                                     onChange={(e) => onChange(objName, 'output', alias, fieldName, e.target.checked, 'smoothing')}
                                                                     className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
                                                                 />
@@ -260,27 +247,33 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
                                                     )}
 
                                                     {/* Date Range */}
-                                                    <td className="px-2 py-0.5 align-middle">
-                                                        {objAss.dateRangeEnabled && field?.supports?.dateRange && (
+                                                    {objAss.dateRangeEnabled && (
+                                                        <td className="px-2 py-0.5 align-middle">
                                                             <div className="flex items-center gap-1 text-xs">
                                                                 <input
                                                                     type="number"
-                                                                    className="w-10 p-1 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 outline-none text-center"
+                                                                    className="w-14 p-1 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 outline-none text-center"
                                                                     placeholder="1"
-                                                                    value={field.raw.dateRange?.start ?? 1}
-                                                                    onChange={(e) => onChange(objName, 'output', alias, fieldName, { ...field.raw.dateRange, start: safeParseFloat(e.target.value) }, 'dateRange')}
+                                                                    value={objAss.outputs[alias]?.start?.raw?.single ?? 1}
+                                                                    onChange={(e) => {
+                                                                        const val = safeParseFloat(e.target.value);
+                                                                        onChange(objName, 'output', alias, 'start', val, 'single');
+                                                                    }}
                                                                 />
                                                                 <span className="text-gray-400">-</span>
                                                                 <input
                                                                     type="number"
-                                                                    className="w-10 p-1 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 outline-none text-center"
+                                                                    className="w-14 p-1 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 outline-none text-center"
                                                                     placeholder="End"
-                                                                    value={field.raw.dateRange?.end ?? (years * 12)}
-                                                                    onChange={(e) => onChange(objName, 'output', alias, fieldName, { ...field.raw.dateRange, end: safeParseFloat(e.target.value) }, 'dateRange')}
+                                                                    value={objAss.outputs[alias]?.end?.raw?.single ?? ''}
+                                                                    onChange={(e) => {
+                                                                        const val = e.target.value === '' ? null : safeParseFloat(e.target.value);
+                                                                        onChange(objName, 'output', alias, 'end', val, 'single');
+                                                                    }}
                                                                 />
                                                             </div>
-                                                        )}
-                                                    </td>
+                                                        </td>
+                                                    )}
                                                 </tr>
                                             ))}
                                         </React.Fragment>
@@ -450,8 +443,8 @@ function ValueInput({ field, mode, years, showLabels = true, onChange }: { field
     if (mode === 'single' || !field.supports?.annual) {
         return (
             <SingleValueInput
-                value={field.raw.annual?.[0] ?? null}
-                onChange={(v) => onChange(v, 'annual', 0)}
+                value={field.raw.single ?? field.raw.annual?.[0] ?? null}
+                onChange={(v) => onChange(v, 'single')}
                 format={format}
             />
         );

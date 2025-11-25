@@ -55,7 +55,8 @@ function buildAssumptionField(def: any, ctx: any, seasonalEnabled: boolean = fal
     growth: Array.from({ length: years }, () => 0), // Array for YoY growth, init to 0
     seasonal: Array.from({ length: 12 }, () => 1), // 12 monthly factors, default to 100% (no scaling)
     smoothing: def.supports?.smoothing ? true : false,
-    dateRange: null       // could be { start: 0, end: 59 }
+    dateRange: null,       // could be { start: 0, end: 59 }
+    single: def.default ?? null // Initialize single value from default
   };
 
   // prefill annual if default is meaningful and annual is supported
@@ -93,8 +94,11 @@ function materializeMonthly(def: any, raw: any, ctx: any, seasonalEnabled: boole
   }
 
   // In single mode, only use annual[0] for all months - ignore other years and smoothing
-  if (uiMode === 'single') {
-    const singleVal = raw.annual?.[0] ?? 0;
+  // In single mode, only use single value or annual[0] for all months
+  // Also use this logic if the field doesn't support annual mode (e.g. start/end assumptions)
+  if (uiMode === 'single' || !def.supports?.annual) {
+    if (raw.single === null) return null;
+    const singleVal = raw.single ?? raw.annual?.[0] ?? 0;
 
     // Apply seasonal if enabled
     if (seasonalEnabled && def.supports?.seasonal && raw.seasonal) {
@@ -443,6 +447,14 @@ export function updateAssumption(assumptions: any, objName: string, type: string
     targetField.raw.smoothing = value;
   } else if (subField === 'dateRange') {
     targetField.raw.dateRange = value;
+  } else if (subField === 'single') {
+    targetField.raw.single = value;
+    // Also sync annual[0] for backward compatibility if annual exists
+    if (Array.isArray(targetField.raw.annual)) {
+      targetField.raw.annual[0] = value;
+      // If in single mode, maybe we should fill? But 'single' subField implies explicit single value.
+      // Let's just set index 0.
+    }
   } else {
     // Default: Update first year (single mode behavior)
     // Set annual[0] to the value and fill remaining years with same value

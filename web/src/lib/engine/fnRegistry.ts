@@ -17,12 +17,11 @@ export const fnRegistry = {
     const factor = outAss.factor
       ? outAss.factor.value
       : new Float64Array(months).fill(1);
-    const startMonthVal = outAss.start
-      ? outAss.start.value
-      : 0;
-    const startMonth = (startMonthVal instanceof Float64Array || Array.isArray(startMonthVal))
-      ? startMonthVal[0]
-      : startMonthVal;
+    const startMonthVal = outAss.start ? outAss.start.value : 0;
+    const startMonth = (startMonthVal instanceof Float64Array || Array.isArray(startMonthVal)) ? startMonthVal[0] : startMonthVal;
+
+    const endMonthVal = outAss.end ? outAss.end.value : null;
+    const endMonth = (endMonthVal instanceof Float64Array || Array.isArray(endMonthVal)) ? endMonthVal[0] : endMonthVal;
 
     // channel from schema
     const channelNames = cfg.channels ? Object.keys(cfg.channels) : ["val"];
@@ -31,12 +30,13 @@ export const fnRegistry = {
     const baseInput = inputs[0] || new Float64Array(months).fill(0);
     const outSeries = new Float64Array(months);
 
-    // Only apply start month if startEnabled is true (AND logic)
-    const startEnabled = cfg.startEnabled ?? true;
-    const effectiveStart = startEnabled ? startMonth : 0;
+    // Only apply date range if dateRangeEnabled is true (AND logic)
+    const dateRangeEnabled = cfg.dateRangeEnabled ?? true;
+    const effectiveStart = (dateRangeEnabled && startMonth > 0) ? startMonth - 1 : 0;
+    const effectiveEnd = (dateRangeEnabled && endMonth !== null && endMonth !== undefined) ? endMonth : months;
 
     for (let m = 0; m < months; m++) {
-      if (m < effectiveStart) {
+      if (m < effectiveStart || m >= effectiveEnd) {
         outSeries[m] = 0;
         continue;
       }
@@ -61,13 +61,17 @@ export const fnRegistry = {
     const startMonthVal = outAss.start ? outAss.start.value : 0;
     const startMonth = (startMonthVal instanceof Float64Array || Array.isArray(startMonthVal)) ? startMonthVal[0] : startMonthVal;
 
-    // Only apply start month if startEnabled is true (AND logic)
-    const startEnabled = cfg.startEnabled ?? true;
-    const effectiveStart = startEnabled ? startMonth : 0;
+    const endMonthVal = outAss.end ? outAss.end.value : null;
+    const endMonth = (endMonthVal instanceof Float64Array || Array.isArray(endMonthVal)) ? endMonthVal[0] : endMonthVal;
+
+    // Only apply date range if dateRangeEnabled is true (AND logic)
+    const dateRangeEnabled = cfg.dateRangeEnabled ?? true;
+    const effectiveStart = (dateRangeEnabled && startMonth > 0) ? startMonth - 1 : 0;
+    const effectiveEnd = (dateRangeEnabled && endMonth !== null && endMonth !== undefined) ? endMonth : months;
 
     const outSeries = new Float64Array(months);
     for (let m = 0; m < months; m++) {
-      if (m < effectiveStart) {
+      if (m < effectiveStart || m >= effectiveEnd) {
         outSeries[m] = 0;
         continue;
       }
@@ -88,18 +92,22 @@ export const fnRegistry = {
     const startMonthVal = outAss.start ? outAss.start.value : 0;
     const startMonth = (startMonthVal instanceof Float64Array || Array.isArray(startMonthVal)) ? startMonthVal[0] : startMonthVal;
 
+    const endMonthVal = outAss.end ? outAss.end.value : null;
+    const endMonth = (endMonthVal instanceof Float64Array || Array.isArray(endMonthVal)) ? endMonthVal[0] : endMonthVal;
+
     const newCust = inputs[0] || new Float64Array(months).fill(0);
 
     const actSeries = new Float64Array(months);
     const chuSeries = new Float64Array(months);
 
-    // Only apply start month if startEnabled is true (AND logic)
-    const startEnabled = cfg.startEnabled ?? true;
-    const effectiveStart = startEnabled ? startMonth : 0;
+    // Only apply date range if dateRangeEnabled is true (AND logic)
+    const dateRangeEnabled = cfg.dateRangeEnabled ?? true;
+    const effectiveStart = (dateRangeEnabled && startMonth > 0) ? startMonth - 1 : 0;
+    const effectiveEnd = (dateRangeEnabled && endMonth !== null && endMonth !== undefined) ? endMonth : months;
 
     let prevActive = 0;
     for (let m = 0; m < months; m++) {
-      if (m < effectiveStart) {
+      if (m < effectiveStart || m >= effectiveEnd) {
         actSeries[m] = 0;
         chuSeries[m] = 0;
         prevActive = 0;
@@ -185,6 +193,9 @@ export const fnRegistry = {
     const startMonthVal = outAss.start ? outAss.start.value : 0;
     const startMonth = (startMonthVal instanceof Float64Array || Array.isArray(startMonthVal)) ? startMonthVal[0] : startMonthVal;
 
+    const endMonthVal = outAss.end ? outAss.end.value : null;
+    const endMonth = (endMonthVal instanceof Float64Array || Array.isArray(endMonthVal)) ? endMonthVal[0] : endMonthVal;
+
     // Get the input activity (first input)
     const activity = inputs[0] || new Float64Array(months).fill(0);
 
@@ -192,12 +203,13 @@ export const fnRegistry = {
     const headsSeries = new Float64Array(months);
     const costSeries = new Float64Array(months);
 
-    // Only apply start month if startEnabled is true (AND logic)
-    const startEnabled = cfg.startEnabled ?? true;
-    const effectiveStart = startEnabled ? startMonth : 0;
+    // Only apply date range if dateRangeEnabled is true (AND logic)
+    const dateRangeEnabled = cfg.dateRangeEnabled ?? true;
+    const effectiveStart = (dateRangeEnabled && startMonth > 0) ? startMonth - 1 : 0;
+    const effectiveEnd = (dateRangeEnabled && endMonth !== null && endMonth !== undefined) ? endMonth : months;
 
     for (let m = 0; m < months; m++) {
-      if (m < effectiveStart) {
+      if (m < effectiveStart || m >= effectiveEnd) {
         headsSeries[m] = 0;
         costSeries[m] = 0;
         continue;
@@ -232,16 +244,20 @@ export const fnRegistry = {
     const startMonthVal = outAss.start ? outAss.start.value : 0;
     const startMonth = (startMonthVal instanceof Float64Array || Array.isArray(startMonthVal)) ? startMonthVal[0] : startMonthVal;
 
+    const endMonthVal = outAss.end ? outAss.end.value : null;
+    const endMonth = (endMonthVal instanceof Float64Array || Array.isArray(endMonthVal)) ? endMonthVal[0] : endMonthVal;
+
     // Calculate total cost and headcount arrays
     const costSeries = new Float64Array(months);
     const headsSeries = new Float64Array(months);
 
-    // Only apply start month if startEnabled is true (AND logic)
-    const startEnabled = cfg.startEnabled ?? true;
-    const effectiveStart = startEnabled ? startMonth : 0;
+    // Only apply date range if dateRangeEnabled is true (AND logic)
+    const dateRangeEnabled = cfg.dateRangeEnabled ?? true;
+    const effectiveStart = (dateRangeEnabled && startMonth > 0) ? startMonth - 1 : 0;
+    const effectiveEnd = (dateRangeEnabled && endMonth !== null && endMonth !== undefined) ? endMonth : months;
 
     for (let m = 0; m < months; m++) {
-      if (m < effectiveStart) {
+      if (m < effectiveStart || m >= effectiveEnd) {
         headsSeries[m] = 0;
         costSeries[m] = 0;
         continue;
@@ -271,16 +287,20 @@ export const fnRegistry = {
     const startMonthVal = outAss.start ? outAss.start.value : 0;
     const startMonth = (startMonthVal instanceof Float64Array || Array.isArray(startMonthVal)) ? startMonthVal[0] : startMonthVal;
 
+    const endMonthVal = outAss.end ? outAss.end.value : null;
+    const endMonth = (endMonthVal instanceof Float64Array || Array.isArray(endMonthVal)) ? endMonthVal[0] : endMonthVal;
+
     // Calculate total cost and headcount arrays
     const costSeries = new Float64Array(months);
     const headsSeries = new Float64Array(months);
 
-    // Only apply start month if startEnabled is true (AND logic)
-    const startEnabled = cfg.startEnabled ?? true;
-    const effectiveStart = startEnabled ? startMonth : 0;
+    // Only apply date range if dateRangeEnabled is true (AND logic)
+    const dateRangeEnabled = cfg.dateRangeEnabled ?? true;
+    const effectiveStart = (dateRangeEnabled && startMonth > 0) ? startMonth - 1 : 0;
+    const effectiveEnd = (dateRangeEnabled && endMonth !== null && endMonth !== undefined) ? endMonth : months;
 
     for (let m = 0; m < months; m++) {
-      if (m < effectiveStart) {
+      if (m < effectiveStart || m >= effectiveEnd) {
         headsSeries[m] = 0;
         costSeries[m] = 0;
         continue;

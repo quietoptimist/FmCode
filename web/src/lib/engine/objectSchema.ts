@@ -10,7 +10,7 @@ export const objectSchema = {
     showMonthlyAssumptions: false,  // Assumptions = outputs, no need to show both
     options: {
       modes: ['single', 'annual', 'growth'],
-      start: true,
+      dateRange: true,
       smoothing: true,
       integers: true
     },
@@ -54,6 +54,19 @@ export const objectSchema = {
           ui: {
             defaultMode: "single"
           }
+        },
+        {
+          name: "end",
+          label: "End Month",
+          baseType: "number",
+          format: "integer",
+          default: null,
+          supports: {
+            single: true
+          },
+          ui: {
+            defaultMode: "single"
+          }
         }
       ]
     }
@@ -67,7 +80,7 @@ export const objectSchema = {
     showMonthlyAssumptions: false,  // Assumptions = outputs, no need to show both
     options: {
       modes: ['single', 'annual', 'growth'],
-      start: true,
+      dateRange: true,
       smoothing: true,
       integers: true
     },
@@ -111,6 +124,19 @@ export const objectSchema = {
           ui: {
             defaultMode: "single"
           }
+        },
+        {
+          name: "end",
+          label: "End Month",
+          baseType: "number",
+          format: "integer",
+          default: null,
+          supports: {
+            single: true
+          },
+          ui: {
+            defaultMode: "single"
+          }
         }
       ]
     }
@@ -124,7 +150,7 @@ export const objectSchema = {
     showMonthlyAssumptions: true,  // Has driver inputs, show monthly assumptions
     options: {
       modes: ['single', 'annual', 'growth'],
-      start: true,
+      dateRange: true,
       smoothing: true
     },
     channels: {
@@ -165,6 +191,19 @@ export const objectSchema = {
           ui: {
             defaultMode: "single"
           }
+        },
+        {
+          name: "end",
+          label: "End Month",
+          baseType: "number",
+          format: "integer",
+          default: null,
+          supports: {
+            single: true
+          },
+          ui: {
+            defaultMode: "single"
+          }
         }
       ]
     }
@@ -178,7 +217,7 @@ export const objectSchema = {
     showMonthlyAssumptions: false,
     options: {
       modes: ['single', 'annual', 'growth'],
-      start: true,
+      dateRange: true,
       smoothing: true
     },
     channels: {
@@ -219,6 +258,19 @@ export const objectSchema = {
           ui: {
             defaultMode: "single"
           }
+        },
+        {
+          name: "end",
+          label: "End Month",
+          baseType: "number",
+          format: "integer",
+          default: null,
+          supports: {
+            single: true
+          },
+          ui: {
+            defaultMode: "single"
+          }
         }
       ]
     }
@@ -233,7 +285,7 @@ export const objectSchema = {
     showMonthlyAssumptions: false,
     options: {
       modes: ['single', 'annual', 'growth'],
-      start: true,
+      dateRange: true,
       smoothing: true
     },
     channels: {
@@ -274,6 +326,19 @@ export const objectSchema = {
           ui: {
             defaultMode: "single"
           }
+        },
+        {
+          name: "end",
+          label: "End Month",
+          baseType: "number",
+          format: "integer",
+          default: null,
+          supports: {
+            single: true
+          },
+          ui: {
+            defaultMode: "single"
+          }
         }
       ]
     }
@@ -287,7 +352,7 @@ export const objectSchema = {
     showMonthlyAssumptions: true,
     options: {
       modes: ['single', 'annual', 'growth'],
-      start: true,
+      dateRange: true,
       smoothing: true
     },
     channels: {
@@ -328,6 +393,19 @@ export const objectSchema = {
           ui: {
             defaultMode: "single"
           }
+        },
+        {
+          name: "end",
+          label: "End Month",
+          baseType: "number",
+          format: "integer",
+          default: null,
+          supports: {
+            single: true
+          },
+          ui: {
+            defaultMode: "single"
+          }
         }
       ]
     }
@@ -341,7 +419,7 @@ export const objectSchema = {
     showMonthlyAssumptions: true,
     options: {
       modes: ['single', 'annual', 'growth'],
-      start: true,
+      dateRange: true,
       smoothing: true
     },
     channels: {
@@ -382,6 +460,19 @@ export const objectSchema = {
           ui: {
             defaultMode: "single"
           }
+        },
+        {
+          name: "end",
+          label: "End Month",
+          baseType: "number",
+          format: "integer",
+          default: null,
+          supports: {
+            single: true
+          },
+          ui: {
+            defaultMode: "single"
+          }
         }
       ]
     }
@@ -395,7 +486,7 @@ export const objectSchema = {
     showMonthlyAssumptions: true,
     options: {
       modes: ['single', 'annual', 'growth'],
-      start: true,
+      dateRange: true,
       smoothing: true
     },
     channels: {
@@ -436,6 +527,19 @@ export const objectSchema = {
           ui: {
             defaultMode: "single"
           }
+        },
+        {
+          name: "end",
+          label: "End Month",
+          baseType: "number",
+          format: "integer",
+          default: null,
+          supports: {
+            single: true
+          },
+          ui: {
+            defaultMode: "single"
+          }
         }
       ]
     }
@@ -449,7 +553,7 @@ export const objectSchema = {
     showMonthlyAssumptions: true,
     options: {
       modes: ['single', 'annual', 'growth'],
-      start: true,
+      dateRange: true,
       smoothing: true
     },
     channels: {
@@ -490,6 +594,19 @@ export const objectSchema = {
           ui: {
             defaultMode: "single"
           }
+        },
+        {
+          name: "end",
+          label: "End Month",
+          baseType: "number",
+          format: "integer",
+          default: null,
+          supports: {
+            single: true
+          },
+          ui: {
+            defaultMode: "single"
+          }
         }
       ]
     }
@@ -503,7 +620,7 @@ export const objectSchema = {
     showMonthlyAssumptions: true,
     options: {
       modes: ['single', 'annual', 'growth'],
-      start: true,
+      dateRange: true,
       smoothing: true
     },
     channels: {
@@ -544,6 +661,19 @@ export const objectSchema = {
           ui: {
             defaultMode: "single"
           }
+        },
+        {
+          name: "end",
+          label: "End Month",
+          baseType: "number",
+          format: "integer",
+          default: null,
+          supports: {
+            single: true
+          },
+          ui: {
+            defaultMode: "single"
+          }
         }
       ]
     }
@@ -557,7 +687,7 @@ export const objectSchema = {
     showMonthlyAssumptions: true,
     options: {
       modes: ['single', 'annual', 'growth'],
-      start: true,
+      dateRange: true,
       smoothing: true
     },
     channels: {
@@ -598,6 +728,19 @@ export const objectSchema = {
           ui: {
             defaultMode: "single"
           }
+        },
+        {
+          name: "end",
+          label: "End Month",
+          baseType: "number",
+          format: "integer",
+          default: null,
+          supports: {
+            single: true
+          },
+          ui: {
+            defaultMode: "single"
+          }
         }
       ]
     }
@@ -611,7 +754,7 @@ export const objectSchema = {
     showMonthlyAssumptions: true,
     options: {
       modes: ['single', 'annual', 'growth'],
-      start: true,
+      dateRange: true,
       smoothing: true
     },
     channels: {
@@ -652,54 +795,13 @@ export const objectSchema = {
           ui: {
             defaultMode: "single"
           }
-        }
-      ]
-    }
-  },
-
-  // ============================
-  // RevDrvDCPrem — same as revDrv but will have different destinations
-  // ============================
-  RevDrvDCPrem: {
-    impl: "ScaleDrv",
-    showMonthlyAssumptions: true,
-    options: {
-      modes: ['single', 'annual', 'growth'],
-      start: true,
-      smoothing: true
-    },
-    channels: {
-      val: {
-        label: "Revenue",
-        destinations: ["pnl.revenue.recur", "balance.assets.current.ar"]
-      }
-    },
-    assumptions: {
-      object: [],
-      output: [
-        {
-          name: "factor",
-          label: "Price / fee",
-          baseType: "number",
-          format: "currency",
-          default: 50,
-          supports: {
-            single: true,
-            annual: true,
-            monthly: true,
-            smoothing: true,
-            growth: true
-          },
-          ui: {
-            defaultMode: "annual"
-          }
         },
         {
-          name: "start",
-          label: "Start Month",
+          name: "end",
+          label: "End Month",
           baseType: "number",
           format: "integer",
-          default: 1,
+          default: null,
           supports: {
             single: true
           },
@@ -719,7 +821,7 @@ export const objectSchema = {
     showMonthlyAssumptions: true,
     options: {
       modes: ['single', 'annual'],
-      start: true,
+      dateRange: true,
       smoothing: true
     },
     channels: {
@@ -763,6 +865,19 @@ export const objectSchema = {
           ui: {
             defaultMode: "single"
           }
+        },
+        {
+          name: "end",
+          label: "End Month",
+          baseType: "number",
+          format: "integer",
+          default: null,
+          supports: {
+            single: true
+          },
+          ui: {
+            defaultMode: "single"
+          }
         }
       ]
     }
@@ -793,8 +908,7 @@ export const objectSchema = {
           format: "integer",
           default: 1,
           supports: {
-            single: true,
-            monthly: true
+            single: true
           },
           ui: {
             defaultMode: "single"
@@ -812,7 +926,7 @@ export const objectSchema = {
     showMonthlyAssumptions: true,
     options: {
       modes: ['single', 'annual'],
-      start: true,
+      dateRange: true,
       smoothing: true,
       integers: true
     },
@@ -843,7 +957,7 @@ export const objectSchema = {
             integers: true
           },
           ui: {
-            defaultMode: "dateRange"
+            defaultMode: "single"
           }
         },
         {
@@ -874,6 +988,19 @@ export const objectSchema = {
           ui: {
             defaultMode: "single"
           }
+        },
+        {
+          name: "end",
+          label: "End Month",
+          baseType: "number",
+          format: "integer",
+          default: null,
+          supports: {
+            single: true
+          },
+          ui: {
+            defaultMode: "single"
+          }
         }
       ]
     }
@@ -887,7 +1014,7 @@ export const objectSchema = {
     showMonthlyAssumptions: true,
     options: {
       modes: ['single', 'annual'],
-      start: true,
+      dateRange: true,
       smoothing: true,
       integers: true,
       seasonal: true
@@ -920,7 +1047,7 @@ export const objectSchema = {
             seasonal: true
           },
           ui: {
-            defaultMode: "dateRange"
+            defaultMode: "single"
           }
         },
         {
@@ -936,7 +1063,7 @@ export const objectSchema = {
             smoothing: true
           },
           ui: {
-            defaultMode: "dateRange"
+            defaultMode: "single"
           }
         },
         {
@@ -945,6 +1072,19 @@ export const objectSchema = {
           baseType: "number",
           format: "integer",
           default: 1,
+          supports: {
+            single: true
+          },
+          ui: {
+            defaultMode: "single"
+          }
+        },
+        {
+          name: "end",
+          label: "End Month",
+          baseType: "number",
+          format: "integer",
+          default: null,
           supports: {
             single: true
           },
@@ -964,7 +1104,7 @@ export const objectSchema = {
     showMonthlyAssumptions: false,
     options: {
       modes: ['single', 'annual'],
-      start: true,
+      dateRange: true,
       smoothing: true,
       integers: true
     },
@@ -995,7 +1135,7 @@ export const objectSchema = {
             integers: true
           },
           ui: {
-            defaultMode: "dateRange"
+            defaultMode: "single"
           }
         },
         {
@@ -1004,6 +1144,19 @@ export const objectSchema = {
           baseType: "number",
           format: "integer",
           default: 1,
+          supports: {
+            single: true
+          },
+          ui: {
+            defaultMode: "single"
+          }
+        },
+        {
+          name: "end",
+          label: "End Month",
+          baseType: "number",
+          format: "integer",
+          default: null,
           supports: {
             single: true
           },

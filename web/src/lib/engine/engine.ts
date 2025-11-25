@@ -148,7 +148,7 @@ export function runEngine({ ast, index, outGraph, assumptions, ctx, fnRegistry, 
       channels: schema.channels,
       outputNames: [alias],
       outputIndex,
-      startEnabled: objAss.startEnabled ?? true,
+      dateRangeEnabled: objAss.dateRangeEnabled ?? true,
     }) || {};
 
     // --------------------- 4) store results (strict) ---------------------

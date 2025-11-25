@@ -32,8 +32,9 @@ export default function Editor({ params }: { params: { id: string } }) {
     const outputScrollRefs = useRef<(HTMLDivElement | null)[]>([]);
     const isScrolling = useRef(false);
     const [name, setName] = useState('Untitled Model');
+    const [description, setDescription] = useState('');
     const [modelYears, setModelYears] = useState(2);
-    const [viewMode, setViewMode] = useState<'editor' | 'financials'>('editor');
+    const [viewMode, setViewMode] = useState<'model' | 'code' | 'financials'>('model');
     const router = useRouter();
 
     // Helper to rehydrate Maps from JSON
@@ -73,6 +74,7 @@ export default function Editor({ params }: { params: { id: string } }) {
                 } else if (data) {
                     setCode(data.fm_code || '');
                     setName(data.name || 'Untitled Model');
+                    setDescription(data.description || '');
 
                     // We'll trigger a parse after setting code.
                     // But we need to handle the async nature.
@@ -330,6 +332,7 @@ export default function Editor({ params }: { params: { id: string } }) {
             const modelData = {
                 user_id: user.id,
                 name: name,
+                description: description,
                 fm_code: code,
                 ast: result?.ast,
                 assumptions: serializableAssumptions,
@@ -391,7 +394,7 @@ export default function Editor({ params }: { params: { id: string } }) {
     let leftColClass = "lg:col-span-4";
     let rightColClass = "lg:col-span-8";
 
-    if (modelYears > 3) {
+    if (modelYears >= 3) {
         leftColClass = "lg:col-span-5";
         rightColClass = "lg:col-span-7";
     }
@@ -433,19 +436,38 @@ export default function Editor({ params }: { params: { id: string } }) {
 
                     {error && <div className="text-red-600 text-sm">{error}</div>}
 
-                    {viewMode === 'editor' ? (
+                    {viewMode === 'model' && (
+                        <>
+                            <button
+                                onClick={() => setViewMode('code')}
+                                className="px-4 py-2 font-semibold rounded transition-colors shadow-sm text-sm bg-blue-600 text-white hover:bg-blue-700"
+                            >
+                                Code Editor
+                            </button>
+                            <button
+                                onClick={() => setViewMode('financials')}
+                                className="px-4 py-2 font-semibold rounded transition-colors shadow-sm text-sm bg-gray-200 text-gray-700 hover:bg-gray-300"
+                            >
+                                View Financials →
+                            </button>
+                        </>
+                    )}
+
+                    {viewMode === 'code' && (
                         <button
-                            onClick={() => setViewMode('financials')}
-                            className="px-4 py-2 font-semibold rounded transition-colors shadow-sm text-sm bg-purple-600 text-white hover:bg-purple-700"
-                        >
-                            View Financials →
-                        </button>
-                    ) : (
-                        <button
-                            onClick={() => setViewMode('editor')}
+                            onClick={() => setViewMode('model')}
                             className="px-4 py-2 font-semibold rounded transition-colors shadow-sm text-sm bg-gray-600 text-white hover:bg-gray-700"
                         >
-                            ← Back to Editor
+                            ← Back to Model
+                        </button>
+                    )}
+
+                    {viewMode === 'financials' && (
+                        <button
+                            onClick={() => setViewMode('model')}
+                            className="px-4 py-2 font-semibold rounded transition-colors shadow-sm text-sm bg-gray-600 text-white hover:bg-gray-700"
+                        >
+                            ← Back to Model
                         </button>
                     )}
 
@@ -459,27 +481,42 @@ export default function Editor({ params }: { params: { id: string } }) {
                 </div>
             </div>
 
-            {viewMode === 'editor' ? (
-                <>
-                    <div className="w-full max-w-[1600px] mb-4">
-                        <details className="mb-4 bg-white rounded border border-gray-200">
-                            <summary className="p-2 cursor-pointer font-medium text-gray-600 hover:bg-gray-50">FM Code Editor</summary>
-                            <div className="p-4 flex flex-col gap-2">
-                                <textarea
-                                    className="w-full h-40 p-4 font-mono text-sm border rounded shadow-sm focus:ring-2 focus:ring-blue-500 outline-none resize-y"
-                                    value={code}
-                                    onChange={(e) => setCode(e.target.value)}
-                                    spellCheck={false}
-                                />
-                                <button
-                                    onClick={handleParse}
-                                    className="self-start px-4 py-2 bg-blue-600 text-white font-semibold rounded hover:bg-blue-700 transition-colors shadow-sm text-sm"
-                                >
-                                    Parse & Build Graph
-                                </button>
-                            </div>
-                        </details>
+            {viewMode === 'code' && (
+                <div className="w-full max-w-[1600px] mb-4">
+                    <div className="bg-white rounded border border-gray-200 p-4 flex flex-col gap-4 h-[calc(100vh-100px)]">
+                        <div className="flex flex-col gap-1">
+                            <label className="text-sm font-semibold text-gray-600">Business Description</label>
+                            <textarea
+                                className="w-full h-24 p-2 text-sm border rounded shadow-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                                placeholder="Describe the business logic..."
+                            />
+                        </div>
+                        <div className="flex flex-col gap-1 flex-1 min-h-0">
+                            <label className="text-sm font-semibold text-gray-600">FM Code</label>
+                            <textarea
+                                className="w-full h-full p-4 font-mono text-sm border rounded shadow-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+                                value={code}
+                                onChange={(e) => setCode(e.target.value)}
+                                spellCheck={false}
+                            />
+                        </div>
+                        <button
+                            onClick={() => {
+                                handleParse();
+                                setViewMode('model');
+                            }}
+                            className="self-start px-4 py-2 bg-blue-600 text-white font-semibold rounded hover:bg-blue-700 transition-colors shadow-sm text-sm"
+                        >
+                            Parse & Build Model
+                        </button>
                     </div>
+                </div>
+            )}
+
+            {viewMode === 'model' && (
+                <>
 
                     <div className="w-full max-w-[1600px] flex flex-col gap-4 pb-20">
                         <div className="flex gap-4">
@@ -560,7 +597,9 @@ export default function Editor({ params }: { params: { id: string } }) {
                         </div>
                     </div>
                 </>
-            ) : (
+            )}
+
+            {viewMode === 'financials' && (
                 <div className="w-full h-[calc(100vh-100px)] overflow-hidden">
                     <FinancialsPanel financialData={financialData} />
                 </div>
