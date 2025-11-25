@@ -16,9 +16,24 @@ import { buildFinancialsFromEngine } from '@/lib/engine/buildFinancialsHelper';
 import Link from 'next/link';
 
 const SAMPLE_CODE = `
-SetupAndFunding:
-    Setup = Setup()
-    EquityFunding = FundEquity() => startingCash
+CustomerAcquisition:
+  NewCustomers = QuantAnnSeas()            => newOrganic, newPaid  // Forecast number of new customers added per month from organic and paid channels
+  LeadsFromAds = QuantDrv(newPaid.val)     => paidLeads            // Determine how many leads we need to achieve those new customers
+  AdsExpense   = CostDrvSM(paidLeads.val)  => adsCost              // Estimate our marketing spend to generate those leads
+
+CustomerRetention:
+  TiersMix = QuantDrv(NewCustomers.val)    => newFree, newPrem, newGold        // Mix of new customers joining each product tier
+  Users    = SubRetain(...TiersMix.val)    => freeUsers, premUsers, goldUsers  // Active users and churning users by product tier
+  Revenues = RevDrvDel(...Users.act)       => freeRev, premRev, goldRev        // Revenues we generate from active users on each tier
+  Payments = DelRev(Revenues.val)          => paid                             // Cash received when users pay us
+
+People:
+  CustomerSupport = StaffDriven(NewCustomers.val, Users.act) => onboardingTeam, serviceTeam   // Customer support teams for onboarding and in-life assistance
+  CentralTeams = StaffTeam()               => financeTeam, marketingTeam, otherTeam   // Central team headcounts and salaries
+  Leadership   = StaffRole()               => CEO, CFO, COO, OtherRole1, OtherRole2   // Key people start dates and salaries
+  
+OperatingCosts:
+  Overheads = CostAnnGA()                  => rent, utilities, insurance, subscriptions, other  // Regular monthly overhead costs
 `;
 
 export default function Editor({ params }: { params: { id: string } }) {
@@ -33,6 +48,10 @@ export default function Editor({ params }: { params: { id: string } }) {
     const isScrolling = useRef(false);
     const [name, setName] = useState('Untitled Model');
     const [description, setDescription] = useState('');
+    const [selectedModel, setSelectedModel] = useState('GPT-5.1');
+    const [reasoningEffort, setReasoningEffort] = useState('medium');
+    const [generating, setGenerating] = useState(false);
+    const [thoughts, setThoughts] = useState('');
     const [modelYears, setModelYears] = useState(2);
     const [viewMode, setViewMode] = useState<'model' | 'code' | 'financials'>('model');
     const router = useRouter();
@@ -312,6 +331,96 @@ export default function Editor({ params }: { params: { id: string } }) {
         }
     };
 
+    const handleGenerate = async () => {
+        if (!description.trim()) {
+            setError("Please enter a business description first.");
+            return;
+        }
+        setGenerating(true);
+        setThoughts('');
+        setError(null);
+
+        try {
+            const res = await fetch('/api/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    description,
+                    model: selectedModel,
+                    reasoningEffort: selectedModel === 'GPT-5.1' ? reasoningEffort : undefined
+                }),
+            });
+
+            if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.error || 'Failed to generate code');
+            }
+
+            if (!res.body) throw new Error('No response body');
+
+            const reader = res.body.getReader();
+            const decoder = new TextDecoder();
+            let fullText = '';
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value, { stream: true });
+                fullText += chunk;
+
+                // Parse thoughts and code
+                const thinkingMatch = fullText.match(/<thinking>([\s\S]*?)<\/thinking>/);
+                if (thinkingMatch) {
+                    setThoughts(thinkingMatch[1].trim());
+                } else if (fullText.includes('<thinking>')) {
+                    // Partial thinking
+                    const partial = fullText.split('<thinking>')[1];
+                    setThoughts(partial.trim());
+                }
+
+                // Extract code (look for fences or just everything after thinking)
+                // If we have closed thinking tag, everything after is potentially code
+                if (fullText.includes('</thinking>')) {
+                    const parts = fullText.split('</thinking>');
+                    let codePart = parts[1].trim();
+
+                    // Strip fences if present
+                    const codeBlockMatch = codePart.match(/```(?:fm)?\s*([\s\S]*?)(?:```|$)/);
+                    if (codeBlockMatch) {
+                        setCode(codeBlockMatch[1]);
+                    } else {
+                        // If no fences yet, just show raw (might be starting fence)
+                        setCode(codePart.replace(/^```(?:fm)?/, ''));
+                    }
+                }
+            }
+
+            // Final cleanup
+            const thinkingMatch = fullText.match(/<thinking>([\s\S]*?)<\/thinking>/);
+            if (thinkingMatch) {
+                setThoughts(thinkingMatch[1].trim());
+            }
+
+            const parts = fullText.split('</thinking>');
+            if (parts.length > 1) {
+                let codePart = parts[1].trim();
+                const codeBlockMatch = codePart.match(/```(?:fm)?\s*([\s\S]*?)(?:```|$)/);
+                if (codeBlockMatch) {
+                    setCode(codeBlockMatch[1]);
+                } else {
+                    setCode(codePart.replace(/^```(?:fm)?/, '').replace(/```$/, ''));
+                }
+            }
+
+        } catch (err: any) {
+            setError(err.message);
+        } finally {
+            setGenerating(false);
+            setThoughts('');
+        }
+    };
+
     const handleSave = async () => {
         setSaving(true);
         try {
@@ -487,11 +596,55 @@ export default function Editor({ params }: { params: { id: string } }) {
                         <div className="flex flex-col gap-1">
                             <label className="text-sm font-semibold text-gray-600">Business Description</label>
                             <textarea
-                                className="w-full h-24 p-2 text-sm border rounded shadow-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+                                className="w-full h-[432px] p-2 text-sm border rounded shadow-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none"
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
                                 placeholder="Describe the business logic..."
                             />
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={handleGenerate}
+                                    disabled={generating}
+                                    className="px-3 py-1.5 bg-purple-100 text-purple-700 font-medium rounded hover:bg-purple-200 transition-colors text-xs border border-purple-200 disabled:opacity-50 flex items-center gap-1"
+                                >
+                                    {generating ? (
+                                        <>
+                                            <svg className="animate-spin h-3 w-3 text-purple-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                            Generating...
+                                        </>
+                                    ) : (
+                                        <>✨ Generate Code</>
+                                    )}
+                                </button>
+                                <select
+                                    value={selectedModel}
+                                    onChange={(e) => setSelectedModel(e.target.value)}
+                                    className="px-2 py-1.5 bg-white border border-gray-300 rounded text-xs text-gray-700 outline-none focus:ring-1 focus:ring-purple-500"
+                                >
+                                    <option value="gpt-5.1">gpt-5.1</option>
+                                    <option value="gpt-4o">gpt-4o</option>
+                                </select>
+                                {selectedModel === 'gpt-5.1' && (
+                                    <select
+                                        value={reasoningEffort}
+                                        onChange={(e) => setReasoningEffort(e.target.value)}
+                                        className="px-2 py-1.5 bg-white border border-gray-300 rounded text-xs text-gray-700 outline-none focus:ring-1 focus:ring-purple-500"
+                                        title="Reasoning Effort"
+                                    >
+                                        <option value="low">Low Reasoning</option>
+                                        <option value="medium">Medium Reasoning</option>
+                                        <option value="high">High Reasoning</option>
+                                    </select>
+                                )}
+                                {thoughts && (
+                                    <span className="text-xs text-gray-500 italic truncate max-w-[500px] animate-pulse">
+                                        {thoughts.split('\n').pop()}
+                                    </span>
+                                )}
+                            </div>
                         </div>
                         <div className="flex flex-col gap-1 flex-1 min-h-0">
                             <label className="text-sm font-semibold text-gray-600">FM Code</label>
@@ -509,7 +662,7 @@ export default function Editor({ params }: { params: { id: string } }) {
                             }}
                             className="self-start px-4 py-2 bg-blue-600 text-white font-semibold rounded hover:bg-blue-700 transition-colors shadow-sm text-sm"
                         >
-                            Parse & Build Model
+                            Build model
                         </button>
                     </div>
                 </div>

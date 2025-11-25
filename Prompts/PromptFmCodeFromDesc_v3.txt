@@ -135,45 +135,6 @@ Rules:
 </Spread_operator>
 
 
-<Object_variants>
-
-Some objects have variants that behave identically in terms of **logic** but differ in **classification** (e.g. P&L section, LTV grouping).
-
-Examples:
-
-- Quantity driven:
-  - `QuantDrvMul()` = multiply input by internal assumption.
-  - `QuantDrvDiv()` = divide input by internal assumption.
-- Cost-related (suffixes DC, SM, GA, RD, OE):
-  - `CostMthOE()`, `CostMthGA()`, `CostMthSM()`, `CostMthRD()`
-  - `CostDrvDC()`, `CostDrvSM()`
-  - `CostAnnSM()`, `CostAnnGA()`, `CostAnnRD()`
-- Staff-related variants:
-  - `StaffTeamGA()`, `StaffTeamSM()`, `StaffTeamRD()`
-  - `StaffDrvDC()`, `StaffDrvSM()`
-- Revenue-related:
-  - `RevDrv()` = recurring revenues.
-  - `RevDrvNew()` = one-off / non-recurring revenues (for LTV separation).
-  - `RevDrvDel()`, `RevDrvNewDel()` = delayed cash versions (B2B invoicing).
-
-Rules:
-
-- Variants use the **same inputs, assumptions, outputs, and attributes** as the base object.
-- Only the **classification** changes (P&L section, metrics, reporting).
-
-Example:
-
-FM
-    Costs:
-        MaterialsCosts   = CostDrvDC(...UnitsBought.val) > waxCost, wickCost, jarCost // Direct COGS
-        AcquisitionCosts = CostAnnSM() > crmSubscription, eventSponsorship            // Annual S&M costs
-
-FM
-    Revenues:
-        OnboardingRevenues = RevDrvNew(newCustomers.val) > joiningFeeRev, setupFeeRev // One-off onboarding fees
-
-</Object_variants>
-
 <Assumption_configuration>
 
 Logic and flow are defined on the left (LHS) and middle of the line.
@@ -215,8 +176,48 @@ FM
         // 'Free' price is 0 by default, but explicit is clearer here. 'Pro' needs price.
         Subscribers = SubMth(...) => freePlan(price: 0), proPlan(price: 20)
 
-
 </Assumption_configuration>
+
+
+<Object_variants>
+
+Some objects have variants that behave identically in terms of **logic** but differ in **classification** (e.g. P&L section, LTV grouping).
+
+Examples:
+
+- Quantity driven:
+  - `QuantDrvMul()` = multiply input by internal assumption.
+  - `QuantDrvDiv()` = divide input by internal assumption.
+- Cost-related (suffixes DC, SM, GA, RD, OE):
+  - `CostMthOE()`, `CostMthGA()`, `CostMthSM()`, `CostMthRD()`
+  - `CostDrvDC()`, `CostDrvSM()`
+  - `CostAnnSM()`, `CostAnnGA()`, `CostAnnRD()`
+- Staff-related variants:
+  - `StaffTeamGA()`, `StaffTeamSM()`, `StaffTeamRD()`
+  - `StaffDrvDC()`, `StaffDrvSM()`
+- Revenue-related:
+  - `RevDrv()` = recurring revenues.
+  - `RevDrvNew()` = one-off / non-recurring revenues (for LTV separation).
+  - `RevDrvDel()`, `RevDrvNewDel()` = delayed cash versions (B2B invoicing).
+
+Rules:
+
+- Variants use the **same inputs, assumptions, outputs, and attributes** as the base object.
+- Only the **classification** changes (P&L section, metrics, reporting).
+
+Example:
+
+FM
+    Costs:
+        MaterialsCosts   = CostDrvDC(...UnitsBought.val) > waxCost, wickCost, jarCost // Direct COGS
+        AcquisitionCosts = CostAnnSM() > crmSubscription, eventSponsorship            // Annual S&M costs
+
+FM
+    Revenues:
+        OnboardingRevenues = RevDrvNew(newCustomers.val) > joiningFeeRev, setupFeeRev // One-off onboarding fees
+
+</Object_variants>
+
 
 <dashboard_guidelines>
 
@@ -1023,11 +1024,11 @@ Description:
 Inputs:
 - Either a single demand input for all outputs, or one input per equipment category.
 
-Assumptions:
-- Productivity (units per machine per month) per category.
-- Purchase price, inflation.
-- Lifetime (months).
-- Residual value at disposal.
+Assumptions (Parameters):
+- `productivity` (int): Units per machine per month.
+- `price` (int): Purchase price.
+- `lifetime` (int): Months.
+- `residualValue` (number): Residual value at disposal.
 
 Outputs:
 - One or more outputNames (e.g. `mouldingMachines`, `assemblyRobots`, `packagingLines`, `cars`).
@@ -1068,12 +1069,10 @@ Description:
 Inputs:
 - None.
 
-Assumptions per role:
-- Start and end dates.
-- Annual salary.
-- Employer taxes and on-costs (%).
-- Bonus (% of salary).
-- Wage inflation over time.
+Assumptions (Parameters):
+- `start` (int): Role start month.
+- `end` (int): Role end month.
+- `salary` (number): Role salary, bonus, taxes per month.
 
 Outputs:
 - One or more outputNames (e.g. `ceo`, `headOfMarketing`).
@@ -1109,13 +1108,11 @@ Description:
 Inputs:
 - None.
 
-Assumptions per team:
-- Team start date.
-- Headcount over time.
-- Average salary per head.
-- Wage inflation.
-- Employer taxes and on-costs (%).
-- Bonus (%).
+Assumptions (Parameters):
+- `start` (int): Team start month.
+- `end` (int): Team end month.
+- `heads` (number): Team Headcount.
+- `salary` (number): Average salary, bonus, taxes per head per month.
 
 Outputs:
 - One or more outputNames (e.g. `financeTeam`, `marketingTeam`).
@@ -1152,12 +1149,9 @@ Description:
 Inputs:
 - One or more activity drivers (e.g. `Orders.val`, `ActiveCustomers.val`).
 
-Assumptions:
-- Productivity (activity per head).
-- Average salary per head.
-- Wage inflation.
-- Taxes and on-costs (%).
-- Bonus (%).
+Assumptions (Parameters):
+- `productivity` (number): Activity handled per head per month.
+- `salary` (number): Salaries, taxes, bonus per head per month.
 
 Outputs:
 - One or more outputNames (e.g. `fulfilmentTeam`, `supportTeam`).
@@ -1194,10 +1188,9 @@ Inputs:
 - Exactly one input: active locations per month (e.g. `activeStores.val` or `newStores.cum`).
 - For pre-opening hires, advance locations via `AdvQuant()` before passing into `StaffLoc()`.
 
-Assumptions:
-- Roles per location (may be fractional).
-- Salaries, taxes, bonus per role.
-- Wage inflation.
+Assumptions (Parameters):
+- `heads` (number): Headcount per location (may be fractional).
+- `salary` (number): Salaries, taxes, bonus per head.
 
 Outputs:
 - One or more outputNames (roles), e.g. `manager`, `receptionist`, `security`.
@@ -1241,8 +1234,8 @@ Description:
 Inputs:
 - Exactly one input (e.g. `customerItems.val`, `newCustomers.val`).
 
-Assumptions:
-- Mix % per outputName (may vary over time).
+Assumptions (Parameters):
+- `mix` (dict): Mix % per outputName (may vary over time).
 
 Outputs:
 - One or more outputNames.
@@ -1305,8 +1298,8 @@ Description:
 Inputs:
 - One input series (e.g. `newClients.val`, `newProjects.cum`).
 
-Assumptions:
-- Delay period (integer months).
+Assumptions (Parameters):
+- `months` (int): Number of months to delay.
 
 Outputs:
 - One or more outputNames (usually just one).
@@ -1337,8 +1330,8 @@ Description:
 Inputs:
 - One input series (e.g. `newCustomers.val`, `newProjects.val`).
 
-Assumptions:
-- Advance period (integer months).
+Assumptions (Parameters):
+- `months` (int): Number of months to advance.
 
 Outputs:
 - One or more outputNames.
@@ -1370,8 +1363,8 @@ Description:
 Inputs:
 - One or more revenue series (typically `.rev`).
 
-Assumptions:
-- Payment delay per outputName (can be fractional, e.g. 1.5 months).
+Assumptions (Parameters):
+- `months` (int): Number of months to delay.
 
 Outputs:
 - One or more outputNames representing cash-in streams (e.g. `subscriptionsPaid`, `setupFeesPaid`).
@@ -1456,8 +1449,8 @@ Description:
 Inputs:
 - One input series (e.g. `projectsWon.val`, `newClients.val`).
 
-Assumptions:
-- Spread duration (N months) and optionally shape.
+Assumptions (Parameters):
+- `months` (int): Number of months to spread over.
 
 Outputs:
 - One or more outputNames.
@@ -1475,74 +1468,6 @@ FM
         ActiveProjects = Spread(hoursNeeded.val) > hoursBilled
 
 </Spread_spec>
-
-
-----------------------------------------------------
-<ResTax_spec>
-----------------------------------------------------
-
-ObjectType: `ResTax()`
-
-Description:
-- Essential object to calculate corporation tax.
-
-Inputs:
-- None.
-
-Assumptions:
-- Tax rate.
-- Payment interval.
-- Anchor month.
-- Payment delay.
-
-Outputs:
-- One outputName: `Tax`.
-
-Attributes:
-- `.rate`   = effective tax rate.
-- `.due`    = tax due at each payment interval.
-- `.paid`   = tax actually paid after delay.
-- `.taxable`= taxable profits accounting for losses.
-
-Example:
-
-FM
-    Results:
-        CorporationTax = ResTax() > Tax // Corporation tax due and paid
-
-</ResTax_spec>
-
-
-----------------------------------------------------
-<ResDcf_spec>
-----------------------------------------------------
-
-ObjectType: `ResDcf()`
-
-Description:
-- Essential object to calculate valuation using discounted cash flow (DCF).
-
-Inputs:
-- None.
-
-Assumptions:
-- Discount rate.
-- Perpetual growth rate.
-- Valuation year.
-
-Outputs:
-- None.
-
-Attributes:
-- None.
-
-Example:
-
-FM
-    Results:
-        Valuation = ResDcf() // Company valuation using DCF
-
-</ResDcf_spec>
 
 
 ----------------------------------------------------
@@ -1653,17 +1578,12 @@ FM
     // BusinessType: <INSERT CATEGORISATION INFO>
     // DateTime: <INSERT DATE & TIME>
 
-    SetupAndFunding:
-        Setup         = Setup()                       // Set model start date
+    Funding:
         EquityFunding = FundEquity() > startingCash  // Initial cash from founders/investors
 
     ////
     // Model logic goes here: construction, customer acquisition, retention, revenues, people, costs, assets.
     ////
-
-    Results:
-        Tax       = ResTax()  > Tax // Corporation tax due and paid
-        Valuation = ResDcf()         // Valuation using DCF
 
     // -------- Dashboard TABLES --------
 
@@ -1674,7 +1594,7 @@ FM
     IncomeStatement:
         KpiIncome = DashTableSum(output_total_revenue, output_total_cogs, output_total_gross_margin, output_total_cust_acquis, output_total_overheads, output_total_prod_dev, output_ebitda, output_total_depreciation, output_ebit, output_total_other_expinc, output_net_profit)
 
-    // Add more DashTable sections for assets, acquisition, retention, revenues, headcounts.
+    // Add more DashTable sections for locations opened, acquisition by channel, retention by customer type or tier, revenue sources, assets owned, headcounts by team.
 
     // -------- Dashboard CHARTS --------
 
@@ -1707,14 +1627,13 @@ FM
 
 Typical section ordering:
 
-1. Setup & Funding  
+1. Funding  
 2. Customer acquisition  
 3. Revenue model (onboarding, product sales, services, subscriptions, rentals, etc.)  
 4. People (driven teams, location teams, central teams, leadership roles)  
 5. Costs (driven costs, overheads, one-off costs)  
 6. Capex (driven capex, projects/locations, one-off setup capex)  
-7. Results (tax, valuation)  
-8. Dashboard (DashTables, then DashCharts)
+7. Dashboard (DashTables, then DashCharts)
 
 </section_order>
 
@@ -1732,8 +1651,7 @@ When to use:
 Skeleton:
 
 FM
-    SetupAndFunding:
-        Setup         = Setup()                     // Set model start date
+    Funding:
         EquityFunding = FundEquity() > startingCash
 
     CustomerAcquisition:
@@ -1769,10 +1687,6 @@ FM
         StaffDevices = CapexEquip(TotalHeads.val) > laptops, phones
         EquipPlan    = CapexMth() > labelPrinter, barcodeScanner, otherEquip
 
-    Results:
-        CorporationTax = ResTax() > Tax
-        Valuation      = ResDcf()
-
     // Dashboard code as per boilerplate
 
 </b2c_saas_upsell_early_pattern>
@@ -1786,7 +1700,7 @@ When to use:
 Skeleton:
 
 FM
-    // Setup & Funding as per boilerplate
+    // initial boilerplate
     
     CustomerOrders:
         WebOrders = QuantAnnSeas() > advertOrders, organicOrders // Orders by source
@@ -1821,7 +1735,7 @@ When to use:
 Skeleton:
 
 FM
-    // Setup & Funding as per boilerplate
+    // initial boilerplate
     
     CustomerOrders:
         WebOrders      = QuantAnnSeas() > advertOrders, organicOrders
@@ -1889,7 +1803,7 @@ FM
 
 Use this checklist when generating FM Code:
 
-- Set up the boilerplate (Setup, Funding, Results, Dashboard skeleton).
+- Set up the boilerplate (Company info & timestamp, Setup, Funding, Results, Dashboard skeleton).
 - Choose only the object types from `<Object_specifications>` that are actually needed.
 - Use the correct object variant for P&L classification (e.g. `CostDrvDC/SM`, `CostAnnGA/SM/RD`, `RevDrvNew`, `RevDrvDel`, etc.).
 - Prefer the spread operator for 1:1 input→output mappings to reduce clutter.
@@ -1902,7 +1816,7 @@ Use this checklist when generating FM Code:
 - Produce **FM Code only** in your final answer:
   - All content must be inside a single `FM` code block.
   - Add concise inline `//` comments for each object.
-  - Do **not** output prose outside code fences.
+  - You may output a brief thinking process enclosed in `<thinking>` tags before the code block.
 
 Create the FM Code for the following startup description:
 """
