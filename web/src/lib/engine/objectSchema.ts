@@ -35,7 +35,6 @@ export const objectSchema = {
             monthly: true,
             smoothing: true,
             growth: true,
-            dateRange: false,
             seasonal: true,
             integers: true
           },
@@ -50,12 +49,7 @@ export const objectSchema = {
           format: "integer",
           default: 1,
           supports: {
-            single: true,
-            monthly: false,
-            dateRange: false,
-            annual: false,
-            growth: false,
-            smoothing: false
+            single: true
           },
           ui: {
             defaultMode: "single"
@@ -98,7 +92,6 @@ export const objectSchema = {
             monthly: true,
             smoothing: true,
             growth: true,
-            dateRange: false,
             seasonal: true,
             integers: true
           },
@@ -113,12 +106,7 @@ export const objectSchema = {
           format: "integer",
           default: 1,
           supports: {
-            single: true,
-            monthly: false,
-            dateRange: false,
-            annual: false,
-            growth: false,
-            smoothing: false
+            single: true
           },
           ui: {
             defaultMode: "single"
@@ -159,8 +147,7 @@ export const objectSchema = {
             annual: true,
             monthly: true,
             smoothing: true,
-            growth: true,      // 👈 enable growth/inflation here
-            dateRange: false
+            growth: true
           },
           ui: {
             defaultMode: "annual"
@@ -173,12 +160,7 @@ export const objectSchema = {
           format: "integer",
           default: 1,
           supports: {
-            single: true,
-            monthly: false,
-            dateRange: false,
-            annual: false,
-            growth: false,
-            smoothing: false
+            single: true
           },
           ui: {
             defaultMode: "single"
@@ -219,8 +201,7 @@ export const objectSchema = {
             annual: true,
             monthly: true,
             smoothing: true,
-            growth: true,
-            dateRange: false
+            growth: true
           },
           ui: {
             defaultMode: "annual"
@@ -233,12 +214,7 @@ export const objectSchema = {
           format: "integer",
           default: 1,
           supports: {
-            single: true,
-            monthly: false,
-            dateRange: false,
-            annual: false,
-            growth: false,
-            smoothing: false
+            single: true
           },
           ui: {
             defaultMode: "single"
@@ -280,8 +256,7 @@ export const objectSchema = {
             annual: true,
             monthly: true,
             smoothing: true,
-            growth: true,     // you could turn this on if you want
-            dateRange: false
+            growth: true
           },
           ui: {
             defaultMode: "annual"
@@ -294,12 +269,7 @@ export const objectSchema = {
           format: "integer",
           default: 1,
           supports: {
-            single: true,
-            monthly: false,
-            dateRange: false,
-            annual: false,
-            growth: false,
-            smoothing: false
+            single: true
           },
           ui: {
             defaultMode: "single"
@@ -340,8 +310,7 @@ export const objectSchema = {
             annual: true,
             monthly: true,
             smoothing: true,
-            growth: true,
-            dateRange: false
+            growth: true
           },
           ui: {
             defaultMode: "single"
@@ -354,12 +323,7 @@ export const objectSchema = {
           format: "integer",
           default: 1,
           supports: {
-            single: true,
-            monthly: false,
-            dateRange: false,
-            annual: false,
-            growth: false,
-            smoothing: false
+            single: true
           },
           ui: {
             defaultMode: "single"
@@ -400,8 +364,7 @@ export const objectSchema = {
             annual: true,
             monthly: true,
             smoothing: true,
-            growth: true,
-            dateRange: false
+            growth: true
           },
           ui: {
             defaultMode: "single"
@@ -414,12 +377,7 @@ export const objectSchema = {
           format: "integer",
           default: 1,
           supports: {
-            single: true,
-            monthly: false,
-            dateRange: false,
-            annual: false,
-            growth: false,
-            smoothing: false
+            single: true
           },
           ui: {
             defaultMode: "single"
@@ -460,8 +418,7 @@ export const objectSchema = {
             annual: true,
             monthly: true,
             smoothing: true,
-            growth: true,
-            dateRange: false
+            growth: true
           },
           ui: {
             defaultMode: "single"
@@ -474,12 +431,7 @@ export const objectSchema = {
           format: "integer",
           default: 1,
           supports: {
-            single: true,
-            monthly: false,
-            dateRange: false,
-            annual: false,
-            growth: false,
-            smoothing: false
+            single: true
           },
           ui: {
             defaultMode: "single"
@@ -520,8 +472,7 @@ export const objectSchema = {
             annual: true,
             monthly: true,
             smoothing: true,
-            growth: true,        // inflation-like
-            dateRange: false
+            growth: true
           },
           ui: {
             defaultMode: "annual"
@@ -534,12 +485,7 @@ export const objectSchema = {
           format: "integer",
           default: 1,
           supports: {
-            single: true,
-            monthly: false,
-            dateRange: false,
-            annual: false,
-            growth: false,
-            smoothing: false
+            single: true
           },
           ui: {
             defaultMode: "single"
@@ -580,8 +526,7 @@ export const objectSchema = {
             annual: true,
             monthly: true,
             smoothing: true,
-            growth: true,        // inflation-like
-            dateRange: false
+            growth: true
           },
           ui: {
             defaultMode: "annual"
@@ -594,12 +539,7 @@ export const objectSchema = {
           format: "integer",
           default: 1,
           supports: {
-            single: true,
-            monthly: false,
-            dateRange: false,
-            annual: false,
-            growth: false,
-            smoothing: false
+            single: true
           },
           ui: {
             defaultMode: "single"
@@ -640,8 +580,7 @@ export const objectSchema = {
             annual: true,
             monthly: true,
             smoothing: true,
-            growth: true,
-            dateRange: false
+            growth: true
           },
           ui: {
             defaultMode: "annual"
@@ -654,12 +593,7 @@ export const objectSchema = {
           format: "integer",
           default: 1,
           supports: {
-            single: true,
-            monthly: false,
-            dateRange: false,
-            annual: false,
-            growth: false,
-            smoothing: false
+            single: true
           },
           ui: {
             defaultMode: "single"
@@ -700,8 +634,7 @@ export const objectSchema = {
             annual: true,
             monthly: true,
             smoothing: true,
-            growth: true,
-            dateRange: false
+            growth: true
           },
           ui: {
             defaultMode: "annual"
@@ -714,12 +647,7 @@ export const objectSchema = {
           format: "integer",
           default: 1,
           supports: {
-            single: true,
-            monthly: false,
-            dateRange: false,
-            annual: false,
-            growth: false,
-            smoothing: false
+            single: true
           },
           ui: {
             defaultMode: "single"
@@ -760,8 +688,7 @@ export const objectSchema = {
             annual: true,
             monthly: true,
             smoothing: true,
-            growth: true,        // inflation-like
-            dateRange: false
+            growth: true
           },
           ui: {
             defaultMode: "annual"
@@ -774,12 +701,7 @@ export const objectSchema = {
           format: "integer",
           default: 1,
           supports: {
-            single: true,
-            monthly: false,
-            dateRange: false,
-            annual: false,
-            growth: false,
-            smoothing: false
+            single: true
           },
           ui: {
             defaultMode: "single"
@@ -823,9 +745,7 @@ export const objectSchema = {
             single: true,
             annual: true,
             monthly: true,
-            smoothing: true,
-            growth: false,
-            dateRange: false
+            smoothing: true
           },
           ui: {
             defaultMode: "single"
@@ -838,12 +758,7 @@ export const objectSchema = {
           format: "integer",
           default: 1,
           supports: {
-            single: true,
-            monthly: false,
-            dateRange: false,
-            annual: false,
-            growth: false,
-            smoothing: false
+            single: true
           },
           ui: {
             defaultMode: "single"
@@ -879,11 +794,7 @@ export const objectSchema = {
           default: 1,
           supports: {
             single: true,
-            monthly: true,     // let the user have per-month delays later
-            dateRange: false,
-            annual: false,
-            growth: false,
-            smoothing: false
+            monthly: true
           },
           ui: {
             defaultMode: "single"
@@ -927,12 +838,9 @@ export const objectSchema = {
           supports: {
             single: true,
             monthly: true,
-            dateRange: false,
             annual: true,
-            growth: false,
             smoothing: true,
-            integers: true,
-            seasonal: false
+            integers: true
           },
           ui: {
             defaultMode: "dateRange"
@@ -947,12 +855,8 @@ export const objectSchema = {
           supports: {
             single: true,
             monthly: true,
-            dateRange: false,
             annual: true,
-            growth: false,
-            smoothing: true,
-            integers: false,
-            seasonal: false
+            smoothing: true
           },
           ui: {
             defaultMode: "single"
@@ -965,12 +869,7 @@ export const objectSchema = {
           format: "integer",
           default: 1,
           supports: {
-            single: true,
-            monthly: false,
-            dateRange: false,
-            annual: false,
-            growth: false,
-            smoothing: false
+            single: true
           },
           ui: {
             defaultMode: "single"
@@ -1015,9 +914,7 @@ export const objectSchema = {
           supports: {
             single: true,
             monthly: true,
-            dateRange: false,
             annual: true,
-            growth: false,
             smoothing: true,
             integers: true,
             seasonal: true
@@ -1035,12 +932,8 @@ export const objectSchema = {
           supports: {
             single: true,
             monthly: true,
-            dateRange: false,
             annual: true,
-            growth: false,
-            smoothing: true,
-            integers: false,
-            seasonal: false
+            smoothing: true
           },
           ui: {
             defaultMode: "dateRange"
@@ -1053,12 +946,7 @@ export const objectSchema = {
           format: "integer",
           default: 1,
           supports: {
-            single: true,
-            monthly: false,
-            dateRange: false,
-            annual: false,
-            growth: false,
-            smoothing: false
+            single: true
           },
           ui: {
             defaultMode: "single"
@@ -1102,12 +990,9 @@ export const objectSchema = {
           supports: {
             single: true,
             monthly: true,
-            dateRange: false,
             annual: true,
-            growth: false,
             smoothing: true,
-            integers: true,
-            seasonal: false
+            integers: true
           },
           ui: {
             defaultMode: "dateRange"
@@ -1120,12 +1005,7 @@ export const objectSchema = {
           format: "integer",
           default: 1,
           supports: {
-            single: true,
-            monthly: false,
-            dateRange: false,
-            annual: false,
-            growth: false,
-            smoothing: false
+            single: true
           },
           ui: {
             defaultMode: "single"
