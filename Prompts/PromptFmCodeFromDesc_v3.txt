@@ -2,8 +2,8 @@ Your job is to build a financial model based on a description of the user's busi
 
 The model is written in **FM Code**, a simple object-oriented language for activity-based financial models for startup companies.
 
-- Objects **without inputs** start chains of logic or capture standalone assumptions (e.g. annual overheads, starting quantities, funding).
-- Objects **with inputs** chain steps together (e.g. sales funnels, conversion rates, BOMs, costs, subscription dynamics).
+- Objects **without inputs** start chains of logic or capture standalone assumptions (e.g. cost(), quant(), fundEquity).
+- Objects **with inputs** chain steps together (e.g. quantDrv(), costDrv(), revDrv(), capexDrv(), staffDrv(), subMth(), supplyMth(), split()).
 - Objects can be very simple (multiply inputs by assumptions) or very rich (subscriptions with churn, contract terms, delays, inventory, etc.).
 
 You must strictly follow the FM Code specification below.
@@ -19,22 +19,25 @@ FM Code is organised into **sections**, each grouping related objects.
 - Each file starts with the keyword `FM` on its own line.
 - Sections are defined by a `SectionTitle:` label.
 - Objects are indented under their SectionTitle.
-- Each object is defined on **one line only**.
 
 Syntax:
 
 FM
     SectionTitle: // Concise name for a group of related objects (e.g. SetupAndFunding, CustomerAcquisition, Revenues, People, Costs, Results, Dashboard)
-        MyObject = ObjectType(inputName.attribute, ...) > outputName1, outputName2, ... // Concise comment describing purpose, main driver, and units. Do NOT mention ObjectTypes in comments.
+        // Concise object comment describing purpose, main driver, and units. Do NOT mention ObjectTypes or assumption values in comments.
+        MyObject = ObjectType(inputName.attribute, ...) >
+            outputName1(assum: assumValue1),
+            outputName2(assum: assumValue2), ... 
 
 Rules:
 
 - `inputName` is always an **ObjectName** or **outputName** followed by an attribute in dot notation (e.g. `Orders.val`, `Subscribers.rev`).
 - **ObjectNames** are indented relative to the section title.
 - Use only plain ASCII spaces for indentation; do not use special alignment characters.
-- **Never** split the code for a single object across multiple lines.
+- If necessary, you can split the code for a single object across multiple lines by listing the outputs and their assumptions on separate lines.
+- Use comments to describe the purpose, main driver, and units of each object. Place comments on the line above the object when split, or on the same line as the object when not split.
 
-</Basic_syntax>
+Basic_syntax>
 
 
 <Naming_conventions>
@@ -43,9 +46,10 @@ Rules:
   - Examples: `CustomerAcquisition`, `StaffRole`, `Subscriptions`.
 - **outputName**: camelCase  
   - Examples: `newCustomers`, `bronzeSubs`, `officeRent`.
-- **Attributes**: lower camelCase after a dot  
+- Channel **Attributes**: lower camelCase after a dot represent channels per outputName 
   - Examples: `.val`, `.heads`, `.rev`, `.act`, `.chu`, `.life`, `.cum`, `.assum`, `.cogs`, `.depr`.
-
+- Assumption **Attributes**: lower camelCase after a colon represent assumptions per outputName 
+  - Examples: `bronzeTier(price: 10, churn: 0.1)`.
 Uniqueness:
 
 - ObjectNames must be unique across the model.
@@ -60,13 +64,13 @@ Naming guidance:
   - Bad: `setupCosts (legal, fitout, licenses)`
   - Good: `setupLegal`, `setupFitout`, `setupLicenses`
 
-Chains of simple objects (only `.val` and `.cum`):
+Chains of simple objects (only `.val` and `.cum` channels per outputName):
 
 - Add prefixes or suffixes to avoid duplication, e.g. `shirtsSold`, `shirtsRev`.
 - Useful suffixes: `...Rev`, `...Cost`, `...Fees`, `...Sold`, `...Items`, `...Units`.
 - Useful prefixes: `new...`, `num...`.
 
-Multi-output objects (e.g. `Supply*()`, `Sub*()`, `Staff*()`):
+Multi-channel objects (e.g. `Supply*()`, `Sub*()`, `Staff*()`):
 
 - Use **neutral nouns** for outputNames describing product, component, tier, role, team, or category.
 - Do not embed measure words (cost, rev, heads, act, churn) in outputNames.
@@ -113,8 +117,13 @@ Without spread:
 
 FM
     SupplyChain:
-        UnitsBought    = QuantDrv(candlesSold.val) > waxKg, wickMetres, jarsBought   // BOM for candles sold
-        MaterialsCosts = CostDrv(waxKg.val, wickMetres.val, jarsBought.val, orders.val) > waxCost, wickCost, jarCost, boxCost // Direct costs
+        UnitsBought    = QuantDrv(candlesSold.val) > waxKg(value: 0.3), wickMetres(value: 0.2), jarsBought(value: 1)   // BOM for candles sold
+        // Candle Direct costs
+        MaterialsCosts = CostDrv(waxKg.val, wickMetres.val, jarsBought.val, orders.val) >
+            waxCost(cost: 3),
+            wickCost(cost: 0.5),
+            jarCost(cost: 1.1),
+            boxCost(cost: 0.75) 
 
 With spread:
 
@@ -189,9 +198,8 @@ Examples:
   - `QuantDrvMul()` = multiply input by internal assumption.
   - `QuantDrvDiv()` = divide input by internal assumption.
 - Cost-related (suffixes DC, SM, GA, RD, OE):
-  - `CostMthOE()`, `CostMthGA()`, `CostMthSM()`, `CostMthRD()`
+  - `CostOE()`, `CostGA()`, `CostSM()`, `CostRD()`
   - `CostDrvDC()`, `CostDrvSM()`
-  - `CostAnnSM()`, `CostAnnGA()`, `CostAnnRD()`
 - Staff-related variants:
   - `StaffTeamGA()`, `StaffTeamSM()`, `StaffTeamRD()`
   - `StaffDrvDC()`, `StaffDrvSM()`
@@ -214,7 +222,7 @@ FM
 
 FM
     Revenues:
-        OnboardingRevenues = RevDrvNew(newCustomers.val) > joiningFeeRev, setupFeeRev // One-off onboarding fees
+        OnboardingRevenues = RevDrvNew(newCustomers.val) > joiningFeeRev(price: 20), setupFeeRev(price: 100) // One-off onboarding fees
 
 </Object_variants>
 
@@ -266,40 +274,6 @@ Separators in FM Code (recommended but not required):
 Each object type below defines: purpose, inputs, internal assumptions, outputs and attributes, plus example FM Code.
 
 ----------------------------------------------------
-<Setup_spec>
-----------------------------------------------------
-
-ObjectType: `Setup()`
-
-Description:
-- Essential in every model. Sets model start month and year.
-- Must be the **first** object in the model.
-
-Inputs:
-- None.
-
-Assumptions:
-- Model start month and year.
-
-Outputs:
-- None.
-
-Attributes:
-- None.
-
-Example:
-
-FM
-    SetupAndFunding:
-        ModelSetup = Setup() // Set model start month and year
-
-Notes:
-- The model will not work without a `Setup()` object.
-
-</Setup_spec>
-
-
-----------------------------------------------------
 <FundEquity_spec>
 ----------------------------------------------------
 
@@ -312,9 +286,9 @@ Description:
 Inputs:
 - None (starting object).
 
-Assumptions:
-- Amount raised per round.
-- Month in which each round is received.
+Assumptions (Parameters):
+- `amount` (number): Amount raised per round.
+- `month` (int): Month in which each round is received.
 
 Outputs:
 - One or more outputNames, each a funding round.
@@ -352,13 +326,10 @@ Description:
 Inputs:
 - None (starting object).
 
-Assumptions (per loan/outputName):
-- Loan start date.
-- Amount borrowed.
-- Interest rate.
-- Grace period (months of no interest or repayments; can be 0).
-- Interest-only period (before amortisation; can be 0).
-- Repayment term (months of principal repayment; can be 0 for pure interest-only).
+Assumptions (Parameters):
+- `start` (int): Loan start month.
+- `amount` (number): Amount borrowed.
+- `rate` (number): Interest rate percentage.
 
 Outputs:
 - One or more outputNames (e.g. `sbaLoan`, `bankLoan`, `ventureDebt`, `equipmentLoan`).
@@ -386,62 +357,25 @@ Notes:
 
 
 ----------------------------------------------------
-<QuantMth_spec>
+<Quant_spec>
 ----------------------------------------------------
 
-ObjectType: `QuantMth()`
-
-Description:
-- Starting object for small or occasional quantities entered **by month**.
-- Outputs are not sent to financial statements by default.
-
-Inputs:
-- None.
-
-Assumptions:
-- Monthly values per outputName entered by the user.
-
-Outputs:
-- One or more outputNames (e.g. `newClinicsUsa`, `newClinicsUk`, `newClinicsCanada`).
-
-Attributes:
-- `.val` = monthly user inputs.
-- `.cum` = cumulative totals.
-- Available at object and outputName level.
-
-Example:
-
-FM
-    Expansion:
-        NewClinics = QuantMth() > newClinicsUsa, newClinicsUk, newClinicsCanada // New clinics opening per month by region
-
-Notes:
-- `NewClinics.cum` = total clinics opened across all regions.
-
-</QuantMth_spec>
-
-
-----------------------------------------------------
-<QuantAnn_spec>
-----------------------------------------------------
-
-ObjectType: `QuantAnn()`
+ObjectType: `Quant()`
 
 Variants:
-- `QuantAnn()` = annual quantity assumptions spread evenly across months.
-- `QuantAnnSeas()` = annual assumptions spread using a seasonality profile (% by calendar month).
+- `Quant()` = annual quantity assumptions spread evenly across months.
+- `QuantSeas()` = annual assumptions spread using a seasonality profile (% by calendar month).
 
 Description:
 - Starting objects for large volumes forecasted annually rather than monthly.
-- `QuantAnn()` assumes even monthly pattern.
-- `QuantAnnSeas()` uses user-defined monthly seasonality percentages (sum to 100%).
+- `Quant()` assumes even monthly pattern.
+- `QuantSeas()` uses user-defined monthly seasonality percentages (sum to 100%).
 
 Inputs:
 - None.
 
-Assumptions:
-- Annual forecast per outputName.
-- For `QuantAnnSeas()` only: seasonality % per calendar month.
+Assumptions (Parameters):
+- `value` (number): Monthly forecast per outputName.
 
 Outputs:
 - One or more outputNames (e.g. `organicUsers`, `paidAdsUsers`).
@@ -449,7 +383,7 @@ Outputs:
 Attributes:
 - `.val`   = monthly values (annual forecast spread evenly or by seasonality).
 - `.cum`   = cumulative quantities over time.
-- `.assum` = seasonality % by calendar month (`QuantAnnSeas` only, per outputName).
+- `.assum` = seasonality % by calendar month (per outputName only).
 
 Examples:
 
@@ -457,15 +391,15 @@ Even spread:
 
 FM
     CustomerAcquisition:
-        NewUsers = QuantAnn() > organicUsers, paidAdsUsers // Annual new users by source
+        NewUsers = Quant() > organicUsers, paidAdsUsers // Annual new users by source
 
 Seasonal:
 
 FM
     Demand:
-        TravelBookings = QuantAnnSeas() > consumerBookings, corporateBookings // Seasonal bookings by segment
+        TravelBookings = QuantSeas() > consumerBookings, corporateBookings // Seasonal bookings by segment
 
-</QuantAnn_spec>
+</Quant_spec>
 
 
 ----------------------------------------------------
@@ -488,8 +422,8 @@ Inputs:
   - A single input applied to all outputs.
 - Inputs are always attributes from other objects (e.g. `marketingSpend.val`).
 
-Assumptions:
-- Per-output assumptions (e.g. CPC, conversion rates, units per order).
+Assumptions (Parameters):
+- `factor` (number): Multiplier or divisor per outputName.
 
 Outputs:
 - One or more outputNames.
@@ -497,7 +431,7 @@ Outputs:
 Attributes:
 - `.val` = scaled value per month.
 - `.cum` = cumulative total.
-- `.assum` = per-output assumption used to scale input (available per outputName only).
+- `.assum` = per-output factor used to scale input (available per outputName only).
 
 Examples:
 
@@ -530,10 +464,9 @@ Inputs:
 - One input per tier: number of **new subscribers per month**.
 - Typically follows a mix step such as `Split()`.
 
-Assumptions:
-- Monthly price per tier.
-- Price inflation over time (object level).
-- Monthly churn % per tier.
+Assumptions (Parameters):
+- `price` (number): Monthly price per tier.
+- `churn` (number): Monthly churn % per tier.
 
 Outputs:
 - One or more outputNames representing tiers (e.g. `bronzeSubs`, `silverSubs`, `goldSubs`).
@@ -551,8 +484,11 @@ Example:
 
 FM
     Subscriptions:
-        NewSubscribers = Split(newCustomers.val) > newBronze, newSilver, newGold
-        Subscribers    = SubMth(...NewSubscribers.val) > bronzeSubs, silverSubs, goldSubs // Monthly subs and churn by tier
+        NewSubscribers = Split(newCustomers.val) > newBronze(mix: 0.5), newSilver(mix: 0.3), newGold(mix: 0.2)
+        Subscribers    = SubMth(...NewSubscribers.val) >
+            bronzeSubs(price: 10, churn: 0.1),
+            silverSubs(price: 20, churn: 0.1),
+            goldSubs(price: 50, churn: 0.1) // Monthly subs and churn by tier
 
 </SubMth_spec>
 
@@ -573,14 +509,10 @@ Description:
 Inputs:
 - One input per tier/plan: number of new contracts starting each month.
 
-Assumptions:
-- Contract term length (months) per tier.
-- Churn at term end (%).
-- Price per term (revenue recognised straight-line over term).
-- Price inflation over time (object level).
-- Billing cadence: monthly, quarterly prepaid, annual prepaid.
-- Cash timing aligned to billing cadence.
-- For `SubTermDel()`: cash is delayed and routes via Accounts Receivable.
+Assumptions (Parameters):
+- `churn` (number): Term-end churn % per tier.
+- `term` (number): Contract term length (months) per tier.
+- `price` (number): Price per term (revenue recognised straight-line over term).
 
 Outputs:
 - One or more outputNames representing tiers/plans (e.g. `monthlyPro`, `annualPro`).
@@ -604,7 +536,7 @@ Prompt payments (B2C):
 
 FM
     Subscriptions:
-        NewContracts = QuantAnnSeas() > newPlans
+        NewContracts = QuantSeas() > newPlans
         NewPlanMix   = Split(newPlans.val) > newAnnual, newMonthly
         Subscribers  = SubTerm(...NewPlanMix.val) > subsAnnual, subsMonthly
 
@@ -612,7 +544,7 @@ Delayed payments (B2B):
 
 FM
     Subscriptions:
-        NewContracts = QuantAnnSeas() > newPlans
+        NewContracts = QuantSeas() > newPlans
         NewPlanMix   = Split(newPlans.val) > newAnnual, newMonthly
         Subscribers  = SubTermDel(...NewPlanMix.val) > subsAnnual, subsMonthly
         Payments     = DelRev(Subscribers.rev) > subsPaid // Cash collections with delay
@@ -636,8 +568,8 @@ Description:
 Inputs:
 - One input per tier: new customers/users per month.
 
-Assumptions:
-- Monthly churn % per tier.
+Assumptions (Parameters):
+- `churn` (number): Monthly churn % per tier.
 
 Outputs:
 - One or more outputNames (e.g. `customers`, `freeUsers`).
@@ -652,8 +584,8 @@ Example:
 
 FM
     Customers:
-        CustomersAcquired = QuantAnnSeas() > newCustomers
-        RetainedCustomers = SubRetain(newCustomers.val) > customers // Retained customer base
+        CustomersAcquired = QuantSeas() > newCustomers
+        RetainedCustomers = SubRetain(newCustomers.val) > customers(churn: 0.1) // Retained customer base churning monthly
 
 </SubRetain_spec>
 
@@ -676,9 +608,8 @@ Inputs:
 - One or more quantity inputs (e.g. `...ProductsSold.val`).
 - Spread operator commonly used for 1:1 products → revenue streams.
 
-Assumptions:
-- Unit price per outputName.
-- Price inflation over time (object level).
+Assumptions (Parameters):
+- `price` (number): Unit price per outputName.
 
 Outputs:
 - One or more outputNames (e.g. `smallCandleRev`, `upsellRev`).
@@ -715,9 +646,8 @@ Description:
 Inputs:
 - One input per outputName, or a single input applied to all outputs.
 
-Assumptions:
-- Price per unit or customer.
-- Payment delay (months).
+Assumptions (Parameters):
+- `price` (number): Unit price per outputName.
 
 Outputs:
 - One or more outputNames (e.g. `softwareLicences`, `setupFees`).
@@ -765,9 +695,8 @@ Inputs:
 - One input per outputName, or one input applied to all outputs (1:1 or 1:many).
 - Inputs are typically quantities or activity metrics (e.g. `itemsBought.val`, `Orders.val`).
 
-Assumptions:
-- Unit cost per outputName.
-- Cost inflation over time (object level).
+Assumptions (Parameters):
+- `cost` (number): Unit cost per outputName.
 
 Outputs:
 - One or more outputNames (e.g. `materialsCost`, `deliveryCost`).
@@ -799,15 +728,15 @@ Notes:
 
 
 ----------------------------------------------------
-<CostAnn_spec>
+<Cost_spec>
 ----------------------------------------------------
 
-ObjectType: `CostAnn()`
+ObjectType: `Cost()`
 
 Variants:
-- `CostAnnGA()` = annual G&A overheads (rent, utilities, insurance, software).
-- `CostAnnSM()` = annual S&M overheads (budgets, sponsorships, tools).
-- `CostAnnRD()` = annual R&D costs.
+- `CostGA()` = annual G&A overheads (rent, utilities, insurance, software).
+- `CostSM()` = annual S&M overheads (budgets, sponsorships, tools).
+- `CostRD()` = annual R&D costs.
 
 Description:
 - Allows annual cost assumptions that are spread evenly across months.
@@ -816,9 +745,8 @@ Description:
 Inputs:
 - None.
 
-Assumptions:
-- Annual cost per outputName.
-- Cost inflation over time (object level).
+Assumptions (Parameters):
+- `cost` (number): Monthly cost per outputName.
 
 Outputs:
 - One or more outputNames (e.g. `officeRent`, `insurance`).
@@ -830,51 +758,11 @@ Example:
 
 FM
     Costs:
-        OverheadCosts = CostAnnGA() > officeRent, utilities, insurance, softwareSubscriptions
-        AcquisitionCosts = CostAnnSM() > crmSubscription, eventSponsorship
+        OverheadCosts = CostGA() > officeRent, utilities, insurance, softwareSubscriptions
+        AcquisitionCosts = CostSM() > crmSubscription, eventSponsorship
 
-</CostAnn_spec>
+</Cost_spec>
 
-
-----------------------------------------------------
-<CostMth_spec>
-----------------------------------------------------
-
-ObjectType: `CostMth()`
-
-Variants:
-- `CostMthOE()` = one-off or setup costs (Other Expense).
-- `CostMthGA()` = irregular G&A costs.
-- `CostMthSM()` = irregular S&M costs.
-- `CostMthRD()` = irregular R&D costs.
-
-Description:
-- Monthly cost assumptions entered directly (often irregular and sparse).
-
-Inputs:
-- None.
-
-Assumptions:
-- Monthly cost values per outputName (often zero in most months).
-
-Outputs:
-- One or more outputNames.
-
-Attributes:
-- `.val` = monthly cost.
-- `.cum` = cumulative cost.
-- Available at object and outputName level.
-
-Examples:
-
-FM
-    Costs:
-        CompanySetup = CostMthOE() > legalFees, companyRegistration, licenceFees
-        OccasionalCosts = CostMthGA() > consultancyFees, officeEvents
-        AcquisitionProjects = CostMthSM() > conferenceSponsorship, influencerTrialCampaign
-        DevelopmentProjects = CostMthRD() > prototypeDesign, freelanceResearchers, patentFees
-
-</CostMth_spec>
 
 
 ----------------------------------------------------
@@ -894,14 +782,12 @@ Inputs:
   - Use `QuantDrv` to create BOMs per product.
   - Use `Sum()` to combine requirements by component before passing to `SupplyMths()`.
 
-Assumptions:
-- Target inventory level per item.
-- Unit cost per item + inflation (object level).
-- Lead time in months (≥ 1).
-- Minimum order quantity (MOQ).
-- Case pack / order multiple (rounding above MOQ).
-- Optional opening inventory (units and value).
-- Default cash terms: pay at order placement; prepayments held as an asset until receipt.
+Assumptions (Parameters):
+- `inventory` (number): Target inventory level as % item sales.
+- `cost` (number): Unit cost per item.
+- `leadTime` (int): Lead time in months (≥ 1).
+- `moq` (int): Minimum order quantity (MOQ).
+- `case` (int): Case pack / order multiple (order step size when above MOQ).
 
 Outputs:
 - One or more outputNames (e.g. `blouses`, `zippers`, `wax`, `wicks`).
@@ -920,15 +806,19 @@ Examples (finished goods):
 
 FM
     Demand:
-        CustomerOrders = QuantAnnSeas() > orders
+        CustomerOrders = QuantSeas() > orders
         BasketItems    = QuantDrv(orders.val) > items
         ProductsSold   = Split(items.val) > blousesSold, shortsSold, sweatersSold
 
     SupplyChain:
-        Purchasing = SupplyMths(...ProductsSold.val) > blouses, shorts, sweaters
+        // Orders are placed months in advance considering MOQ and lead times
+        Purchasing = SupplyMths(...ProductsSold.val) >
+            blouses(inventory:0.5, cost:10, leadTime:2, moq:100, case:10),
+            shorts(inventory:0.5, cost:7, leadTime:2, moq:100, case:10),
+            sweaters(inventory:0.5, cost:15, leadTime:2, moq:50, case:5)
 
     Revenues:
-        Revenues = RevDrv(...ProductsSold.val) > blousesRev, shortsRev, sweatersRev
+        Revenues = RevDrv(...ProductsSold.val) > blousesRev(price: 30), shortsRev(price: 25), sweatersRev(price: 50) // Revenues are driven by sales volumes
 
 Notes:
 - Use either `SupplyMths()` **or** `CostDrvDC()` for COGS, not both.
@@ -950,8 +840,9 @@ Description:
 Inputs:
 - None.
 
-Assumptions:
-- Monthly capex entries per outputName.
+Assumptions (Parameters):
+- `capex` (number): Capex in first month.
+- `lifetime` (int): Months asset typically lasts before being replaced.
 
 Outputs:
 - One or more outputNames (e.g. `officeFurniture`, `officeFitout`).
@@ -965,7 +856,7 @@ Example:
 
 FM
     Capex:
-        CompanySetupCapex = CapexMth() > officeFurniture, officeFitout // Capitalised setup spend
+        CompanySetupCapex = CapexMth() > officeFurniture(capex: 1000, lifetime: 60), officeFitout(capex: 2000, lifetime: 60) // Capitalised setup spend
 
 </CapexMth_spec>
 
@@ -1046,13 +937,17 @@ Examples:
 FM
     Capex:
         FactoryEquip = CapexEquip(widgetDemand.val) > mouldingMachines, assemblyRobots, packagingLines
-        RentalFleet  = CapexEquip(rentalDays.val) > cars
+        RentalFleet  = CapexEquip(rentalDays.val) > cars(productivity: 10, price: 10000, lifetime: 60, residualValue: 1000)
 
 FM
     Capex:
         RentalDemand = QuantAnnSeas() > rentalDays
-        CarMix       = Split(rentalDays.val) > economyDays, standardDays, suvDays
-        RentalFleet  = CapexEquip(...CarMix.val) > economyCars, standardCars, suvCars
+        CarMix       = Split(rentalDays.val) > economyDays(mix: 0.5), standardDays(mix: 0.4), suvDays(mix: 0.1)
+        // We own a mix of cars in the fleet to cover rental days demand for each type of vehicle.
+        RentalFleet  = CapexEquip(...CarMix.val) >
+            economyCars(productivity: 25, price: 10000, lifetime: 60, residualValue: 1000),
+            standardCars(productivity: 22, price: 20000, lifetime: 60, residualValue: 2000),
+            suvCars(productivity: 20, price: 30000, lifetime: 60, residualValue: 3000)
 
 </CapexEquip_spec>
 
