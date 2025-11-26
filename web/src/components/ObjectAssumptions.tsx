@@ -24,6 +24,17 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
         Object.values(out).some((field: any) => field.supports?.seasonal)
     );
 
+    const typeName = objAss.type;
+    const schema = typeName ? (objectSchema as any)[typeName] : null;
+    const options = schema?.options || {};
+    const availableModes = (options.modes || ['single']) as InputMode[];
+
+    const hasSmoothing = options.smoothing && mode !== 'single';
+    const hasDateRange = options.dateRange;
+    const hasIntegers = options.integers;
+    const hasMultipleModes = availableModes.length > 1;
+    const hasOptions = hasSmoothing || hasDateRange || hasIntegers || hasMultipleModes;
+
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
     return (
@@ -37,10 +48,6 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
                     <div className="flex items-center gap-4">
                         {/* Collapsible Options */}
                         {optionsExpanded && (() => {
-                            const typeName = objAss.type;
-                            const schema = typeName ? (objectSchema as any)[typeName] : null;
-                            const options = schema?.options || {};
-
                             return (
                                 <>
                                     {/* Smoothing Toggle - only show in multi-year modes */}
@@ -116,13 +123,15 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
                         })()}
 
                         {/* Toggle Button */}
-                        <button
-                            onClick={() => setOptionsExpanded(!optionsExpanded)}
-                            className="w-6 h-6 flex items-center justify-center bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded text-gray-600 text-xs font-bold transition-colors"
-                            title={optionsExpanded ? "Hide options" : "Show options"}
-                        >
-                            {optionsExpanded ? '<' : '>'}
-                        </button>
+                        {hasOptions && (
+                            <button
+                                onClick={() => setOptionsExpanded(!optionsExpanded)}
+                                className="w-6 h-6 flex items-center justify-center bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded text-gray-600 text-xs font-bold transition-colors"
+                                title={optionsExpanded ? "Hide options" : "Show options"}
+                            >
+                                {optionsExpanded ? '>' : '...'}
+                            </button>
+                        )}
                     </div>
                 </div>
                 {objAss.comment && (

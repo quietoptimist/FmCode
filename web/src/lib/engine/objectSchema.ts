@@ -73,7 +73,7 @@ export const objectSchema = {
   },
 
   // ============================
-  // QuantAnnSeas — just creates numbers, no inputs, seasonal variation
+  // QuantSeas — just creates numbers, no inputs, seasonal variation
   // ============================
   QuantSeas: {
     impl: "QuantStart",
@@ -82,7 +82,8 @@ export const objectSchema = {
       modes: ['single', 'annual', 'growth'],
       dateRange: true,
       smoothing: true,
-      integers: true
+      integers: true,
+      seasonal: true
     },
     channels: {
       val: {
@@ -838,7 +839,7 @@ export const objectSchema = {
       object: [],
       output: [
         {
-          name: "churnRate",
+          name: "churn",
           label: "Monthly churn rate",
           baseType: "number",
           format: "percent",
@@ -1183,11 +1184,11 @@ export const objectSchema = {
     channels: {
       val: {
         label: "Amount",
-        destinations: ["cash.finance.in.equity", "balance.equity.share"]
+        destinations: ["cash.finance.in.equity"]
       },
       cum: {
         label: "Cumulative Amount",
-        destinations: []
+        destinations: ["balance.equity.share"]
       }
     },
     assumptions: {
@@ -1198,7 +1199,7 @@ export const objectSchema = {
           label: "Amount",
           baseType: "number",
           format: "currency",
-          default: 1000000,
+          default: 100000,
           supports: {
             single: true
           },

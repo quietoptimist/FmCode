@@ -4,7 +4,7 @@
 
 SetupAndFunding:
     Setup               = Setup()                                   // Set model start date
-    EquityFunding       = FundEquity() => startingCash              // Initial cash from founders/investors
+    EquityFunding       = FundEquity() => startingCash, seedRound   // Initial cash from founders/investors
 CustomerAcquisition:
     NewClients          = Quant() => upworkNew, gadsNew             // Annual new clients by source (Upwork vs Google Ads)
     GadsClicks          = QuantDrv(gadsNew.val) => gadsClicks       // Google Ads clicks needed per new client (visitors per client)

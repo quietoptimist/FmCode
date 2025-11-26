@@ -304,7 +304,11 @@ Example:
 
 FM
     SetupAndFunding:
-        EquityFunding = FundEquity() > startingCash, seedRound, seriesA // Cash raised from founders and investors
+        // Cash raised from founders and investors
+        EquityFunding = FundEquity() >
+            startingCash(amount:50000, month: 1),
+            seedRound(amount:300000, month: 12),
+            seriesA(amount:1000000, month: 24) 
 
 Notes:
 - `startingCash.val` is typically the initial cash at model start.
@@ -1476,7 +1480,7 @@ Every model needs core boilerplate code and a standard structure.
 FM
     // BusinessName: <INSERT NAME>
     // BusinessType: <INSERT CATEGORISATION INFO>
-    // DateTime: <INSERT DATE & TIME>
+    // Date:         <INSERT DATE>
 
     Funding:
         EquityFunding = FundEquity() > startingCash  // Initial cash from founders/investors
@@ -1552,14 +1556,14 @@ Skeleton:
 
 FM
     Funding:
-        EquityFunding = FundEquity() > startingCash
+        EquityFunding = FundEquity() > startingCash(amount:50000, month: 1) // Cash raised from founders and investors
 
     CustomerAcquisition:
         Acquisition = QuantAnnSeas() > socialCustomers, organicCustomers   // New customers by source
-        TierMix     = Split(Acquisition.val) > newFree, newBoosted, newUnlimited
+        TierMix     = Split(Acquisition.val) > newFree(mix:0.6), newBoosted(mix:0.3), newUnlimited(mix:0.1) // New customers by tier
 
     Subscriptions:
-        Subscribers = SubMth(...TierMix.val) > freeSubs, boostedSubs, unlimitedSubs // MRR, actives, churn by tier
+        Subscribers = SubMth(...TierMix.val) > freeSubs(), boostedSubs, unlimitedSubs // MRR, actives, churn by tier
 
     SupplementsDemand:
         SuppOrders = QuantDrv(Subscribers.act) > suppBuyers  // % of actives buying supplements

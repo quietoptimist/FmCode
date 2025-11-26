@@ -31,6 +31,17 @@ export function ObjectOutputs({ aliases, store, overrides, months, channelDefs, 
     // Only show totals if there are multiple aliases (otherwise it's just a duplicate row)
     const shouldShowTotals = aliases.length > 1 && showTotals;
 
+    // Check if any output supports seasonal
+    const supportsSeasonal = objAss?.outputs && Object.values(objAss.outputs).some((out: any) =>
+        Object.values(out).some((field: any) => field?.supports?.seasonal)
+    );
+
+    const showSeasonalOption = seasonalEnabled !== undefined && onAssumptionChange && objName && supportsSeasonal;
+    const showTotalsOption = aliases.length > 1;
+    const showAssumptionsOption = showMonthlyAssumptions;
+
+    const hasOptions = showTotalsOption || showAssumptionsOption || showSeasonalOption;
+
     if (!store) return <div className="p-4 text-gray-400 italic">No results calculated.</div>;
 
     // Filter store for these aliases
@@ -73,13 +84,15 @@ export function ObjectOutputs({ aliases, store, overrides, months, channelDefs, 
             <div className="border-b border-gray-200 p-3">
                 <div className="flex items-center gap-4">
                     {/* Toggle Button */}
-                    <button
-                        onClick={() => setOptionsExpanded(!optionsExpanded)}
-                        className="w-6 h-6 flex items-center justify-center bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded text-gray-600 text-xs font-bold transition-colors"
-                        title={optionsExpanded ? "Hide options" : "Show options"}
-                    >
-                        {optionsExpanded ? '>' : '<'}
-                    </button>
+                    {hasOptions && (
+                        <button
+                            onClick={() => setOptionsExpanded(!optionsExpanded)}
+                            className="w-6 h-6 flex items-center justify-center bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded text-gray-600 text-xs font-bold transition-colors"
+                            title={optionsExpanded ? "Hide options" : "Show options"}
+                        >
+                            {optionsExpanded ? '<' : '...'}
+                        </button>
+                    )}
 
                     {/* Collapsible Options */}
                     {optionsExpanded && (

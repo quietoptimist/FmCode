@@ -232,7 +232,7 @@ export default function Editor({ params }: { params: { id: string } }) {
 
                         for (const key in def) {
                             // Always use these keys from the new definition (schema), not from saved data
-                            if (key === 'comment' || key === 'supports') continue;
+                            if (key === 'comment' || key === 'supports' || key === 'type') continue;
                             if (existing[key] !== undefined) {
                                 def[key] = smartMerge(def[key], existing[key]);
                             }
