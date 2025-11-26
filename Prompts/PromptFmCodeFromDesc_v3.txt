@@ -414,7 +414,8 @@ Variants:
 
 Description:
 - Scales monthly input quantities by internal assumptions (multipliers or divisors).
-- Often used for conversion rates or turning one metric into another.
+- Often used for conversion rates or turning one metric into another (factors).
+- If you can make sensible estimates of the factor for each outputName, then populate the `factor` parameter for each outputName.
 
 Inputs:
 - Either:
@@ -439,13 +440,13 @@ Division (e.g. ad spend ÷ CPC = new users):
 
 FM
     CustomerAcquisition:
-        NewUsers = QuantDrvDiv(googleAdCost.val, facebookAdCost.val) > newGoogleUsers, newFacebookUsers // New users per channel
+        NewUsers = QuantDrvDiv(googleAdSpend.val, facebookAdSpend.val) > newGoogleUsers(factor: 5), newFacebookUsers(factor: 2) // New users per channel driven by ad spend and cost per new user
 
 Multiplication (e.g. orders × items per order):
 
 FM
     Orders:
-        ItemsBought = QuantDrvMul(orders.val) > items // Total items per month
+        ItemsBought = QuantDrvMul(orders.val) > items(factor: 2) // Total items per month driven by orders and items per order
 
 </QuantDrv_spec>
 
@@ -1124,7 +1125,7 @@ ObjectType: `Split()`
 
 Description:
 - Splits a single input quantity into multiple outputs based on internal mix percentages.
-- Outputs always sum to the input.
+- Outputs always sum to the input. Always use mix % to allocate across outputNames and ensure sum is 100%.
 
 Inputs:
 - Exactly one input (e.g. `customerItems.val`, `newCustomers.val`).
@@ -1142,7 +1143,11 @@ Example:
 
 FM
     Demand:
-        ProductsSold = Split(customerItems.val) > smallCandles, largeCandles, giftSets // Product mix
+        // Product mix of candles sold
+        CandlesSold = Split(customerItems.val) >
+            smallCandles(mix: 0.5),
+            largeCandles(mix: 0.4),
+            giftSets(mix: 0.1)
 
 </Split_spec>
 

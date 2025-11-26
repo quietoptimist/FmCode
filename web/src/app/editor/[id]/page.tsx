@@ -369,48 +369,43 @@ export default function Editor({ params }: { params: { id: string } }) {
                 const chunk = decoder.decode(value, { stream: true });
                 fullText += chunk;
 
-                // Parse thoughts and code
-                const thinkingMatch = fullText.match(/<thinking>([\s\S]*?)<\/thinking>/);
-                if (thinkingMatch) {
-                    setThoughts(thinkingMatch[1].trim());
-                } else if (fullText.includes('<thinking>')) {
-                    // Partial thinking
-                    const partial = fullText.split('<thinking>')[1];
-                    setThoughts(partial.trim());
-                }
-
-                // Extract code (look for fences or just everything after thinking)
-                // If we have closed thinking tag, everything after is potentially code
-                if (fullText.includes('</thinking>')) {
-                    const parts = fullText.split('</thinking>');
-                    let codePart = parts[1].trim();
-
-                    // Strip fences if present
-                    const codeBlockMatch = codePart.match(/```(?:fm)?\s*([\s\S]*?)(?:```|$)/);
-                    if (codeBlockMatch) {
-                        setCode(codeBlockMatch[1]);
-                    } else {
-                        // If no fences yet, just show raw (might be starting fence)
-                        setCode(codePart.replace(/^```(?:fm)?/, ''));
+                // 1. Extract thoughts (look for the last complete block or an open block at the end)
+                const thoughtsMatches = [...fullText.matchAll(/<thinking>([\s\S]*?)<\/thinking>/g)];
+                if (thoughtsMatches.length > 0) {
+                    setThoughts(thoughtsMatches[thoughtsMatches.length - 1][1].trim());
+                } else {
+                    // Check for partial open tag at the end
+                    const openTagIndex = fullText.lastIndexOf('<thinking>');
+                    if (openTagIndex !== -1 && !fullText.includes('</thinking>', openTagIndex)) {
+                        setThoughts(fullText.slice(openTagIndex + 10).trim());
                     }
                 }
-            }
 
-            // Final cleanup
-            const thinkingMatch = fullText.match(/<thinking>([\s\S]*?)<\/thinking>/);
-            if (thinkingMatch) {
-                setThoughts(thinkingMatch[1].trim());
-            }
+                // 2. Remove all thinking blocks to get "clean" text for code extraction
+                let cleanText = fullText.replace(/<thinking>[\s\S]*?<\/thinking>/g, '');
+                // Also remove partial thinking tag at the end if present (to avoid showing it as code)
+                cleanText = cleanText.replace(/<thinking>[\s\S]*$/, '').trim();
 
-            const parts = fullText.split('</thinking>');
-            if (parts.length > 1) {
-                let codePart = parts[1].trim();
-                const codeBlockMatch = codePart.match(/```(?:fm)?\s*([\s\S]*?)(?:```|$)/);
-                if (codeBlockMatch) {
+                // 3. Extract code from clean text
+                // Try to find a markdown block first
+                const codeBlockMatch = cleanText.match(/```(?:fm)?\s*([\s\S]*?)(?:```|$)/);
+                if (codeBlockMatch && codeBlockMatch[1].trim()) {
                     setCode(codeBlockMatch[1]);
-                } else {
-                    setCode(codePart.replace(/^```(?:fm)?/, '').replace(/```$/, ''));
+                } else if (cleanText) {
+                    // Fallback: treat the whole clean text as code (stripping potential start fence if incomplete)
+                    setCode(cleanText.replace(/^```(?:fm)?/, '').replace(/```$/, ''));
                 }
+            }
+
+            // Final cleanup (same logic as loop to ensure consistency)
+            let cleanText = fullText.replace(/<thinking>[\s\S]*?<\/thinking>/g, '');
+            cleanText = cleanText.replace(/<thinking>[\s\S]*$/, '').trim();
+
+            const codeBlockMatch = cleanText.match(/```(?:fm)?\s*([\s\S]*?)(?:```|$)/);
+            if (codeBlockMatch && codeBlockMatch[1].trim()) {
+                setCode(codeBlockMatch[1]);
+            } else if (cleanText) {
+                setCode(cleanText.replace(/^```(?:fm)?/, '').replace(/```$/, ''));
             }
 
         } catch (err: any) {
