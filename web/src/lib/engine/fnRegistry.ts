@@ -82,6 +82,45 @@ export const fnRegistry = {
   },
 
   // ==================================
+  // QuantPulse — creates a single month pulse
+  // ==================================
+  QuantPulse(ctx, _inputs, cfg) {
+    const months = ctx.months;
+    const outName = (cfg.outputNames && cfg.outputNames[0]) ? cfg.outputNames[0] : "val";
+    const outAss = cfg.output || {};
+
+    // Amount assumption
+    const amount = outAss.amount ? outAss.amount.value : new Float64Array(months).fill(0);
+
+    // Month assumption
+    const monthVal = outAss.month ? outAss.month.value : 0;
+    const targetMonth = (monthVal instanceof Float64Array || Array.isArray(monthVal)) ? monthVal[0] : monthVal;
+
+    const outSeries = new Float64Array(months);
+    const cumSeries = new Float64Array(months);
+
+    // 1-based month index
+    const mIndex = (targetMonth > 0) ? Math.floor(targetMonth) - 1 : -1;
+
+    let runningTotal = 0;
+    for (let m = 0; m < months; m++) {
+      let val = 0;
+      if (m === mIndex) {
+        val = amount[m];
+      }
+      outSeries[m] = val;
+      runningTotal += val;
+      cumSeries[m] = runningTotal;
+    }
+
+    return {
+      [outName]: outSeries,
+      val: outSeries,
+      cum: cumSeries
+    };
+  },
+
+  // ==================================
   // SubRetain — uses cfg.output.churnRate.value and startMonth.value
   // ==================================
   SubRetain(ctx, inputs, cfg) {

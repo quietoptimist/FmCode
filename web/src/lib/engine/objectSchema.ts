@@ -3,9 +3,9 @@
 
 export const objectSchema = {
   // ============================
-  // QuantAnn — just creates numbers, no inputs
+  // Quant — just creates numbers, no inputs
   // ============================
-  QuantAnn: {
+  Quant: {
     impl: "QuantStart",
     showMonthlyAssumptions: false,  // Assumptions = outputs, no need to show both
     options: {
@@ -75,7 +75,7 @@ export const objectSchema = {
   // ============================
   // QuantAnnSeas — just creates numbers, no inputs, seasonal variation
   // ============================
-  QuantAnnSeas: {
+  QuantSeas: {
     impl: "QuantStart",
     showMonthlyAssumptions: false,  // Assumptions = outputs, no need to show both
     options: {
@@ -210,9 +210,9 @@ export const objectSchema = {
   },
 
   // ============================
-  // CostAnnSM — Creates costs, same as quantAnn
+  // CostSM — Creates costs, same as quantAnn
   // ============================
-  CostAnnSM: {
+  CostSM: {
     impl: "QuantStart",
     showMonthlyAssumptions: false,
     options: {
@@ -278,9 +278,9 @@ export const objectSchema = {
 
 
   // ============================
-  // CostAnnGA — Creates costs, same as quantAnn
+  // CostGA — Creates costs, same as quantAnn
   // ============================
-  CostAnnGA: {
+  CostGA: {
     impl: "QuantStart",
     showMonthlyAssumptions: false,
     options: {
@@ -1157,6 +1157,61 @@ export const objectSchema = {
           baseType: "number",
           format: "integer",
           default: null,
+          supports: {
+            single: true
+          },
+          ui: {
+            defaultMode: "single"
+          }
+        }
+      ]
+    }
+  },
+
+  // ============================
+  // FundEquity - Equity funding rounds
+  // ============================
+  FundEquity: {
+    impl: "QuantPulse",
+    showMonthlyAssumptions: false,
+    options: {
+      modes: ['single'],
+      dateRange: false,
+      smoothing: false,
+      integers: false
+    },
+    channels: {
+      val: {
+        label: "Amount",
+        destinations: ["cash.finance.in.equity", "balance.equity.share"]
+      },
+      cum: {
+        label: "Cumulative Amount",
+        destinations: []
+      }
+    },
+    assumptions: {
+      object: [],
+      output: [
+        {
+          name: "amount",
+          label: "Amount",
+          baseType: "number",
+          format: "currency",
+          default: 1000000,
+          supports: {
+            single: true
+          },
+          ui: {
+            defaultMode: "single"
+          }
+        },
+        {
+          name: "month",
+          label: "Month",
+          baseType: "number",
+          format: "integer",
+          default: 1,
           supports: {
             single: true
           },

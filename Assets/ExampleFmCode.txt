@@ -6,7 +6,7 @@ SetupAndFunding:
     Setup               = Setup()                                   // Set model start date
     EquityFunding       = FundEquity() => startingCash              // Initial cash from founders/investors
 CustomerAcquisition:
-    NewClients          = QuantAnn() => upworkNew, gadsNew          // Annual new clients by source (Upwork vs Google Ads)
+    NewClients          = Quant() => upworkNew, gadsNew             // Annual new clients by source (Upwork vs Google Ads)
     GadsClicks          = QuantDrv(gadsNew.val) => gadsClicks       // Google Ads clicks needed per new client (visitors per client)
 Retention:
     Retained            = SubRetain(upworkNew.val, gadsNew.val) => upworkClients, gadsClients   // Retain clients by source: active & churn each month
@@ -29,8 +29,8 @@ Costs:
     UpworkRevenueTotal  = Sum(upworkModelRev.rev, upworkAdviceRev.rev)            // Total Upwork-sourced revenues (initial + advisory)
     UpworkFees          = CostDrvSM(UpworkRevenueTotal.val) => upworkFees         // Upwork platform fee as % of revenues (10%)
     GoogleAdsCost       = CostDrvSM(gadsClicks.val) => googleAdsCpc               // Google Ads CPC cost driven by clicks
-    MarketingAgency     = CostAnnSM() => gadsAgencyFee                            // Fixed monthly agency fee for Google Ads management
-    Overheads           = CostAnnGA() => bookkeeping, accounting, insurance, officeConsumables // Predictable overheads (G&A)
+    MarketingAgency     = CostSM() => gadsAgencyFee                               // Fixed monthly agency fee for Google Ads management
+    Overheads           = CostGA() => bookkeeping, accounting, insurance, officeConsumables // Predictable overheads (G&A)
 Capex:
     StaffDevices        = CapexEquip(CompanyHeads.val) => laptops                 // Laptops provided per employee; replacements at end of life
 Results:
