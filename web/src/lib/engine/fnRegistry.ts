@@ -128,7 +128,11 @@ export const fnRegistry = {
     const months = ctx.months;
     const outName = (cfg.outputNames && cfg.outputNames[0]) ? cfg.outputNames[0] : "val";
     const outAss = cfg.output || {};
-    const amount = outAss.value ? outAss.value.value : new Float64Array(months).fill(0);
+    // Support multiple assumption names: value (Quant), cost (Cost), amount (Legacy Cost)
+    const amount = outAss.value ? outAss.value.value
+      : outAss.cost ? outAss.cost.value
+        : outAss.amount ? outAss.amount.value
+          : new Float64Array(months).fill(0);
     const startMonthVal = outAss.start ? outAss.start.value : 0;
     const startMonth = (startMonthVal instanceof Float64Array || Array.isArray(startMonthVal)) ? startMonthVal[0] : startMonthVal;
 

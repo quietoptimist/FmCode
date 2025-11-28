@@ -706,7 +706,8 @@ ObjectType: `CostMul()`
 Variants:
 - `CostMulDC()` = driven direct costs / COGS.
 - `CostMulSM()` = driven sales & marketing / acquisition costs.
-(Other variants exist for classification but share the same logic.)
+- `CostMulGA()` = driven general & administrative costs.
+- `CostMulRD()` = driven research & development costs.
 
 Description:
 - Converts activity volumes into monthly costs using per-unit cost assumptions.
@@ -1255,13 +1256,18 @@ Notes:
 
 
 ----------------------------------------------------
-<DelQuant_spec>
+<Del_spec>
 ----------------------------------------------------
 
-ObjectType: `DelQuant()`
+ObjectType: `Del()`
+
+Variants:
+- `DelQuant()` = delays an input quantity series by N months (shifts forward in time).
+- `DelRev()` = delays an input revenue series by N months (shifts forward in time).
+- `DelCost()` = delays an input cost series by N months (shifts forward in time).
 
 Description:
-- Delays an input quantity series by N months (shifts forward in time).
+- Delays an input series by N months (shifts forward in time).
 
 Inputs:
 - One input series (e.g. `newClients.val`, `newProjects.cum`).
@@ -1276,14 +1282,46 @@ Attributes:
 - `.val`   = delayed series.
 - `.assum` = delay in months (per outputName).
 
-Example:
+Customer delayed start:
 
 FM
     Customers:
         DelayedStartClients = DelQuant(newClients.val) > onboardedClients
         Subscribers         = SubMth(onboardedClients.val) > subscribingClients
 
-</DelQuant_spec>
+Single revenue stream:
+
+FM
+    Revenues:
+        Subscribers = SubTermDel(...TierMix.val) > bronzeSubs, silverSubs, goldSubs
+        Collections = DelRev(Subscribers.rev) > subscriptionsPaid
+
+Recurring revenues:
+
+FM
+    Revenues:
+        Subscribers       = SubTermDel(...TierMix.val) > bronzeSubs, silverSubs, goldSubs
+        CollectionsByTier = DelRev(...Subscribers.rev) > paidBronze, paidSilver, paidGold
+
+Non-recurring revenues:
+
+FM
+    Revenues:
+        OnboardingFees   = RevDrvNewDel(newCustomers.val) > setupFees
+        SetupCollections = DelRev(setupFees.val) > setupFeesPaid
+
+Supplier payment delay:
+
+FM
+    Suppliers:
+        SupplierCosts = CostMulDC(...Supplies.cost) > componentCost, materialsCost
+        PaymentDelays = DelCost(SupplierCosts.cost) > paidSupplierCosts
+
+Notes:
+- Use with the **Del** variants of other objects only; do not also pass cash-immediate objects or you will double-count cash.
+- Negative delays correspond to prepayments and are rarely recommended.
+
+</Del_spec>
 
 
 ----------------------------------------------------
@@ -1317,58 +1355,6 @@ FM
 
 </AdvQuant_spec>
 
-
-----------------------------------------------------
-<DelRev_spec>
-----------------------------------------------------
-
-ObjectType: `DelRev()`
-
-Description:
-- Converts recognised revenue into cash collections using a delay.
-- Intended to be paired with `SubTermDel()` and `RevDrvDel()/RevDrvNewDel()`.
-
-Inputs:
-- One or more revenue series (typically `.rev`).
-
-Assumptions (Parameters):
-- `months` (int): Number of months to delay.
-
-Outputs:
-- One or more outputNames representing cash-in streams (e.g. `subscriptionsPaid`, `setupFeesPaid`).
-
-Attributes:
-- `.val`   = monthly cash collected.
-- `.assum` = delay in months (per outputName).
-
-Examples:
-
-Single stream:
-
-FM
-    Revenues:
-        Subscribers = SubTermDel(...TierMix.val) > bronzeSubs, silverSubs, goldSubs
-        Collections = DelRev(Subscribers.rev) > subscriptionsPaid
-
-By tier:
-
-FM
-    Revenues:
-        Subscribers       = SubTermDel(...TierMix.val) > bronzeSubs, silverSubs, goldSubs
-        CollectionsByTier = DelRev(...Subscribers.rev) > paidBronze, paidSilver, paidGold
-
-Example with `RevDrvNewDel`:
-
-FM
-    Revenues:
-        OnboardingFees   = RevDrvNewDel(newCustomers.val) > setupFees
-        SetupCollections = DelRev(setupFees.val) > setupFeesPaid
-
-Notes:
-- Use with the **Del** variants only; do not also pass cash-immediate objects or you will double-count cash.
-- Negative delays correspond to prepayments and are rarely recommended.
-
-</DelRev_spec>
 
 
 ----------------------------------------------------

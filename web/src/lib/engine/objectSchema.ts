@@ -231,8 +231,8 @@ export const objectSchema = {
       single: true,
       annual: false,
       growth: false,
-      seasonal: false,
       monthly: false,
+      seasonal: false,
       dateRange: false,
       smoothing: false
     },
@@ -246,7 +246,7 @@ export const objectSchema = {
       object: [],
       output: [
         {
-          name: "amount",
+          name: "cost",
           label: "Monthly amount",
           baseType: "number",
           format: "currency",
@@ -571,9 +571,9 @@ export const objectSchema = {
   },
 
   // ============================
-  // DelRev - delay revenue outputs to account for payment delays
+  // Del - delay outputs
   // ============================
-  DelRev: {
+  Del: {
     impl: "Delay",
     showMonthlyAssumptions: true,
     options: {
@@ -582,7 +582,7 @@ export const objectSchema = {
     channels: {
       val: {
         label: "Delayed value",
-        destinations: ["balance.assets.current.ar", "cash.ops.in.sales"]
+        destinations: []
       }
     },
     assumptions: {
@@ -1047,6 +1047,75 @@ function createVariant(base: any, overrides: any) {
 });
 
 
+
+// RevMulNew - New Revenue
+(objectSchema as any).RevMulNew = createVariant(objectSchema.RevMul, {
+  channels: {
+    val: { destinations: ["pnl.revenue.new", "cash.ops.in.sales"] }
+  }
+});
+
+// RevMulDel - Delayed Revenue
+(objectSchema as any).RevMulDel = createVariant(objectSchema.RevMul, {
+  channels: {
+    val: { destinations: ["pnl.revenue.recur", "balance.assets.current.ar"] }
+  }
+});
+
+// RevMulNewDel - New Delayed Revenue
+(objectSchema as any).RevMulNewDel = createVariant(objectSchema.RevMul, {
+  channels: {
+    val: { destinations: ["pnl.revenue.new", "balance.assets.current.ar"] }
+  }
+});
+
+
+
+// CostMthGA - Monthly G&A Costs
+(objectSchema as any).CostMthGA = createVariant(objectSchema.Cost, {
+  options: {
+    single: false,
+    monthly: true
+  },
+  channels: {
+    val: { destinations: ["pnl.opex.ga", "cash.ops.out.opex"] }
+  }
+});
+
+// CostMthSM - Monthly S&M Costs
+(objectSchema as any).CostMthSM = createVariant(objectSchema.Cost, {
+  options: {
+    single: false,
+    monthly: true
+  },
+  channels: {
+    val: { destinations: ["pnl.opex.sm", "cash.ops.out.opex"] }
+  }
+});
+
+// CostMthRD - Monthly R&D Costs
+(objectSchema as any).CostMthRD = createVariant(objectSchema.Cost, {
+  options: {
+    single: false,
+    monthly: true
+  },
+  channels: {
+    val: { destinations: ["pnl.opex.rd", "cash.ops.out.opex"] }
+  }
+});
+
+// CostMthOE - Monthly Other Expenses
+(objectSchema as any).CostMthOE = createVariant(objectSchema.Cost, {
+  options: {
+    single: false,
+    monthly: true
+  },
+  channels: {
+    val: { destinations: ["pnl.otherExpenses", "cash.ops.out.opex"] }
+  }
+});
+
+
 // CostDC - Direct Costs
 (objectSchema as any).CostDC = createVariant(objectSchema.Cost, {
   channels: {
@@ -1109,28 +1178,6 @@ function createVariant(base: any, overrides: any) {
 (objectSchema as any).CostMulRD = createVariant(objectSchema.CostMul, {
   channels: {
     val: { destinations: ["pnl.opex.rd", "cash.ops.out.opex"] }
-  }
-});
-
-
-// RevMulNew - New Revenue
-(objectSchema as any).RevMulNew = createVariant(objectSchema.RevMul, {
-  channels: {
-    val: { destinations: ["pnl.revenue.new", "cash.ops.in.sales"] }
-  }
-});
-
-// RevMulDel - Delayed Revenue
-(objectSchema as any).RevMulDel = createVariant(objectSchema.RevMul, {
-  channels: {
-    val: { destinations: ["pnl.revenue.recur", "balance.assets.current.ar"] }
-  }
-});
-
-// RevMulNewDel - New Delayed Revenue
-(objectSchema as any).RevMulNewDel = createVariant(objectSchema.RevMul, {
-  channels: {
-    val: { destinations: ["pnl.revenue.new", "balance.assets.current.ar"] }
   }
 });
 
@@ -1267,6 +1314,30 @@ function createVariant(base: any, overrides: any) {
     cost: { destinations: ["pnl.opex.rd", "cash.ops.out.opex"] }
   }
 });
+
+
+
+// DelQuant - Delay Quantity (synonym for Del)
+(objectSchema as any).DelQuant = createVariant(objectSchema.Del, {
+  channels: {
+    val: { destinations: [] }
+  }
+});
+
+// DelRev - Delay Revenue
+(objectSchema as any).DelRev = createVariant(objectSchema.Del, {
+  channels: {
+    val: { destinations: ["balance.assets.current.ar", "cash.ops.in.sales"] }
+  }
+});
+
+// DelCost - Delay Cost
+(objectSchema as any).DelCost = createVariant(objectSchema.Del, {
+  channels: {
+    val: { destinations: ["balance.liabilities.current.ap", "cash.ops.out.opex"] }
+  }
+});
+
 
 
 
