@@ -13,6 +13,7 @@ interface ObjectOutputsProps {
     objName?: string;
     onAssumptionChange?: (objName: string, type: 'object' | 'output' | 'meta', aliasOrName: string, fieldName: string, value: any, subField?: string | null, index?: number | null) => void;
     showMonthlyAssumptions?: boolean;  // From schema
+    uiMode?: 'single' | 'annual' | 'growth' | 'monthly';
 }
 
 const months_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -23,7 +24,7 @@ const safeParseFloat = (val: string): number => {
     return isNaN(parsed) ? 0 : parsed;
 };
 
-export function ObjectOutputs({ aliases, store, overrides, months, channelDefs, onOverride, objAss, seasonalEnabled, objName, onAssumptionChange, showMonthlyAssumptions }: ObjectOutputsProps) {
+export function ObjectOutputs({ aliases, store, overrides, months, channelDefs, onOverride, objAss, seasonalEnabled, objName, onAssumptionChange, showMonthlyAssumptions, uiMode }: ObjectOutputsProps) {
     const [optionsExpanded, setOptionsExpanded] = useState(false);
     const [showTotals, setShowTotals] = useState(true);
     const [showAssumptions, setShowAssumptions] = useState(true);
@@ -78,6 +79,40 @@ export function ObjectOutputs({ aliases, store, overrides, months, channelDefs, 
     const channelNames = Object.keys(byChannel);
     const isSingleChannel = channelNames.length === 1;
 
+    // Helper to handle cell changes
+    const handleCellChange = (alias: string, channel: string, month: number, newVal: number | null) => {
+        if (uiMode === 'monthly' && onAssumptionChange && objName) {
+            // In monthly mode, we update the assumption directly
+            // We need to find the field name. Usually 'amount' or 'factor'.
+            // We can look at objAss.outputs[alias]
+            const outAss = objAss?.outputs?.[alias];
+            if (outAss) {
+                // Find the primary value field (one that supports monthly?)
+                // Or just pick the first one that isn't start/end?
+                // Usually it's 'amount', 'factor', 'count', etc.
+                // Let's look for one that supports monthly.
+                const fieldName = Object.keys(outAss).find(k => outAss[k]?.supports?.monthly);
+
+                if (fieldName) {
+                    // Update the monthly array at this index
+                    // We need to construct the full monthly array update?
+                    // updateAssumption handles index update for 'monthly' subField?
+                    // Let's check updateAssumption. It doesn't seem to have index support for monthly array yet?
+                    // Wait, updateAssumption:
+                    // } else if (subField === 'monthly' && index !== null) { ... } -> NO, it doesn't have this block!
+                    // It has: if (subField === 'annual' && index !== null) ...
+                    // We need to add monthly index support to updateAssumption too!
+
+                    // Assuming updateAssumption supports it (I will add it), we call:
+                    onAssumptionChange(objName, 'output', alias, fieldName, newVal, 'monthly', month);
+                }
+            }
+        } else {
+            // Normal override
+            onOverride(alias, channel, month, newVal);
+        }
+    };
+
     return (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
             {/* Options Panel */}
@@ -120,7 +155,7 @@ export function ObjectOutputs({ aliases, store, overrides, months, channelDefs, 
                                 </label>
                             )}
                             {/* Seasonal Toggle */}
-                            {seasonalEnabled !== undefined && onAssumptionChange && objName && (() => {
+                            {seasonalEnabled !== undefined && onAssumptionChange && objName && uiMode !== 'monthly' && (() => {
                                 // Check if any output supports seasonal
                                 const supportsSeasonal = objAss?.outputs && Object.values(objAss.outputs).some((out: any) =>
                                     Object.values(out).some((field: any) => field?.supports?.seasonal)
@@ -338,7 +373,8 @@ export function ObjectOutputs({ aliases, store, overrides, months, channelDefs, 
                                                                 key={m}
                                                                 calculatedValue={val}
                                                                 overrideValue={overrideVal}
-                                                                onOverride={(newVal) => onOverride(alias, channel, m, newVal)}
+                                                                onOverride={(newVal) => handleCellChange(alias, channel, m, newVal)}
+                                                                isDirectEdit={uiMode === 'monthly'}
                                                             />
                                                         );
                                                     })}
@@ -399,7 +435,8 @@ export function ObjectOutputs({ aliases, store, overrides, months, channelDefs, 
                                                             key={m}
                                                             calculatedValue={val}
                                                             overrideValue={overrideVal}
-                                                            onOverride={(newVal) => onOverride(alias, channel, m, newVal)}
+                                                            onOverride={(newVal) => handleCellChange(alias, channel, m, newVal)}
+                                                            isDirectEdit={uiMode === 'monthly'}
                                                         />
                                                     );
                                                 })}
@@ -433,9 +470,10 @@ interface OverrideCellProps {
     calculatedValue: number;
     overrideValue: number | undefined;
     onOverride: (val: number | null) => void;
+    isDirectEdit?: boolean;
 }
 
-function OverrideCell({ calculatedValue, overrideValue, onOverride }: OverrideCellProps) {
+function OverrideCell({ calculatedValue, overrideValue, onOverride, isDirectEdit }: OverrideCellProps) {
     const isOverridden = overrideValue !== undefined;
     const displayValue = isOverridden ? overrideValue : calculatedValue;
 
@@ -471,6 +509,27 @@ function OverrideCell({ calculatedValue, overrideValue, onOverride }: OverrideCe
             (e.target as HTMLInputElement).blur();
         }
     };
+
+    // Style for direct edit mode (monthly mode)
+    // It should look like a normal input, not an override
+    if (isDirectEdit) {
+        return (
+            <td className="p-0 border-l border-transparent transition-all hover:bg-blue-50">
+                <input
+                    type="text"
+                    className="w-full h-full p-1.5 text-right bg-transparent outline-none focus:ring-2 focus:ring-blue-500 focus:z-10 text-gray-700"
+                    value={isEditing ? editValue : displayValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                    onFocus={() => {
+                        setIsEditing(true);
+                        setEditValue(displayValue.toString());
+                    }}
+                    onBlur={handleCommit}
+                    onChange={(e) => setEditValue(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                />
+            </td>
+        );
+    }
 
     return (
         <td

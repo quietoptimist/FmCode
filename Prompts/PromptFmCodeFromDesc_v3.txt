@@ -195,18 +195,18 @@ Some objects have variants that behave identically in terms of **logic** but dif
 Examples:
 
 - Quantity driven:
-  - `QuantDrvMul()` = multiply input by internal assumption.
-  - `QuantDrvDiv()` = divide input by internal assumption.
+  - `QuantMul()` = multiply input by internal assumption.
+  - `QuantDiv()` = divide input by internal assumption.
 - Cost-related (suffixes DC, SM, GA, RD, OE):
   - `CostOE()`, `CostGA()`, `CostSM()`, `CostRD()`
-  - `CostDrvDC()`, `CostDrvSM()`
+  - `CostMulDC()`, `CostMulSM()`
 - Staff-related variants:
   - `StaffTeamGA()`, `StaffTeamSM()`, `StaffTeamRD()`
-  - `StaffDrvDC()`, `StaffDrvSM()`
+  - `StaffMulDC()`, `StaffMulSM()`
 - Revenue-related:
-  - `RevDrv()` = recurring revenues.
-  - `RevDrvNew()` = one-off / non-recurring revenues (for LTV separation).
-  - `RevDrvDel()`, `RevDrvNewDel()` = delayed cash versions (B2B invoicing).
+  - `RevMul()` = recurring revenues.
+  - `RevMulNew()` = one-off / non-recurring revenues (for LTV separation).
+  - `RevMulDel()`, `RevMulNewDel()` = delayed cash versions (B2B invoicing).
 
 Rules:
 
@@ -217,12 +217,12 @@ Example:
 
 FM
     Costs:
-        MaterialsCosts   = CostDrvDC(...UnitsBought.val) > waxCost, wickCost, jarCost // Direct COGS
-        AcquisitionCosts = CostAnnSM() > crmSubscription, eventSponsorship            // Annual S&M costs
+        MaterialsCosts   = CostMulDC(...UnitsBought.val) > waxCost, wickCost, jarCost   // Direct COGS
+        AcquisitionCosts = CostSM() > crmSubscription, eventSponsorship                 // Monthly recurring S&M costs
 
 FM
     Revenues:
-        OnboardingRevenues = RevDrvNew(newCustomers.val) > joiningFeeRev(price: 20), setupFeeRev(price: 100) // One-off onboarding fees
+        OnboardingRevenues = RevMulNew(newCustomers.val) > joiningFeeRev(price: 20), setupFeeRev(price: 100) // One-off onboarding fees
 
 </Object_variants>
 
@@ -367,13 +367,14 @@ Notes:
 ObjectType: `Quant()`
 
 Variants:
-- `Quant()` = annual quantity assumptions spread evenly across months.
-- `QuantSeas()` = annual assumptions spread using a seasonality profile (% by calendar month).
+- `Quant()` = monthly quantity assumptions spread evenly across months (default for monthly volumes > 1).
+- `QuantMth()` = monthly quantity assumptions entered manually in each month (choose for monthly volumes < 1).
+- `QuantSeas()` = monthly assumptions adjusted using a seasonality scalar (% by calendar month).
 
 Description:
-- Starting objects for large volumes forecasted annually rather than monthly.
+- Starting objects for very low volumes forecasted monthly rather than annually.
 - `Quant()` assumes even monthly pattern.
-- `QuantSeas()` uses user-defined monthly seasonality percentages (sum to 100%).
+- `QuantSeas()` uses user-defined monthly seasonality scalars default 100%.
 
 Inputs:
 - None.
@@ -391,13 +392,27 @@ Attributes:
 
 Examples:
 
+Low volume B2B client acquisition entered monthly:
+
+FM
+    ClientAcquisition:
+        NewClients = QuantMth() > newClients // Annual new clients
+
 Even spread:
+
+Occasional store openings entered monthly:
+
+FM
+    NewStores:
+        NewStores = QuantMth() > newSmallStores, newLargeStores // Annual new stores by size
+
+Higher volume B2C customer acquisition spread evenly:
 
 FM
     CustomerAcquisition:
         NewUsers = Quant() > organicUsers, paidAdsUsers // Annual new users by source
 
-Seasonal:
+Seasonal customer bookings varying by calendar month:
 
 FM
     Demand:
@@ -407,14 +422,14 @@ FM
 
 
 ----------------------------------------------------
-<QuantDrv_spec>
+<QuantMult_spec>
 ----------------------------------------------------
 
-ObjectType: `QuantDrv()`
+ObjectType: `QuantMult()`
 
 Variants:
-- `QuantDrvMul()` = multiply input by user assumptions.
-- `QuantDrvDiv()` = divide input by user assumptions.
+- `QuantMult()` = multiply input by user assumptions.
+- `QuantDiv()`  = divide input by user assumptions.
 
 Description:
 - Scales monthly input quantities by internal assumptions (multipliers or divisors).
@@ -444,15 +459,15 @@ Division (e.g. ad spend ÷ CPC = new users):
 
 FM
     CustomerAcquisition:
-        NewUsers = QuantDrvDiv(googleAdSpend.val, facebookAdSpend.val) > newGoogleUsers(factor: 5), newFacebookUsers(factor: 2) // New users per channel driven by ad spend and cost per new user
+        NewUsers = QuantDiv(googleAdSpend.val, facebookAdSpend.val) > newGoogleUsers(factor: 5), newFacebookUsers(factor: 2) // New users per channel driven by ad spend and cost per new user
 
 Multiplication (e.g. orders × items per order):
 
 FM
     Orders:
-        ItemsBought = QuantDrvMul(orders.val) > items(factor: 2) // Total items per month driven by orders and items per order
+        ItemsBought = QuantMult(orders.val) > items(factor: 2) // Total items per month driven by orders and items per order
 
-</QuantDrv_spec>
+</QuantMult_spec>
 
 
 ----------------------------------------------------
@@ -596,14 +611,14 @@ FM
 
 
 ----------------------------------------------------
-<RevDrv_spec>
+<RevMul_spec>
 ----------------------------------------------------
 
-ObjectType: `RevDrv()`
+ObjectType: `RevMul()`
 
 Variants:
-- `RevDrv()`    = recurring revenues.
-- `RevDrvNew()` = new / one-off revenues (joining, setup, implementation fees).
+- `RevMul()`    = recurring revenues.
+- `RevMulNew()` = new / one-off revenues (joining, setup, implementation fees).
 
 Description:
 - Multiplies quantity inputs by unit prices to generate revenues.
@@ -628,24 +643,24 @@ Examples:
 
 FM
     Revenues:
-        ProductRevenues = RevDrv(...ProductsSold.val) > smallCandleRev, largeCandleRev, giftSetRev
-        OnboardingRevenues = RevDrvNew(newCustomers.val) > joiningFeeRev, setupFeeRev
+        ProductRevenues = RevMul(...ProductsSold.val) > smallCandleRev, largeCandleRev, giftSetRev
+        OnboardingRevenues = RevMulNew(newCustomers.val) > joiningFeeRev, setupFeeRev
 
-</RevDrv_spec>
+</RevMul_spec>
 
 
 ----------------------------------------------------
-<RevDrvDel_spec>
+<RevMulDel_spec>
 ----------------------------------------------------
 
-ObjectType: `RevDrvDel()`
+ObjectType: `RevMulDel()`
 
 Variants:
-- `RevDrvDel()`    = recurring revenues with delayed cash.
-- `RevDrvNewDel()` = new/one-off revenues with delayed cash.
+- `RevMulDel()`    = recurring revenues with delayed cash.
+- `RevMulNewDel()` = new/one-off revenues with delayed cash.
 
 Description:
-- Works like `RevDrv()` but routes cash to Accounts Receivable, to be collected later via `DelRev()`.
+- Works like `RevMul()` but routes cash to Accounts Receivable, to be collected later via `DelRev()`.
 - Revenue is recognised in the correct month; cash is delayed.
 
 Inputs:
@@ -669,28 +684,28 @@ One-off fees with delay:
 
 FM
     Revenues:
-        ImplementationRevenues = RevDrvNewDel(newClients.val) > setupFees
+        ImplementationRevenues = RevMulNewDel(newClients.val) > setupFees
         SetupPayments          = DelRev(setupFees.val)        > setupPaid
 
 Recurring invoiced software:
 
 FM
     Revenues:
-        SoftwareRevenues = RevDrvDel(activeClients.val) > softwareLicences
+        SoftwareRevenues = RevMulDel(activeClients.val) > softwareLicences
         SoftwarePayments = DelRev(softwareLicences.val) > softwarePaid
 
-</RevDrvDel_spec>
+</RevMulDel_spec>
 
 
 ----------------------------------------------------
-<CostDrv_spec>
+<CostMul_spec>
 ----------------------------------------------------
 
-ObjectType: `CostDrv()`
+ObjectType: `CostMul()`
 
 Variants:
-- `CostDrvDC()` = driven direct costs / COGS.
-- `CostDrvSM()` = driven sales & marketing / acquisition costs.
+- `CostMulDC()` = driven direct costs / COGS.
+- `CostMulSM()` = driven sales & marketing / acquisition costs.
 (Other variants exist for classification but share the same logic.)
 
 Description:
@@ -716,20 +731,20 @@ Examples:
 
 FM
     Costs:
-        MaterialsCosts = CostDrvDC(waxKg.val, wickMetres.val, jarsBought.val) > waxCost, wickCost, jarCost
-        AcquisitionCosts = CostDrvSM(clicksGoogle.val, clicksFacebook.val) > googleAdsCost, facebookAdsCost
+        MaterialsCosts = CostMulDC(waxKg.val, wickMetres.val, jarsBought.val) > waxCost, wickCost, jarCost
+        AcquisitionCosts = CostMulSM(clicksGoogle.val, clicksFacebook.val) > googleAdsCost, facebookAdsCost
 
 Spread:
 
 FM
     Costs:
-        MaterialsCosts = CostDrvDC(...UnitsBought.val) > waxCost, wickCost, jarCost
-        FulfilmentCosts = CostDrvDC(Orders.val) > packagingCost, shippingCost
+        MaterialsCosts = CostMulDC(...UnitsBought.val) > waxCost, wickCost, jarCost
+        FulfilmentCosts = CostMulDC(Orders.val) > packagingCost, shippingCost
 
 Notes:
-- If using `SupplyMths()` for COGS, do not duplicate COGS with `CostDrvDC()`.
+- If using `SupplyMths()` for COGS, do not duplicate COGS with `CostMulDC()`.
 
-</CostDrv_spec>
+</CostMul_spec>
 
 
 ----------------------------------------------------
@@ -739,12 +754,12 @@ Notes:
 ObjectType: `Cost()`
 
 Variants:
-- `CostGA()` = annual G&A overheads (rent, utilities, insurance, software).
-- `CostSM()` = annual S&M overheads (budgets, sponsorships, tools).
-- `CostRD()` = annual R&D costs.
+- `CostGA()` = G&A overheads per month (rent, utilities, insurance, software).
+- `CostSM()` = S&M overheads per month (budgets, sponsorships, tools).
+- `CostRD()` = R&D costs per month.
 
 Description:
-- Allows annual cost assumptions that are spread evenly across months.
+- Allows monthly cost assumptions.
 - Starting object; no inputs.
 
 Inputs:
@@ -1034,14 +1049,14 @@ FM
 
 
 ----------------------------------------------------
-<StaffDrv_spec>
+<StaffDiv_spec>
 ----------------------------------------------------
 
-ObjectType: `StaffDrv()`
+ObjectType: `StaffDiv()`
 
 Variants:
-- `StaffDrvDC()` = activity-driven direct cost teams.
-- `StaffDrvSM()` = activity-driven sales & marketing teams.
+- `StaffDivDC()` = activity-driven direct cost teams.
+- `StaffDivSM()` = activity-driven sales & marketing teams.
 
 Description:
 - Headcount and cost scale with specific activity (orders, customers, leads, etc.).
@@ -1065,21 +1080,21 @@ Examples:
 
 FM
     People:
-        FulfilmentTeams = StaffDrvDC(Orders.val) > warehouseTeam, shippingTeam
-        SalesTeams      = StaffDrvSM(newCustomers.val) > salesTeam, onboardingTeam
+        FulfilmentTeams = StaffDivDC(Orders.val) > warehouseTeam, shippingTeam
+        SalesTeams      = StaffDivSM(newCustomers.val) > salesTeam, onboardingTeam
 
-</StaffDrv_spec>
+</StaffDiv_spec>
 
 
 ----------------------------------------------------
-<StaffLoc_spec>
+<StaffMul_spec>
 ----------------------------------------------------
 
-ObjectType: `StaffLoc()`
+ObjectType: `StaffMul()`
 
 Variants:
-- `StaffLocSM()` = fixed store/location staff treated as Sales & Marketing.
-- `StaffLocDC()` = fixed service/location staff treated as Direct Cost.
+- `StaffMulSM()` = fixed store/location staff treated as Sales & Marketing.
+- `StaffMulDC()` = fixed service/location staff treated as Direct Cost.
 
 Description:
 - Scales fixed roles per physical location (stores, clinics, etc.) based on active locations.
@@ -1100,10 +1115,10 @@ Attributes:
 - `.val`   = cost = `.heads` × (salary + taxes + bonus)/12 (with inflation).
 - Available at object and role level.
 
-Combining with `StaffDrv*()`:
+Combining with `StaffDiv*()`:
 
-- Use `StaffLoc*()` for fixed per-location roles.
-- Use `StaffDrv*()` for activity-driven roles (e.g. driven by footfall, patients).
+- Use `StaffMul*()` for fixed per-location roles.
+- Use `StaffDiv*()` for activity-driven roles (e.g. driven by footfall, patients).
 - Avoid double-counting by keeping fixed and variable teams separate and summing when needed.
 
 Example:
@@ -1111,14 +1126,14 @@ Example:
 FM
     Locations:
         NewSites        = QuantMth() > newStores
-        LtStoreFootfall = QuantDrv(newStores.val) > ltFootfall
+        LtStoreFootfall = QuantMul(newStores.val) > ltFootfall
         RampedFootfall  = Ramp(ltFootfall.val) > footfall
 
     StoreStaffing:
-        StoreStaff    = StaffLocSM(activeStores.val) > manager, security, backoffice, reception
-        VariableTeams = StaffDrvSM(footfall.val) > floorTeam, cashiers
+        StoreStaff    = StaffMulSM(activeStores.val) > manager, security, backoffice, reception
+        VariableTeams = StaffDivSM(footfall.val) > floorTeam, cashiers
 
-</StaffLoc_spec>
+</StaffMul_spec>
 
 
 ----------------------------------------------------

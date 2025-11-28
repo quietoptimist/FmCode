@@ -4,9 +4,9 @@
 export const fnRegistry = {
 
   // ==================================
-  // ScaleDrv — used for all QuantDrv, CostDrv, RevDrv type objects with a simple output = input x assum
+  // Multiply — used for all QuantMul, CostMul, RevMul type objects with a simple output = input x assum
   // ==================================
-  ScaleDrv(ctx, inputs, cfg) {
+  Multiply(ctx, inputs, cfg) {
     const months = ctx.months;
     const alias =
       (cfg.outputNames && cfg.outputNames[0])
@@ -215,9 +215,9 @@ export const fnRegistry = {
   },
 
   // ==================================
-  // StaffDriven — calculates headcount from activity ÷ productivity
+  // StaffDiv — calculates headcount from activity ÷ productivity
   // ==================================
-  StaffDriven(ctx, inputs, cfg) {
+  StaffDiv(ctx, inputs, cfg) {
     const months = ctx.months;
     const outAss = cfg.output || {};
 
@@ -266,7 +266,7 @@ export const fnRegistry = {
   },
 
   // ==================================
-  // StaffTeams — calculates staff costs from headCount × salary
+  // StaffTeam — calculates staff heads and salary from heads per location
   // ==================================
   StaffTeam(ctx, inputs, cfg) {
     const months = ctx.months;
@@ -312,7 +312,7 @@ export const fnRegistry = {
   },
 
   // ==================================
-  // StaffRoles — for individual roles (CEO, CFO, etc.) where headcount is always 1
+  // StaffRole — for individual roles (CEO, CFO, etc.) where headcount is always 1
   // ==================================
   StaffRole(ctx, inputs, cfg) {
     const months = ctx.months;

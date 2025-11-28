@@ -25,15 +25,10 @@ export function buildModelAssumptions(ast: any, index: any, objectSchema: any, c
 
     // Determine default UI mode
     let defaultUiMode = 'single';
-    if (options.modes) {
-      // Legacy: use first mode or 'single'
-      defaultUiMode = options.modes[0] || 'single';
-    } else {
-      // New: find the mode set to true
-      const modes = ['single', 'annual', 'growth', 'monthly'];
-      const found = modes.find(m => options[m] === true);
-      if (found) defaultUiMode = found;
-    }
+    // Find the mode set to true
+    const modes = ['single', 'annual', 'growth', 'monthly'];
+    const found = modes.find(m => options[m] === true);
+    if (found) defaultUiMode = found;
 
     const objAss: any = {
       type: typeName,
@@ -134,7 +129,16 @@ function materializeMonthly(def: any, raw: any, ctx: any, seasonalEnabled: boole
   // In single mode, only use annual[0] for all months - ignore other years and smoothing
   // In single mode, only use single value or annual[0] for all months
   // Also use this logic if the field doesn't support annual mode (e.g. start/end assumptions)
-  if (uiMode === 'single' || !def.supports?.annual) {
+  if (uiMode === 'monthly') {
+    // 2) Monthly mode: Start with zeros (or defaults) and only apply monthly overrides
+    // We skip single/annual/growth logic entirely.
+    // However, if there's a default value (like for start month), we might want to respect it?
+    // User said: "any values set in single, multiple, or growth mode should not be used"
+    // But for things like "start month", they might still want a base?
+    // Actually, user said "user simply overtypes the monthly outputs".
+    // So base should be 0.
+    out.fill(0);
+  } else if (uiMode === 'single' || !def.supports?.annual) {
     if (raw.single === null) return null;
     const singleVal = raw.single ?? raw.annual?.[0] ?? 0;
 
@@ -226,7 +230,7 @@ function materializeMonthly(def: any, raw: any, ctx: any, seasonalEnabled: boole
     }
   }
 
-  // 5) apply monthly overrides
+  // 5) apply monthly overrides (also applies to monthly mode)
   if (def.supports?.monthly && Array.isArray(raw.monthly)) {
     for (let m = 0; m < months; m++) {
       if (raw.monthly[m] != null) {
@@ -438,6 +442,12 @@ export function updateAssumption(assumptions: any, objName: string, type: string
     targetField.raw.growth = Array.from({ length: years }, () => 0);
   }
 
+  // Ensure monthly array exists if we are about to use it
+  if (!Array.isArray(targetField.raw.monthly)) {
+    const months = ctx.months ?? 24;
+    targetField.raw.monthly = Array.from({ length: months }, () => null);
+  }
+
   // Handle different update types
   if (subField === 'annual' && index !== null) {
     // Updating a specific year in annual array
@@ -478,6 +488,10 @@ export function updateAssumption(assumptions: any, objName: string, type: string
       const g = targetField.raw.growth[i] || 0;
       targetField.raw.annual[i] = prev * (1 + g);
     }
+
+  } else if (subField === 'monthly' && index !== null) {
+    // Updating a specific month in monthly array
+    targetField.raw.monthly[index] = value;
 
   } else if (subField === 'seasonal' && index !== null) {
     targetField.raw.seasonal[index] = value;

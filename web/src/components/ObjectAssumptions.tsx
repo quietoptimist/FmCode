@@ -10,7 +10,7 @@ interface ObjectAssumptionsProps {
     onChange: (objName: string, type: 'object' | 'output' | 'meta', aliasOrName: string, fieldName: string, value: any, subField?: string | null, index?: number | null) => void;
 }
 
-type InputMode = 'single' | 'annual' | 'growth';
+type InputMode = 'single' | 'annual' | 'growth' | 'monthly';
 
 export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', onChange }: ObjectAssumptionsProps) {
     const mode = uiMode;
@@ -27,14 +27,11 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
     const typeName = objAss.type;
     const schema = typeName ? (objectSchema as any)[typeName] : null;
     const options = schema?.options || {};
-    let availableModes = (options.modes || []) as InputMode[];
+    // Derive available modes from boolean keys
+    const allModes: InputMode[] = ['single', 'annual', 'growth', 'monthly'];
+    let availableModes = allModes.filter(m => options[m] !== undefined); // If key exists (true or false), it's available
 
-    if (availableModes.length === 0) {
-        // Derive from boolean keys
-        const allModes: InputMode[] = ['single', 'annual', 'growth'];
-        availableModes = allModes.filter(m => options[m] !== undefined); // If key exists (true or false), it's available
-        if (availableModes.length === 0) availableModes = ['single'];
-    }
+    if (availableModes.length === 0) availableModes = ['single'];
 
     const hasSmoothing = options.smoothing !== undefined; // Check existence
     const hasDateRange = options.dateRange !== undefined;
@@ -57,8 +54,8 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
                         {optionsExpanded && (() => {
                             return (
                                 <>
-                                    {/* Smoothing Toggle - only show in multi-year modes */}
-                                    {hasSmoothing && mode !== 'single' && (
+                                    {/* Smoothing Toggle - only show in multi-year modes and not monthly */}
+                                    {hasSmoothing && mode !== 'single' && mode !== 'monthly' && (
                                         <label className="flex items-center gap-1 text-xs font-medium text-gray-600 cursor-pointer select-none">
                                             <input
                                                 type="checkbox"
@@ -70,8 +67,8 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
                                         </label>
                                     )}
 
-                                    {/* Date Range Toggle */}
-                                    {hasDateRange && (
+                                    {/* Date Range Toggle - hide in monthly mode */}
+                                    {hasDateRange && mode !== 'monthly' && (
                                         <label className="flex items-center gap-1 text-xs font-medium text-gray-600 cursor-pointer select-none">
                                             <input
                                                 type="checkbox"
@@ -83,8 +80,8 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
                                         </label>
                                     )}
 
-                                    {/* Integers Toggle */}
-                                    {hasIntegers && (
+                                    {/* Integers Toggle - hide in monthly mode */}
+                                    {hasIntegers && mode !== 'monthly' && (
                                         <label className="flex items-center gap-1 text-xs font-medium text-gray-600 cursor-pointer select-none">
                                             <input
                                                 type="checkbox"
@@ -110,7 +107,7 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
                                                 >
                                                     {availableModes.map((m) => (
                                                         <option key={m} value={m} className="capitalize">
-                                                            {m === 'annual' ? 'multiple' : m}
+                                                            {m === 'annual' ? 'yearly' : m}
                                                         </option>
                                                     ))}
                                                 </select>
@@ -146,7 +143,7 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
             </div>
 
             {/* Object Level Assumptions */}
-            {objAss.object && Object.keys(objAss.object).length > 0 && (
+            {mode !== 'monthly' && objAss.object && Object.keys(objAss.object).length > 0 && (
                 <div className="space-y-3 pl-4 border-l-2 border-blue-100">
                     <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Global Settings</h4>
                     {Object.entries(objAss.object).map(([fieldName, field]: [string, any]) => (
@@ -163,7 +160,7 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
             )}
 
             {/* Output Level Assumptions Table */}
-            {objAss.outputs && Object.keys(objAss.outputs).length > 0 && (
+            {((mode !== 'monthly') || (mode === 'monthly' && objAss.dateRangeEnabled)) && objAss.outputs && Object.keys(objAss.outputs).length > 0 && (
                 <div className="mt-2 overflow-x-auto">
                     <table className="text-sm text-left w-full">
                         <thead className="text-xs text-gray-500 uppercase bg-gray-50">
@@ -180,7 +177,7 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
                                                 </div>
                                             ))}
                                         </div>
-                                    ) : (
+                                    ) : mode === 'growth' ? (
                                         <div className="flex gap-2">
                                             <div className="w-20 text-[10px] text-gray-500 uppercase text-center flex justify-center">Base (Y1)</div>
                                             {Array.from({ length: years - 1 }).map((_, i) => (
@@ -189,6 +186,9 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
                                                 </div>
                                             ))}
                                         </div>
+                                    ) : (
+                                        // Monthly mode - no value header needed if we hide the column, or empty
+                                        <span className="text-gray-400 italic font-normal">Monthly Inputs</span>
                                     )}
                                 </th>
                                 {mode !== 'single' && (objAss.smoothingEnabled ?? true) && <th className="px-2 py-1 font-medium w-16">Smooth</th>}
@@ -234,7 +234,7 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
 
                                                     {/* Value Inputs */}
                                                     <td className="px-2 py-0.5 align-middle">
-                                                        {field && (
+                                                        {field && mode !== 'monthly' && (
                                                             <ValueInput
                                                                 field={field}
                                                                 mode={mode}
@@ -242,6 +242,9 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
                                                                 showLabels={false}
                                                                 onChange={(val, subField, index) => onChange(objName, 'output', alias, fieldName, val, subField, index)}
                                                             />
+                                                        )}
+                                                        {mode === 'monthly' && (
+                                                            <span className="text-xs text-gray-400 italic">See outputs</span>
                                                         )}
                                                     </td>
 
@@ -295,6 +298,11 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
                             })()}
                         </tbody>
                     </table>
+                </div>
+            )}
+            {mode === 'monthly' && (
+                <div className="text-xs text-gray-500 italic p-2">
+                    Edit monthly values directly in the outputs panel.
                 </div>
             )}
         </div>

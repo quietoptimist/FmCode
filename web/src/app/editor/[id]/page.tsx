@@ -17,7 +17,7 @@ import Link from 'next/link';
 
 const SAMPLE_CODE = `
 CustomerAcquisition:
-  NewCustomers = QuantAnnSeas()            => newOrganic, newPaid  // Forecast number of new customers added per month from organic and paid channels
+  NewCustomers = QuantSeas()            => newOrganic, newPaid  // Forecast number of new customers added per month from organic and paid channels
   LeadsFromAds = QuantDrv(newPaid.val)     => paidLeads            // Determine how many leads we need to achieve those new customers
   AdsExpense   = CostDrvSM(paidLeads.val)  => adsCost              // Estimate our marketing spend to generate those leads
 
@@ -33,7 +33,7 @@ People:
   Leadership   = StaffRole()               => CEO, CFO, COO, OtherRole1, OtherRole2   // Key people start dates and salaries
   
 OperatingCosts:
-  Overheads = CostAnnGA()                  => rent, utilities, insurance, subscriptions, other  // Regular monthly overhead costs
+  Overheads = CostGA()                  => rent, utilities, insurance, subscriptions, other  // Regular monthly overhead costs
 `;
 
 export default function Editor({ params }: { params: { id: string } }) {

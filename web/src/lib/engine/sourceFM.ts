@@ -33,6 +33,6 @@ Costs:
     UpworkRevenueTotal  = Sum(upworkModelRev.rev, upworkAdviceRev.rev)            // Total Upwork-sourced revenues (initial + advisory)
     UpworkFees          = CostDrvSM(UpworkRevenueTotal.val) => upworkFees         // Upwork platform fee as % of revenues (10%)
     GoogleAdsCost       = CostDrvSM(gadsClicks.val) => googleAdsCpc               // Google Ads CPC cost driven by clicks
-    MarketingAgency     = CostAnnSM() => gadsAgencyFee                            // Fixed monthly agency fee for Google Ads management
-    Overheads           = CostAnnGA() => bookkeeping, accounting, insurance, officeConsumables // Predictable overheads (G&A)
+    MarketingAgency     = CostSM() => gadsAgencyFee                            // Fixed monthly agency fee for Google Ads management
+    Overheads           = CostGA() => bookkeeping, accounting, insurance, officeConsumables // Predictable overheads (G&A)
 `;

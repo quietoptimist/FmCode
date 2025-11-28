@@ -7,15 +7,15 @@ SetupAndFunding:
     EquityFunding       = FundEquity() => startingCash, seedRound   // Initial cash from founders/investors
 CustomerAcquisition:
     NewClients          = Quant() => upworkNew, gadsNew             // Annual new clients by source (Upwork vs Google Ads)
-    GadsClicks          = QuantDrv(gadsNew.val) => gadsClicks       // Google Ads clicks needed per new client (visitors per client)
+    GadsClicks          = QuantMul(gadsNew.val) => gadsClicks       // Google Ads clicks needed per new client (visitors per client)
 Retention:
     Retained            = SubRetain(upworkNew.val, gadsNew.val) => upworkClients, gadsClients   // Retain clients by source: active & churn each month
 InitialModelWork:
-    ModelHrs            = QuantDrv(NewClients.val) => designCheckHrs, buildModelHrs, followupCallHrs // Hours per new client for review, build, and follow-up (hrs per client)
+    ModelHrs            = QuantMul(NewClients.val) => designCheckHrs, buildModelHrs, followupCallHrs // Hours per new client for review, build, and follow-up (hrs per client)
     AIInterview         = CostDrvDC(NewClients.val) => aiInterviewCost                               // Small inference cost per new client (direct cost)
 AdvisoryWork:
-    AdviceBuyers        = QuantDrv(...Retained.act) => upworkAdviceBuyers, gadsAdviceBuyers         // % of active clients buying advice each month
-    AdviceHours         = QuantDrv(...AdviceBuyers.val) => upworkAdviceHrs, gadsAdviceHrs           // Hours per advice buyer
+    AdviceBuyers        = QuantMul(...Retained.act) => upworkAdviceBuyers, gadsAdviceBuyers         // % of active clients buying advice each month
+    AdviceHours         = QuantMul(...AdviceBuyers.val) => upworkAdviceHrs, gadsAdviceHrs           // Hours per advice buyer
 Revenues:
     InitialModelFees    = RevDrvNewDel(upworkNew.val, gadsNew.val) => upworkModelRev, gadsModelRev  // One-off initial model fees (invoiced; payment delay)
     AdviceRevenues      = RevDrvDel(upworkAdviceHrs.val, gadsAdviceHrs.val) => upworkAdviceRev, gadsAdviceRev // Recurring advisory revenues per hour (invoiced; payment delay)
@@ -27,8 +27,8 @@ People:
     CompanyHeads        = Sum(ModellingTeam.heads, AdvisoryTeam.heads, Management.heads)            // Total company headcount across roles & teams
 Costs:
     UpworkRevenueTotal  = Sum(upworkModelRev.rev, upworkAdviceRev.rev)            // Total Upwork-sourced revenues (initial + advisory)
-    UpworkFees          = CostDrvSM(UpworkRevenueTotal.val) => upworkFees         // Upwork platform fee as % of revenues (10%)
-    GoogleAdsCost       = CostDrvSM(gadsClicks.val) => googleAdsCpc               // Google Ads CPC cost driven by clicks
+    UpworkFees          = CostMulSM(UpworkRevenueTotal.val) => upworkFees         // Upwork platform fee as % of revenues (10%)
+    GoogleAdsCost       = CostMulSM(gadsClicks.val) => googleAdsCpc               // Google Ads CPC cost driven by clicks
     MarketingAgency     = CostSM() => gadsAgencyFee                               // Fixed monthly agency fee for Google Ads management
     Overheads           = CostGA() => bookkeeping, accounting, insurance, officeConsumables // Predictable overheads (G&A)
 Capex:

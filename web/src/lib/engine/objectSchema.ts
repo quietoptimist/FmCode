@@ -10,6 +10,7 @@ export const objectSchema = {
     showMonthlyAssumptions: false,  // Assumptions = outputs, no need to show both
     options: {
       single: true,
+      monthly: false,
       annual: false,
       growth: false,
       dateRange: false,
@@ -34,11 +35,76 @@ export const objectSchema = {
           default: 10,
           supports: {
             single: true,
-            annual: false,
-            monthly: false,
-            smoothing: false,
-            growth: false,
-            seasonal: false,
+            annual: true,
+            monthly: true,
+            smoothing: true,
+            growth: true,
+            seasonal: true,
+            integers: true
+          }
+        },
+        {
+          name: "start",
+          label: "Start Month",
+          baseType: "number",
+          format: "integer",
+          default: 1,
+          supports: {
+            single: true
+          }
+        },
+        {
+          name: "end",
+          label: "End Month",
+          baseType: "number",
+          format: "integer",
+          default: null,
+          supports: {
+            single: true
+          }
+        }
+      ]
+    }
+  },
+
+  // ============================
+  // QuantMth — just creates numbers, no inputs
+  // ============================
+  QuantMth: {
+    impl: "QuantStart",
+    showMonthlyAssumptions: false,  // Assumptions = outputs, no need to show both
+    options: {
+      single: false,
+      monthly: true,
+      annual: false,
+      growth: false,
+      dateRange: false,
+      smoothing: false,
+      integers: true,
+      seasonal: false
+    },
+    channels: {
+      val: {
+        label: "Value",
+        destinations: []  // Initial setup value
+      }
+    },
+    assumptions: {
+      object: [],
+      output: [
+        {
+          name: "amount",
+          label: "Monthly Quantity",
+          baseType: "number",
+          format: "integer",
+          default: 10,
+          supports: {
+            single: true,
+            annual: true,
+            monthly: true,
+            smoothing: true,
+            growth: true,
+            seasonal: true,
             integers: true
           }
         },
@@ -73,12 +139,13 @@ export const objectSchema = {
     impl: "QuantStart",
     showMonthlyAssumptions: false,  // Assumptions = outputs, no need to show both
     options: {
-      single: false,
-      annual: true,
+      single: true,
+      annual: false,
+      monthly: true,
       growth: false,
       dateRange: false,
       smoothing: true,
-      integers: false,
+      integers: true,
       seasonal: true
     },
     channels: {
@@ -99,11 +166,11 @@ export const objectSchema = {
           supports: {
             single: false,
             annual: true,
-            monthly: false,
+            monthly: true,
             smoothing: true,
             growth: false,
             seasonal: true,
-            integers: false
+            integers: true
           }
         },
         {
@@ -131,15 +198,19 @@ export const objectSchema = {
   },
 
   // ============================
-  // QuantDrv → ScaleDrv impl
+  // QuantMul → Multiply impl
   // ============================
-  QuantDrv: {
-    impl: "ScaleDrv",
+  QuantMul: {
+    impl: "Multiply",
     showMonthlyAssumptions: true,  // Has driver inputs, show monthly assumptions
     options: {
-      modes: ['single', 'annual', 'growth'],
-      dateRange: true,
-      smoothing: true
+      single: true,
+      annual: false,
+      growth: false,
+      monthly: false,
+      seasonal: false,
+      dateRange: false,
+      smoothing: false
     },
     channels: {
       val: {
@@ -161,6 +232,74 @@ export const objectSchema = {
             annual: true,
             monthly: true,
             smoothing: true,
+            seasonal: true,
+            growth: true
+          },
+          ui: {
+            defaultMode: "annual"
+          }
+        },
+        {
+          name: "start",
+          label: "Start Month",
+          baseType: "number",
+          format: "integer",
+          default: 1,
+          supports: {
+            single: true
+          }
+        },
+        {
+          name: "end",
+          label: "End Month",
+          baseType: "number",
+          format: "integer",
+          default: null,
+          supports: {
+            single: true
+          }
+        }
+      ]
+    }
+  },
+
+
+  // ============================
+  // QuantDiv → Divide input by assumption
+  // ============================
+  QuantDiv: {
+    impl: "Divide",
+    showMonthlyAssumptions: true,  // Has driver inputs, show monthly assumptions
+    options: {
+      single: true,
+      annual: false,
+      growth: false,
+      monthly: false,
+      seasonal: false,
+      dateRange: false,
+      smoothing: false
+    },
+    channels: {
+      val: {
+        label: "Value",
+        destinations: []  // Generic driver - mapping depends on usage context
+      }
+    },
+    assumptions: {
+      object: [],
+      output: [
+        {
+          name: "factor",
+          label: "# per input",
+          baseType: "number",
+          format: "decimal",
+          default: 2,
+          supports: {
+            single: true,
+            annual: true,
+            monthly: true,
+            smoothing: true,
+            seasonal: true,
             growth: true
           },
           ui: {
@@ -198,9 +337,13 @@ export const objectSchema = {
     impl: "QuantStart",
     showMonthlyAssumptions: false,
     options: {
-      modes: ['single', 'annual', 'growth'],
-      dateRange: true,
-      smoothing: true
+      single: true,
+      annual: false,
+      growth: false,
+      monthly: false,
+      seasonal: false,
+      dateRange: false,
+      smoothing: false
     },
     channels: {
       val: {
@@ -260,9 +403,13 @@ export const objectSchema = {
     impl: "QuantStart",
     showMonthlyAssumptions: false,
     options: {
-      modes: ['single', 'annual', 'growth'],
-      dateRange: true,
-      smoothing: true
+      single: true,
+      annual: false,
+      growth: false,
+      seasonal: false,
+      monthly: false,
+      dateRange: false,
+      smoothing: false
     },
     channels: {
       val: {
@@ -283,6 +430,7 @@ export const objectSchema = {
             single: true,
             annual: true,
             monthly: true,
+            seasonal: true,
             smoothing: true,
             growth: true
           },
@@ -315,73 +463,16 @@ export const objectSchema = {
   },
 
   // ============================
-  // ScaleDrv — also a scaler
+  // CostMulDC — also a scaler
   // ============================
-  ScaleDrv: {
-    impl: "ScaleDrv",
+  CostMulDC: {
+    impl: "Multiply",
     showMonthlyAssumptions: true,
     options: {
       single: true,
       annual: false,
       growth: false,
-      dateRange: false,
-      smoothing: true
-    },
-    channels: {
-      val: {
-        label: "Value",
-        destinations: []  // KPI or custom mapping
-      }
-    },
-    assumptions: {
-      object: [],               // leave empty for now
-      output: [
-        {
-          name: "factor",
-          label: "number per input",
-          baseType: "number",
-          format: "number",
-          default: 1,
-          supports: {
-            single: true,
-            annual: false,
-            monthly: false,
-            smoothing: true,
-            growth: false
-          }
-        },
-        {
-          name: "start",
-          label: "Start Month",
-          baseType: "number",
-          format: "integer",
-          default: 1,
-          supports: {
-            single: true
-          }
-        },
-        {
-          name: "end",
-          label: "End Month",
-          baseType: "number",
-          format: "integer",
-          default: null,
-          supports: {
-            single: true
-          }
-        }
-      ]
-    }
-  },
-
-  // ============================
-  // CostDrvDC — also a scaler
-  // ============================
-  CostDrvDC: {
-    impl: "ScaleDrv",
-    showMonthlyAssumptions: true,
-    options: {
-      modes: ['single', 'annual', 'growth'],
+      monthly: false,
       dateRange: true,
       smoothing: true
     },
@@ -436,13 +527,16 @@ export const objectSchema = {
   },
 
   // ============================
-  // CostDrvSM — scalar with different financial destination
+  // CostMulSM — scalar with different financial destination
   // ============================
-  CostDrvSM: {
+  CostMulSM: {
     impl: "ScaleDrv",
     showMonthlyAssumptions: true,
     options: {
-      modes: ['single', 'annual', 'growth'],
+      single: true,
+      annual: false,
+      growth: false,
+      monthly: false,
       dateRange: true,
       smoothing: true
     },
@@ -497,13 +591,16 @@ export const objectSchema = {
   },
 
   // ============================
-  // RevDrvNew — same scaling idea
+  // RevMulNew — same scaling idea
   // ============================
-  RevDrvNew: {
+  RevMulNew: {
     impl: "ScaleDrv",
     showMonthlyAssumptions: true,
     options: {
-      modes: ['single', 'annual', 'growth'],
+      single: true,
+      annual: false,
+      growth: false,
+      monthly: false,
       dateRange: true,
       smoothing: true
     },
@@ -558,13 +655,16 @@ export const objectSchema = {
   },
 
   // ============================
-  // RevDrvNewDel — same as revDrv but will have different destinations
+  // RevMulNewDel — same as revMul but will have different destinations
   // ============================
-  RevDrvNewDel: {
+  RevMulNewDel: {
     impl: "ScaleDrv",
     showMonthlyAssumptions: true,
     options: {
-      modes: ['single', 'annual', 'growth'],
+      single: true,
+      annual: false,
+      growth: false,
+      monthly: false,
       dateRange: true,
       smoothing: true
     },
@@ -619,13 +719,16 @@ export const objectSchema = {
   },
 
   // ============================
-  // RevDrv — recurring revenues
+  // RevMul — recurring revenues
   // ============================
-  RevDrv: {
+  RevMul: {
     impl: "ScaleDrv",
     showMonthlyAssumptions: true,
     options: {
-      modes: ['single', 'annual', 'growth'],
+      single: true,
+      annual: false,
+      growth: false,
+      monthly: false,
       dateRange: true,
       smoothing: true
     },
@@ -680,13 +783,16 @@ export const objectSchema = {
   },
 
   // ============================
-  // RevDrvDel — recurring revenues with a delay before cash in
+  // RevMulDel — recurring revenues with a delay before cash in
   // ============================
-  RevDrvDel: {
+  RevMulDel: {
     impl: "ScaleDrv",
     showMonthlyAssumptions: true,
     options: {
-      modes: ['single', 'annual', 'growth'],
+      single: true,
+      annual: false,
+      growth: false,
+      monthly: false,
       dateRange: true,
       smoothing: true
     },
@@ -747,7 +853,9 @@ export const objectSchema = {
     impl: "SubRetain",
     showMonthlyAssumptions: true,
     options: {
-      modes: ['single', 'annual'],
+      single: true,
+      annual: false,
+      monthly: false,
       dateRange: true,
       smoothing: true
     },
@@ -811,7 +919,7 @@ export const objectSchema = {
     impl: "Delay",
     showMonthlyAssumptions: true,
     options: {
-      modes: ['single']
+      single: true
     },
     channels: {
       val: {
@@ -840,13 +948,15 @@ export const objectSchema = {
   },
 
   // ============================
-  // StaffDriven - teams of people with manually entered headcount and salary
+  // StaffDiv - teams of people driven by input activity and their productivity
   // ============================
-  StaffDriven: {
-    impl: "StaffDriven",
+  StaffDiv: {
+    impl: "StaffDiv",
     showMonthlyAssumptions: true,
     options: {
-      modes: ['single', 'annual'],
+      single: true,
+      annual: false,
+      monthly: false,
       dateRange: true,
       smoothing: true,
       integers: true
@@ -922,13 +1032,15 @@ export const objectSchema = {
   },
 
   // ============================
-  // StaffTeams - teams of people with manually entered headcount and salary
+  // StaffTeam - teams of people driven by heads per location
   // ============================
   StaffTeam: {
     impl: "StaffTeam",
     showMonthlyAssumptions: true,
     options: {
-      modes: ['single', 'annual'],
+      single: true,
+      annual: false,
+      monthly: false,
       dateRange: true,
       smoothing: true,
       integers: true,
@@ -1006,13 +1118,15 @@ export const objectSchema = {
   },
 
   // ============================
-  // StaffRoles - teams of people with manually entered headcount and salary
+  // StaffRole - individual roles with manually entered headcount and salary
   // ============================
   StaffRole: {
     impl: "StaffRole",
     showMonthlyAssumptions: false,
     options: {
-      modes: ['single', 'annual'],
+      single: true,
+      annual: false,
+      monthly: false,
       dateRange: true,
       smoothing: true,
       integers: true
@@ -1078,7 +1192,7 @@ export const objectSchema = {
     impl: "QuantPulse",
     showMonthlyAssumptions: false,
     options: {
-      modes: ['single'],
+      single: true,
       dateRange: false,
       smoothing: false,
       integers: false
@@ -1133,7 +1247,7 @@ export const objectSchema = {
     impl: "Sum",
     showMonthlyAssumptions: false,  // Just sums inputs, no unique assumptions
     options: {
-      modes: ['single']
+      single: true
     },
     channels: {
       val: {
