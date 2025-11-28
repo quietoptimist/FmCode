@@ -217,7 +217,7 @@ Example:
 
 FM
     Costs:
-        MaterialsCosts   = CostMulDC(...UnitsBought.val) > waxCost, wickCost, jarCost   // Direct COGS
+        MaterialsCosts   = CostMulDC(...UnitsBought.val) > waxCost, wickCost, jarCost   // Direct COGS driven by units bought
         AcquisitionCosts = CostSM() > crmSubscription, eventSponsorship                 // Monthly recurring S&M costs
 
 FM
@@ -287,7 +287,7 @@ Inputs:
 - None (starting object).
 
 Assumptions (Parameters):
-- `amount` (number): Amount raised per round.
+- `value` (number): Amount raised per round.
 - `month` (int): Month in which each round is received.
 
 Outputs:
@@ -422,13 +422,13 @@ FM
 
 
 ----------------------------------------------------
-<QuantMult_spec>
+<QuantMul_spec>
 ----------------------------------------------------
 
-ObjectType: `QuantMult()`
+ObjectType: `QuantMul()`
 
 Variants:
-- `QuantMult()` = multiply input by user assumptions.
+- `QuantMul()` = multiply input by user assumptions.
 - `QuantDiv()`  = divide input by user assumptions.
 
 Description:
@@ -465,9 +465,9 @@ Multiplication (e.g. orders × items per order):
 
 FM
     Orders:
-        ItemsBought = QuantMult(orders.val) > items(factor: 2) // Total items per month driven by orders and items per order
+        ItemsBought = QuantMul(orders.val) > items(factor: 2) // Total items per month driven by orders and items per order
 
-</QuantMult_spec>
+</QuantMul_spec>
 
 
 ----------------------------------------------------
@@ -786,6 +786,44 @@ FM
 
 
 ----------------------------------------------------
+<CostMth_spec>
+----------------------------------------------------
+
+ObjectType: `Cost()`
+
+Variants:
+- `CostMthGA()` = G&A overheads per month (rent, utilities, insurance, software).
+- `CostMthSM()` = S&M overheads per month (budgets, sponsorships, tools).
+- `CostMthRD()` = R&D costs per month.
+- `CostMthOE()` = One-off costs per month.
+
+Description:
+- Allows manually entered monthly cost assumptions.
+- Starting object; no inputs.
+
+Inputs:
+- None.
+
+Assumptions (Parameters):
+- `cost` (number): Monthly cost per outputName.
+
+Outputs:
+- One or more outputNames (e.g. `officeRent`, `insurance`).
+
+Attributes:
+- `.val` = monthly cost, available at object and outputName level.
+
+Example:
+
+FM
+    Costs:
+        OverheadCosts = CostGA() > officeRent, utilities, insurance, softwareSubscriptions
+        AcquisitionCosts = CostSM() > crmSubscription, eventSponsorship
+
+</Cost_spec>
+
+
+----------------------------------------------------
 <SupplyMths_spec>
 ----------------------------------------------------
 
@@ -827,7 +865,7 @@ Examples (finished goods):
 FM
     Demand:
         CustomerOrders = QuantSeas() > orders
-        BasketItems    = QuantDrv(orders.val) > items
+        BasketItems    = QuantMul(orders.val) > items
         ProductsSold   = Split(items.val) > blousesSold, shortsSold, sweatersSold
 
     SupplyChain:
@@ -841,8 +879,8 @@ FM
         Revenues = RevDrv(...ProductsSold.val) > blousesRev(price: 30), shortsRev(price: 25), sweatersRev(price: 50) // Revenues are driven by sales volumes
 
 Notes:
-- Use either `SupplyMths()` **or** `CostDrvDC()` for COGS, not both.
-- `CostDrvDC()` may still be needed for fees (card, platform, fulfilment, etc.).
+- Use either `SupplyMths()` **or** `CostMulDC()` for COGS, not both.
+- `CostMulDC()` may still be needed for fees (card, platform, fulfilment, etc.).
 
 </SupplyMths_spec>
 
@@ -914,7 +952,7 @@ Examples:
 
 FM
     Capex:
-        HouseScalars = QuantDrv(newHouses.val) > houseSizeFactor
+        HouseScalars = QuantMul(newHouses.val) > houseSizeFactor
         HouseCapex   = CapexProj(houseSizeFactor.val) > land, foundations, build, interiors
 
         StoreCapex   = CapexProj(newStores.val) > design, permissions, construction, fitout, equipment
@@ -978,6 +1016,12 @@ FM
 
 ObjectType: `StaffRole()`
 
+Variants:
+- `StaffRoleDC()` = Direct cost roles.
+- `StaffRoleGA()` = G&A roles.
+- `StaffRoleSM()` = S&M roles.
+- `StaffRoleRD()` = R&D roles.
+
 Description:
 - Models individual roles with their own salary, tax, bonus, and timing.
 
@@ -1013,6 +1057,7 @@ FM
 ObjectType: `StaffTeam()`
 
 Variants:
+- `StaffTeamDC()` = Direct cost teams.
 - `StaffTeamGA()` = G&A teams.
 - `StaffTeamSM()` = Sales & marketing teams.
 - `StaffTeamRD()` = R&D teams.
@@ -1041,9 +1086,9 @@ Examples:
 
 FM
     People:
-        CentralTeams    = StaffTeamGA() > financeTeam, hrTeam, adminTeam
-        AcquisitionTeams= StaffTeamSM() > marketingTeam, partnershipsTeam, salesTeam
-        DevelopmentTeams= StaffTeamRD() > productDesignTeam, labTeam, frontEndDevs, backEndDevs
+        CentralTeams     = StaffTeamGA() > financeTeam, hrTeam, adminTeam
+        AcquisitionTeams = StaffTeamSM() > marketingTeam, partnershipsTeam, salesTeam
+        DevelopmentTeams = StaffTeamRD() > productDesignTeam, labTeam, frontEndDevs, backEndDevs
 
 </StaffTeam_spec>
 
@@ -1057,6 +1102,8 @@ ObjectType: `StaffDiv()`
 Variants:
 - `StaffDivDC()` = activity-driven direct cost teams.
 - `StaffDivSM()` = activity-driven sales & marketing teams.
+- `StaffDivGA()` = activity-driven G&A teams.
+- `StaffDivRD()` = activity-driven R&D teams.
 
 Description:
 - Headcount and cost scale with specific activity (orders, customers, leads, etc.).
@@ -1095,6 +1142,8 @@ ObjectType: `StaffMul()`
 Variants:
 - `StaffMulSM()` = fixed store/location staff treated as Sales & Marketing.
 - `StaffMulDC()` = fixed service/location staff treated as Direct Cost.
+- `StaffMulGA()` = fixed service/location staff treated as General & Administrative.
+- `StaffMulRD()` = fixed service/location staff treated as Research & Development.
 
 Description:
 - Scales fixed roles per physical location (stores, clinics, etc.) based on active locations.
@@ -1383,7 +1432,7 @@ Example:
 FM
     Projects:
         ClientsWon     = QuantMth() > newClients
-        ResourceNeeded = QuantDrv(newClients.val) > hoursNeeded
+        ResourceNeeded = QuantMul(newClients.val) > hoursNeeded
         ActiveProjects = Spread(hoursNeeded.val) > hoursBilled
 
 </Spread_spec>
@@ -1536,7 +1585,7 @@ FM
         Leadership   = StaffRole()   > ceo, cfo, headProduct, headMarketing, headOperations // Tailor roles to the business
 
     Costs:
-        Overheads  = CostAnnGA() > rent, utilities, travel, software, insurance, accountingFees, bankingFees, communications, officePostage, officeSupplies, otherOverheads
+        Overheads  = CostGA() > rent, utilities, travel, software, insurance, accountingFees, bankingFees, communications, officePostage, officeSupplies, otherOverheads
         SetupCosts = CostMthOE() > companySetup, legalFees, companyLicenses, otherSetupCosts, consultingFees
 
 </boilerplate_code>

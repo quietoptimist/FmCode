@@ -9,10 +9,12 @@ export const objectSchema = {
     impl: "QuantStart",
     showMonthlyAssumptions: false,  // Assumptions = outputs, no need to show both
     options: {
+      // modes in dropdown menu with one of them set to true to indicate inital state when model is created
       single: true,
       monthly: false,
       annual: false,
       growth: false,
+      // these control the option menu check boxes existence and initial state
       dateRange: false,
       smoothing: false,
       integers: true,
@@ -22,23 +24,30 @@ export const objectSchema = {
       val: {
         label: "Value",
         destinations: []  // Initial setup value
+      },
+      cum: {
+        label: "Cumulative Value",
+        destinations: []  // Initial setup value
       }
     },
     assumptions: {
       object: [],
       output: [
         {
-          name: "amount",
+          name: "value",
           label: "Monthly Quantity",
           baseType: "number",
           format: "integer",
           default: 10,
           supports: {
+            // modes in dropdown menu with one of them set to true to indicate inital state when model is created
             single: true,
             annual: true,
             monthly: true,
-            smoothing: true,
             growth: true,
+            // if true, then this assumption will have the option of applying the adjustment when calculating monthly assumptions
+            dateRange: true,
+            smoothing: true,
             seasonal: true,
             integers: true
           }
@@ -67,135 +76,9 @@ export const objectSchema = {
     }
   },
 
-  // ============================
-  // QuantMth — just creates numbers, no inputs
-  // ============================
-  QuantMth: {
-    impl: "QuantStart",
-    showMonthlyAssumptions: false,  // Assumptions = outputs, no need to show both
-    options: {
-      single: false,
-      monthly: true,
-      annual: false,
-      growth: false,
-      dateRange: false,
-      smoothing: false,
-      integers: true,
-      seasonal: false
-    },
-    channels: {
-      val: {
-        label: "Value",
-        destinations: []  // Initial setup value
-      }
-    },
-    assumptions: {
-      object: [],
-      output: [
-        {
-          name: "amount",
-          label: "Monthly Quantity",
-          baseType: "number",
-          format: "integer",
-          default: 10,
-          supports: {
-            single: true,
-            annual: true,
-            monthly: true,
-            smoothing: true,
-            growth: true,
-            seasonal: true,
-            integers: true
-          }
-        },
-        {
-          name: "start",
-          label: "Start Month",
-          baseType: "number",
-          format: "integer",
-          default: 1,
-          supports: {
-            single: true
-          }
-        },
-        {
-          name: "end",
-          label: "End Month",
-          baseType: "number",
-          format: "integer",
-          default: null,
-          supports: {
-            single: true
-          }
-        }
-      ]
-    }
-  },
 
-  // ============================
-  // QuantSeas — just creates numbers, no inputs, seasonal variation
-  // ============================
-  QuantSeas: {
-    impl: "QuantStart",
-    showMonthlyAssumptions: false,  // Assumptions = outputs, no need to show both
-    options: {
-      single: true,
-      annual: false,
-      monthly: true,
-      growth: false,
-      dateRange: false,
-      smoothing: true,
-      integers: true,
-      seasonal: true
-    },
-    channels: {
-      val: {
-        label: "Monthly Quantity",
-        destinations: []  // KPI or custom mapping
-      }
-    },
-    assumptions: {
-      object: [],
-      output: [
-        {
-          name: "amount",
-          label: "Monthly Quantity",
-          baseType: "number",
-          format: "integer",
-          default: 10,
-          supports: {
-            single: false,
-            annual: true,
-            monthly: true,
-            smoothing: true,
-            growth: false,
-            seasonal: true,
-            integers: true
-          }
-        },
-        {
-          name: "start",
-          label: "Start Month",
-          baseType: "number",
-          format: "integer",
-          default: 1,
-          supports: {
-            single: true
-          }
-        },
-        {
-          name: "end",
-          label: "End Month",
-          baseType: "number",
-          format: "integer",
-          default: null,
-          supports: {
-            single: true
-          }
-        }
-      ]
-    }
-  },
+
+
 
   // ============================
   // QuantMul → Multiply impl
@@ -214,8 +97,12 @@ export const objectSchema = {
     },
     channels: {
       val: {
-        label: "Value",
+        label: "Quantity",
         destinations: []  // Generic driver - mapping depends on usage context
+      },
+      cum: {
+        label: "Cum Value",
+        destinations: []  // Initial setup value
       }
     },
     assumptions: {
@@ -223,7 +110,7 @@ export const objectSchema = {
       output: [
         {
           name: "factor",
-          label: "# per input",
+          label: "Multiplier",
           baseType: "number",
           format: "decimal",
           default: 2,
@@ -281,8 +168,12 @@ export const objectSchema = {
     },
     channels: {
       val: {
-        label: "Value",
+        label: "Quantity",
         destinations: []  // Generic driver - mapping depends on usage context
+      },
+      cum: {
+        label: "Cum Value",
+        destinations: []  // Initial setup value
       }
     },
     assumptions: {
@@ -290,7 +181,7 @@ export const objectSchema = {
       output: [
         {
           name: "factor",
-          label: "# per input",
+          label: "Divisor",
           baseType: "number",
           format: "decimal",
           default: 2,
@@ -331,75 +222,9 @@ export const objectSchema = {
   },
 
   // ============================
-  // CostSM — Creates costs, same as quantAnn
+  // Cost — Creates recurring monthly costs (Base for variants)
   // ============================
-  CostSM: {
-    impl: "QuantStart",
-    showMonthlyAssumptions: false,
-    options: {
-      single: true,
-      annual: false,
-      growth: false,
-      monthly: false,
-      seasonal: false,
-      dateRange: false,
-      smoothing: false
-    },
-    channels: {
-      val: {
-        label: "Value",
-        destinations: ["pnl.opex.sm", "cash.ops.out.opex"]  // Sales & marketing cost
-      }
-    },
-    assumptions: {
-      object: [],
-      output: [
-        {
-          name: "amount",
-          label: "Monthly Cost",
-          baseType: "number",
-          format: "currency",
-          default: 1000,
-          supports: {
-            single: true,
-            annual: true,
-            monthly: true,
-            smoothing: true,
-            growth: true
-          },
-          ui: {
-            defaultMode: "annual"
-          }
-        },
-        {
-          name: "start",
-          label: "Start Month",
-          baseType: "number",
-          format: "integer",
-          default: 1,
-          supports: {
-            single: true
-          }
-        },
-        {
-          name: "end",
-          label: "End Month",
-          baseType: "number",
-          format: "integer",
-          default: null,
-          supports: {
-            single: true
-          }
-        }
-      ]
-    }
-  },
-
-
-  // ============================
-  // CostGA — Creates costs, same as quantAnn
-  // ============================
-  CostGA: {
+  Cost: {
     impl: "QuantStart",
     showMonthlyAssumptions: false,
     options: {
@@ -414,7 +239,7 @@ export const objectSchema = {
     channels: {
       val: {
         label: "Value",
-        destinations: ["pnl.opex.ga", "cash.ops.out.opex"]
+        destinations: ["pnl.opex.ga", "cash.ops.out.opex"] // Default to GA
       }
     },
     assumptions: {
@@ -463,9 +288,9 @@ export const objectSchema = {
   },
 
   // ============================
-  // CostMulDC — also a scaler
+  // CostMul — Multiplies input by unit cost (Base for variants)
   // ============================
-  CostMulDC: {
+  CostMul: {
     impl: "Multiply",
     showMonthlyAssumptions: true,
     options: {
@@ -479,11 +304,11 @@ export const objectSchema = {
     channels: {
       val: {
         label: "Cost",
-        destinations: ["pnl.cogs.direct", "cash.ops.out.cogs"]  // KPI or custom mapping
+        destinations: ["pnl.cogs.direct", "cash.ops.out.cogs"]  // Default to DC
       }
     },
     assumptions: {
-      object: [],               // leave empty for now
+      object: [],
       output: [
         {
           name: "factor",
@@ -500,198 +325,6 @@ export const objectSchema = {
           },
           ui: {
             defaultMode: "single"
-          }
-        },
-        {
-          name: "start",
-          label: "Start Month",
-          baseType: "number",
-          format: "integer",
-          default: 1,
-          supports: {
-            single: true
-          }
-        },
-        {
-          name: "end",
-          label: "End Month",
-          baseType: "number",
-          format: "integer",
-          default: null,
-          supports: {
-            single: true
-          }
-        }
-      ]
-    }
-  },
-
-  // ============================
-  // CostMulSM — scalar with different financial destination
-  // ============================
-  CostMulSM: {
-    impl: "ScaleDrv",
-    showMonthlyAssumptions: true,
-    options: {
-      single: true,
-      annual: false,
-      growth: false,
-      monthly: false,
-      dateRange: true,
-      smoothing: true
-    },
-    channels: {
-      val: {
-        label: "Cost",
-        destinations: ["pnl.opex.sm", "cash.ops.out.opex"]  // KPI or custom mapping
-      }
-    },
-    assumptions: {
-      object: [],               // leave empty for now
-      output: [
-        {
-          name: "factor",
-          label: "Cost per unit",
-          baseType: "number",
-          format: "currency",
-          default: 1,
-          supports: {
-            single: true,
-            annual: true,
-            monthly: true,
-            smoothing: true,
-            growth: true
-          },
-          ui: {
-            defaultMode: "single"
-          }
-        },
-        {
-          name: "start",
-          label: "Start Month",
-          baseType: "number",
-          format: "integer",
-          default: 1,
-          supports: {
-            single: true
-          }
-        },
-        {
-          name: "end",
-          label: "End Month",
-          baseType: "number",
-          format: "integer",
-          default: null,
-          supports: {
-            single: true
-          }
-        }
-      ]
-    }
-  },
-
-  // ============================
-  // RevMulNew — same scaling idea
-  // ============================
-  RevMulNew: {
-    impl: "ScaleDrv",
-    showMonthlyAssumptions: true,
-    options: {
-      single: true,
-      annual: false,
-      growth: false,
-      monthly: false,
-      dateRange: true,
-      smoothing: true
-    },
-    channels: {
-      val: {
-        label: "Revenue",
-        destinations: ["pnl.revenue.new", "cash.ops.in.sales"]
-      }
-    },
-    assumptions: {
-      object: [],
-      output: [
-        {
-          name: "factor",
-          label: "Price or fee",
-          baseType: "number",
-          format: "currency",
-          default: 50,
-          supports: {
-            single: true,
-            annual: true,
-            monthly: true,
-            smoothing: true,
-            growth: true
-          },
-          ui: {
-            defaultMode: "annual"
-          }
-        },
-        {
-          name: "start",
-          label: "Start Month",
-          baseType: "number",
-          format: "integer",
-          default: 1,
-          supports: {
-            single: true
-          }
-        },
-        {
-          name: "end",
-          label: "End Month",
-          baseType: "number",
-          format: "integer",
-          default: null,
-          supports: {
-            single: true
-          }
-        }
-      ]
-    }
-  },
-
-  // ============================
-  // RevMulNewDel — same as revMul but will have different destinations
-  // ============================
-  RevMulNewDel: {
-    impl: "ScaleDrv",
-    showMonthlyAssumptions: true,
-    options: {
-      single: true,
-      annual: false,
-      growth: false,
-      monthly: false,
-      dateRange: true,
-      smoothing: true
-    },
-    channels: {
-      val: {
-        label: "Revenue",
-        destinations: ["pnl.revenue.new", "balance.assets.current.ar"]
-      }
-    },
-    assumptions: {
-      object: [],
-      output: [
-        {
-          name: "factor",
-          label: "Price or fee",
-          baseType: "number",
-          format: "currency",
-          default: 50,
-          supports: {
-            single: true,
-            annual: true,
-            monthly: true,
-            smoothing: true,
-            growth: true
-          },
-          ui: {
-            defaultMode: "annual"
           }
         },
         {
@@ -722,7 +355,7 @@ export const objectSchema = {
   // RevMul — recurring revenues
   // ============================
   RevMul: {
-    impl: "ScaleDrv",
+    impl: "Multiply",
     showMonthlyAssumptions: true,
     options: {
       single: true,
@@ -782,69 +415,7 @@ export const objectSchema = {
     }
   },
 
-  // ============================
-  // RevMulDel — recurring revenues with a delay before cash in
-  // ============================
-  RevMulDel: {
-    impl: "ScaleDrv",
-    showMonthlyAssumptions: true,
-    options: {
-      single: true,
-      annual: false,
-      growth: false,
-      monthly: false,
-      dateRange: true,
-      smoothing: true
-    },
-    channels: {
-      val: {
-        label: "Revenue",
-        destinations: ["pnl.revenue.recur", "balance.assets.current.ar"]
-      }
-    },
-    assumptions: {
-      object: [],
-      output: [
-        {
-          name: "factor",
-          label: "Unit Price",
-          baseType: "number",
-          format: "currency",
-          default: 100,
-          supports: {
-            single: true,
-            annual: true,
-            monthly: true,
-            smoothing: true,
-            growth: true
-          },
-          ui: {
-            defaultMode: "annual"
-          }
-        },
-        {
-          name: "start",
-          label: "Start Month",
-          baseType: "number",
-          format: "integer",
-          default: 1,
-          supports: {
-            single: true
-          }
-        },
-        {
-          name: "end",
-          label: "End Month",
-          baseType: "number",
-          format: "integer",
-          default: null,
-          supports: {
-            single: true
-          }
-        }
-      ]
-    }
-  },
+
 
   // ============================
   // SubRetain — multi-channel
@@ -878,6 +449,93 @@ export const objectSchema = {
           baseType: "number",
           format: "percent",
           default: 0.08,
+          supports: {
+            single: true,
+            annual: true,
+            monthly: true,
+            smoothing: true
+          },
+          ui: {
+            defaultMode: "single"
+          }
+        },
+        {
+          name: "start",
+          label: "Start Month",
+          baseType: "number",
+          format: "integer",
+          default: 1,
+          supports: {
+            single: true
+          }
+        },
+        {
+          name: "end",
+          label: "End Month",
+          baseType: "number",
+          format: "integer",
+          default: null,
+          supports: {
+            single: true
+          }
+        }
+      ]
+    }
+  },
+
+  // ============================
+  // SubMth — subscribers with monthly recurring revenue
+  // ============================
+  SubMth: {
+    impl: "SubMth",
+    showMonthlyAssumptions: true,
+    options: {
+      single: true,
+      annual: false,
+      monthly: false,
+      dateRange: true,
+      smoothing: true
+    },
+    channels: {
+      act: {
+        label: "Active Users",
+        destinations: []
+      },
+      chu: {
+        label: "Churned Users",
+        destinations: []
+      },
+      rev: {
+        label: "Revenue",
+        destinations: ["pnl.revenue.recur", "cash.ops.in.sales"]
+      }
+    },
+    assumptions: {
+      object: [],
+      output: [
+        {
+          name: "price",
+          label: "Monthly Price",
+          baseType: "number",
+          format: "currency",
+          default: 10,
+          supports: {
+            single: true,
+            annual: true,
+            monthly: true,
+            dateRange: true,
+            smoothing: true
+          },
+          ui: {
+            defaultMode: "single"
+          }
+        },
+        {
+          name: "churn",
+          label: "Monthly churn rate",
+          baseType: "number",
+          format: "percent",
+          default: 0.05,
           supports: {
             single: true,
             annual: true,
@@ -980,6 +638,92 @@ export const objectSchema = {
           baseType: "number",
           format: "number",
           default: 1000,
+          supports: {
+            single: true,
+            monthly: true,
+            annual: true,
+            dateRange: true,
+            smoothing: true,
+            integers: true
+          },
+          ui: {
+            defaultMode: "single"
+          }
+        },
+        {
+          name: "salary",
+          label: "Average Salary",
+          baseType: "number",
+          format: "currency",
+          default: 3000,
+          supports: {
+            single: true,
+            monthly: true,
+            annual: true,
+            smoothing: true
+          },
+          ui: {
+            defaultMode: "single"
+          }
+        },
+        {
+          name: "start",
+          label: "Start Month",
+          baseType: "number",
+          format: "integer",
+          default: 1,
+          supports: {
+            single: true
+          }
+        },
+        {
+          name: "end",
+          label: "End Month",
+          baseType: "number",
+          format: "integer",
+          default: null,
+          supports: {
+            single: true
+          }
+        }
+      ]
+    }
+  },
+
+
+  // ============================
+  // StaffMul - teams of people driven by heads per location
+  // ============================
+  StaffMul: {
+    impl: "StaffMul",
+    showMonthlyAssumptions: true,
+    options: {
+      single: true,
+      annual: false,
+      monthly: false,
+      dateRange: true,
+      smoothing: true,
+      integers: true
+    },
+    channels: {
+      heads: {
+        label: "Staff Heads",
+        destinations: ["memo.headcount.cogs"]  // Map to appropriate team
+      },
+      cost: {
+        label: "Staff Cost",
+        destinations: ["pnl.cogs.direct", "cash.ops.out.cogs"]  // Map to appropriate category
+      }
+    },
+    assumptions: {
+      object: [],
+      output: [
+        {
+          name: "heads",
+          label: "Heads per location",
+          baseType: "number",
+          format: "number",
+          default: 1,
           supports: {
             single: true,
             monthly: true,
@@ -1211,7 +955,7 @@ export const objectSchema = {
       object: [],
       output: [
         {
-          name: "amount",
+          name: "value",
           label: "Amount",
           baseType: "number",
           format: "currency",
@@ -1261,3 +1005,267 @@ export const objectSchema = {
     }
   }
 };
+
+// ==========================================
+// Helper to create variants of existing objects
+// ==========================================
+function createVariant(base: any, overrides: any) {
+  const merged = JSON.parse(JSON.stringify(base)); // Deep clone base
+
+  // Helper to deep merge overrides
+  function deepMerge(target: any, source: any) {
+    for (const key in source) {
+      if (source[key] instanceof Object && key in target && !Array.isArray(source[key])) {
+        Object.assign(source[key], deepMerge(target[key], source[key]));
+      }
+    }
+    Object.assign(target || {}, source);
+    return target;
+  }
+
+  return deepMerge(merged, overrides);
+}
+
+// ==========================================
+// Define Variants
+// ==========================================
+
+// CostMulDC - Direct Costs (same as base)
+(objectSchema as any).CostMulDC = createVariant(objectSchema.CostMul, {
+  channels: {
+    val: { destinations: ["pnl.cogs.direct", "cash.ops.out.cogs"] }
+  }
+});
+
+// CostMulSM - S&M Costs
+(objectSchema as any).CostMulSM = createVariant(objectSchema.CostMul, {
+  channels: {
+    val: { destinations: ["pnl.opex.sm", "cash.ops.out.opex"] }
+  }
+});
+
+// CostMulGA - G&A Costs
+(objectSchema as any).CostMulGA = createVariant(objectSchema.CostMul, {
+  channels: {
+    val: { destinations: ["pnl.opex.ga", "cash.ops.out.opex"] }
+  }
+});
+
+// CostMulRD - R&D Costs
+(objectSchema as any).CostMulRD = createVariant(objectSchema.CostMul, {
+  channels: {
+    val: { destinations: ["pnl.opex.rd", "cash.ops.out.opex"] }
+  }
+});
+
+
+// StaffRoleDC - Direct Staff
+(objectSchema as any).StaffRoleDC = createVariant(objectSchema.StaffRole, {
+  channels: {
+    cost: { destinations: ["pnl.cogs.direct", "cash.ops.out.cogs"] },
+    heads: { destinations: ["memo.headcount.cogs"] }
+  }
+});
+
+// StaffRoleGA - G&A roles
+(objectSchema as any).StaffRoleGA = createVariant(objectSchema.StaffRole, {
+  channels: {
+    cost: { destinations: ["pnl.opex.ga", "cash.ops.out.opex"] },
+    heads: { destinations: ["memo.headcount.ga"] }
+  }
+});
+
+// StaffRoleSM - S&M roles
+(objectSchema as any).StaffRoleSM = createVariant(objectSchema.StaffRole, {
+  channels: {
+    cost: { destinations: ["pnl.opex.sm", "cash.ops.out.opex"] },
+    heads: { destinations: ["memo.headcount.sm"] }
+  }
+});
+
+// StaffRoleRD - R&D roles
+(objectSchema as any).StaffRoleRD = createVariant(objectSchema.StaffRole, {
+  channels: {
+    cost: { destinations: ["pnl.opex.rd", "cash.ops.out.opex"] },
+    heads: { destinations: ["memo.headcount.rd"] }
+  }
+});
+
+
+// StaffTeamDC - Direct Staff
+(objectSchema as any).StaffTeamDC = createVariant(objectSchema.StaffTeam, {
+  channels: {
+    heads: { destinations: ["memo.headcount.cogs"] },
+    cost: { destinations: ["pnl.cogs.direct", "cash.ops.out.cogs"] }
+  }
+});
+
+// StaffTeamSM - S&M Staff
+(objectSchema as any).StaffTeamSM = createVariant(objectSchema.StaffTeam, {
+  channels: {
+    heads: { destinations: ["memo.headcount.sm"] },
+    cost: { destinations: ["pnl.opex.sm", "cash.ops.out.opex"] }
+  }
+});
+
+// StaffTeamGA - G&A Staff
+(objectSchema as any).StaffTeamGA = createVariant(objectSchema.StaffTeam, {
+  channels: {
+    heads: { destinations: ["memo.headcount.ga"] },
+    cost: { destinations: ["pnl.opex.ga", "cash.ops.out.opex"] }
+  }
+});
+
+// StaffTeamRD - R&D Staff
+(objectSchema as any).StaffTeamRD = createVariant(objectSchema.StaffTeam, {
+  channels: {
+    heads: { destinations: ["memo.headcount.rd"] },
+    cost: { destinations: ["pnl.opex.rd", "cash.ops.out.opex"] }
+  }
+});
+
+
+// StaffMulDC - Direct Staff
+(objectSchema as any).StaffMulDC = createVariant(objectSchema.StaffMul, {
+  channels: {
+    heads: { destinations: ["memo.headcount.cogs"] },
+    cost: { destinations: ["pnl.cogs.direct", "cash.ops.out.cogs"] }
+  }
+});
+
+// StaffMulSM - S&M Staff
+(objectSchema as any).StaffMulSM = createVariant(objectSchema.StaffMul, {
+  channels: {
+    heads: { destinations: ["memo.headcount.sm"] },
+    cost: { destinations: ["pnl.opex.sm", "cash.ops.out.opex"] }
+  }
+});
+
+// StaffMulGA - G&A Staff
+(objectSchema as any).StaffMulGA = createVariant(objectSchema.StaffMul, {
+  channels: {
+    heads: { destinations: ["memo.headcount.ga"] },
+    cost: { destinations: ["pnl.opex.ga", "cash.ops.out.opex"] }
+  }
+});
+
+// StaffMulRD - R&D Staff
+(objectSchema as any).StaffMulRD = createVariant(objectSchema.StaffMul, {
+  channels: {
+    heads: { destinations: ["memo.headcount.rd"] },
+    cost: { destinations: ["pnl.opex.rd", "cash.ops.out.opex"] }
+  }
+});
+
+
+// StaffDivDC - Direct Staff
+(objectSchema as any).StaffDivDC = createVariant(objectSchema.StaffDiv, {
+  channels: {
+    heads: { destinations: ["memo.headcount.cogs"] },
+    cost: { destinations: ["pnl.cogs.direct", "cash.ops.out.cogs"] }
+  }
+});
+
+// StaffDivSM - S&M Staff
+(objectSchema as any).StaffDivSM = createVariant(objectSchema.StaffDiv, {
+  channels: {
+    heads: { destinations: ["memo.headcount.sm"] },
+    cost: { destinations: ["pnl.opex.sm", "cash.ops.out.opex"] }
+  }
+});
+
+// StaffDivGA - G&A Staff
+(objectSchema as any).StaffDivGA = createVariant(objectSchema.StaffDiv, {
+  channels: {
+    heads: { destinations: ["memo.headcount.ga"] },
+    cost: { destinations: ["pnl.opex.ga", "cash.ops.out.opex"] }
+  }
+});
+
+// StaffDivRD - R&D Staff
+(objectSchema as any).StaffDivRD = createVariant(objectSchema.StaffDiv, {
+  channels: {
+    heads: { destinations: ["memo.headcount.rd"] },
+    cost: { destinations: ["pnl.opex.rd", "cash.ops.out.opex"] }
+  }
+});
+
+
+// CostDC - Direct Costs
+(objectSchema as any).CostDC = createVariant(objectSchema.Cost, {
+  channels: {
+    val: { destinations: ["pnl.cogs.direct", "cash.ops.out.cogs"] }
+  }
+});
+
+// CostSM - S&M Costs
+(objectSchema as any).CostSM = createVariant(objectSchema.Cost, {
+  channels: {
+    val: { destinations: ["pnl.opex.sm", "cash.ops.out.opex"] }
+  }
+});
+
+// CostGA - G&A Costs
+(objectSchema as any).CostGA = createVariant(objectSchema.Cost, {
+  channels: {
+    val: { destinations: ["pnl.opex.ga", "cash.ops.out.opex"] }
+  }
+});
+
+// CostRD - R&D Costs
+(objectSchema as any).CostRD = createVariant(objectSchema.Cost, {
+  channels: {
+    val: { destinations: ["pnl.opex.rd", "cash.ops.out.opex"] }
+  }
+});
+
+// CostOE - Other Expenses
+(objectSchema as any).CostOE = createVariant(objectSchema.Cost, {
+  channels: {
+    val: { destinations: ["pnl.otherExpenses", "cash.ops.out.opex"] }
+  }
+});
+
+
+// RevMulNew - New Revenue
+(objectSchema as any).RevMulNew = createVariant(objectSchema.RevMul, {
+  channels: {
+    val: { destinations: ["pnl.revenue.new", "cash.ops.in.sales"] }
+  }
+});
+
+// RevMulDel - Delayed Revenue
+(objectSchema as any).RevMulDel = createVariant(objectSchema.RevMul, {
+  channels: {
+    val: { destinations: ["pnl.revenue.recur", "balance.assets.current.ar"] }
+  }
+});
+
+// RevMulNewDel - New Delayed Revenue
+(objectSchema as any).RevMulNewDel = createVariant(objectSchema.RevMul, {
+  channels: {
+    val: { destinations: ["pnl.revenue.new", "balance.assets.current.ar"] }
+  }
+});
+
+
+// QuantMth - Monthly Quant
+(objectSchema as any).QuantMth = createVariant(objectSchema.Quant, {
+  options: {
+    single: false,
+    monthly: true
+  }
+});
+
+// QuantSeas - Seasonal Quant
+(objectSchema as any).QuantSeas = createVariant(objectSchema.Quant, {
+  options: {
+    seasonal: true,
+    smoothing: true
+  }
+});
+
+
+// SubTerm - Term subscriptions (placeholder)
+// This is just a temporary placeholder to provide a valid name, but the term functionality hasn't been implemented.
+(objectSchema as any).SubTerm = createVariant(objectSchema.SubMth, {});

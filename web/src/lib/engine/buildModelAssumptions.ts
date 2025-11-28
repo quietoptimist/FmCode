@@ -1,7 +1,7 @@
 
 // buildModelAssumptions.mjs
 
-export function buildModelAssumptions(ast: any, index: any, objectSchema: any, ctx = { months: 24, years: 2 }) {
+export function buildModelAssumptions(ast: any, index: any, objectSchema: any, ctx = { months: 36, years: 3 }) {
   const result: any = {};
 
   for (const obj of ast.objects) {
@@ -53,12 +53,25 @@ export function buildModelAssumptions(ast: any, index: any, objectSchema: any, c
       (obj.outputs && obj.outputs.length ? obj.outputs : (index.outputsByObject.get(obj.name) || []))
         .filter(Boolean);
 
+    // Create a map of output assumptions from the AST node
+    const outputAssumptionsMap = new Map();
+    if (obj.outputAssumptions) {
+      for (const oa of obj.outputAssumptions) {
+        outputAssumptionsMap.set(oa.name, oa.assumptions);
+      }
+    }
+
     const outputDefs = (schema.assumptions && schema.assumptions.output) || [];
 
     for (const alias of outputAliases) {
       const outAss: any = {};
+      // Get any initial values defined in the code for this alias
+      const initialValues = outputAssumptionsMap.get(alias) || {};
+
       for (const def of outputDefs) {
-        outAss[def.name] = buildAssumptionField(def, ctx, objAss.seasonalEnabled ?? false);
+        // Check if there is an initial value for this assumption (e.g. 'value', 'price')
+        const initialValue = initialValues[def.name];
+        outAss[def.name] = buildAssumptionField(def, ctx, objAss.seasonalEnabled ?? false, initialValue);
       }
       objAss.outputs[alias] = outAss;
     }
@@ -72,13 +85,16 @@ export function buildModelAssumptions(ast: any, index: any, objectSchema: any, c
 /**
  * Build one assumption field = { raw: {...}, value: ... , label, baseType }
  */
-function buildAssumptionField(def: any, ctx: any, seasonalEnabled: boolean = false) {
+function buildAssumptionField(def: any, ctx: any, seasonalEnabled: boolean = false, initialValue: any = undefined) {
   const months = ctx.months ?? 60;
   const years = ctx.years ?? Math.ceil(months / 12);
 
   // Determine defaults from supports
   const supports = def.supports || {};
   const smoothingDefault = supports.smoothing === true;
+
+  // Determine initial single value: use passed initialValue if present, else default
+  const singleStart = initialValue !== undefined ? initialValue : (def.default ?? null);
 
   const raw: any = {
     annual: Array.from({ length: years }, () => null),
@@ -87,14 +103,17 @@ function buildAssumptionField(def: any, ctx: any, seasonalEnabled: boolean = fal
     seasonal: Array.from({ length: 12 }, () => 1), // 12 monthly factors, default to 100% (no scaling)
     smoothing: smoothingDefault,
     dateRange: null,       // could be { start: 0, end: 59 }
-    single: def.default ?? null // Initialize single value from default
+    single: singleStart // Initialize single value from default or code
   };
 
-  // prefill annual if default is meaningful and annual is supported
+  // prefill annual if default/initial is meaningful and annual is supported
   // "Supported" now means present in supports (true or false)
   const annualSupported = supports.annual !== undefined;
-  if (annualSupported && typeof def.default === "number") {
-    raw.annual = Array.from({ length: years }, () => def.default);
+  // Use initialValue if present, otherwise default
+  const valToUse = initialValue !== undefined ? initialValue : def.default;
+
+  if (annualSupported && typeof valToUse === "number") {
+    raw.annual = Array.from({ length: years }, () => valToUse);
   }
 
   const value = materializeMonthly(def, raw, ctx, seasonalEnabled, 'single', false, false, true); // Default to single mode on init, no date range/integers

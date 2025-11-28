@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { objectSchema } from '@/lib/engine/objectSchema';
 import { formatName } from '@/lib/formatters';
 
 interface ObjectOutputsProps {
@@ -14,6 +15,7 @@ interface ObjectOutputsProps {
     onAssumptionChange?: (objName: string, type: 'object' | 'output' | 'meta', aliasOrName: string, fieldName: string, value: any, subField?: string | null, index?: number | null) => void;
     showMonthlyAssumptions?: boolean;  // From schema
     uiMode?: 'single' | 'annual' | 'growth' | 'monthly';
+    usedChannels?: Set<string>;
 }
 
 const months_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -24,7 +26,7 @@ const safeParseFloat = (val: string): number => {
     return isNaN(parsed) ? 0 : parsed;
 };
 
-export function ObjectOutputs({ aliases, store, overrides, months, channelDefs, onOverride, objAss, seasonalEnabled, objName, onAssumptionChange, showMonthlyAssumptions, uiMode }: ObjectOutputsProps) {
+export function ObjectOutputs({ aliases, store, overrides, months, channelDefs, onOverride, objAss, seasonalEnabled, objName, onAssumptionChange, showMonthlyAssumptions, uiMode, usedChannels }: ObjectOutputsProps) {
     const [optionsExpanded, setOptionsExpanded] = useState(false);
     const [showTotals, setShowTotals] = useState(true);
     const [showAssumptions, setShowAssumptions] = useState(true);
@@ -37,7 +39,13 @@ export function ObjectOutputs({ aliases, store, overrides, months, channelDefs, 
         Object.values(out).some((field: any) => field?.supports?.seasonal)
     );
 
-    const showSeasonalOption = seasonalEnabled !== undefined && onAssumptionChange && objName && supportsSeasonal;
+    // Check if the object type has the seasonal option available in schema
+    const typeName = objAss?.type;
+    const schema = typeName ? (objectSchema as any)[typeName] : null;
+    const options = schema?.options || {};
+    const seasonalOptionAvailable = options.seasonal !== undefined;
+
+    const showSeasonalOption = seasonalEnabled !== undefined && onAssumptionChange && objName && supportsSeasonal && seasonalOptionAvailable;
     const showTotalsOption = aliases.length > 1;
     const showAssumptionsOption = showMonthlyAssumptions;
 
@@ -401,6 +409,13 @@ export function ObjectOutputs({ aliases, store, overrides, months, channelDefs, 
                     ) : (
                         // Multiple channels: group by channel, show aliases within
                         channelNames.map(channel => {
+                            // Check visibility for 'cum' channel
+                            if (channel === 'cum') {
+                                // Only show if at least one alias in this group has its 'cum' channel used
+                                const isUsed = aliases.some(alias => usedChannels?.has(`${alias}.cum`));
+                                if (!isUsed) return null;
+                            }
+
                             // Calculate totals for this channel
                             const channelTotals = new Float64Array(months);
                             for (const alias of aliases) {
@@ -411,6 +426,8 @@ export function ObjectOutputs({ aliases, store, overrides, months, channelDefs, 
                                     }
                                 }
                             }
+
+                            const isReadOnly = channel === 'cum';
 
                             return (
                                 <React.Fragment key={channel}>
@@ -423,12 +440,22 @@ export function ObjectOutputs({ aliases, store, overrides, months, channelDefs, 
                                     {aliases.map(alias => {
                                         const series = byChannel[channel]?.[alias];
                                         if (!series) return null;
+                                        if (channel === 'cum') {
+                                            console.log(`[ObjectOutputs] ${alias}.cum values:`, Array.from(series).slice(0, 5));
+                                        }
                                         return (
                                             <tr key={`${alias}.${channel}`} className="hover:bg-gray-50 group transition-colors">
                                                 <td className="p-1.5 font-medium text-gray-600 sticky left-0 bg-white group-hover:bg-gray-50 z-10 border-r shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)] whitespace-nowrap">
                                                     {formatName(alias)}
                                                 </td>
                                                 {Array.from(series).slice(0, months).map((val, m) => {
+                                                    if (isReadOnly) {
+                                                        return (
+                                                            <td key={m} className="p-1.5 text-right text-xs text-gray-500 bg-gray-50/50 cursor-default select-none">
+                                                                {val.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                                                            </td>
+                                                        );
+                                                    }
                                                     const overrideVal = overrides?.[alias]?.[channel]?.[m];
                                                     return (
                                                         <OverrideCell

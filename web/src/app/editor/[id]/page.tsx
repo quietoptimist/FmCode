@@ -17,23 +17,23 @@ import Link from 'next/link';
 
 const SAMPLE_CODE = `
 CustomerAcquisition:
-  NewCustomers = QuantSeas()            => newOrganic, newPaid  // Forecast number of new customers added per month from organic and paid channels
-  LeadsFromAds = QuantDrv(newPaid.val)     => paidLeads            // Determine how many leads we need to achieve those new customers
-  AdsExpense   = CostDrvSM(paidLeads.val)  => adsCost              // Estimate our marketing spend to generate those leads
+  NewCustomers = QuantSeas()               => newOrganic, newPaid  // Forecast number of new customers added per month from organic and paid channels
+  LeadsFromAds = QuantDiv(newPaid.val)     => paidLeads            // Determine how many visitors we need to achieve those new customers using conversion rate
+  AdsExpense   = CostMulSM(paidLeads.val)  => adsCost              // Estimate our marketing spend to generate those leads
 
 CustomerRetention:
-  TiersMix = QuantDrv(NewCustomers.val)    => newFree, newPrem, newGold        // Mix of new customers joining each product tier
+  TiersMix = QuantMul(NewCustomers.val)    => newFree, newPrem, newGold        // Mix of new customers joining each product tier
   Users    = SubRetain(...TiersMix.val)    => freeUsers, premUsers, goldUsers  // Active users and churning users by product tier
-  Revenues = RevDrvDel(...Users.act)       => freeRev, premRev, goldRev        // Revenues we generate from active users on each tier
+  Revenues = RevMulDel(...Users.act)       => freeRev, premRev, goldRev        // Revenues we generate from active users on each tier
   Payments = DelRev(Revenues.val)          => paid                             // Cash received when users pay us
 
 People:
-  CustomerSupport = StaffDriven(NewCustomers.val, Users.act) => onboardingTeam, serviceTeam   // Customer support teams for onboarding and in-life assistance
-  CentralTeams = StaffTeam()               => financeTeam, marketingTeam, otherTeam   // Central team headcounts and salaries
-  Leadership   = StaffRole()               => CEO, CFO, COO, OtherRole1, OtherRole2   // Key people start dates and salaries
+  CustomerSupport = StaffDiv(NewCustomers.val, Users.act) => onboardingTeam, serviceTeam             // Customer support teams for onboarding and in-life assistance
+  CentralTeams    = StaffTeam()                           => financeTeam, marketingTeam, otherTeam   // Central team headcounts and salaries
+  Leadership      = StaffRole()                           => CEO, CFO, COO, OtherRole1, OtherRole2   // Key people start dates and salaries
   
 OperatingCosts:
-  Overheads = CostGA()                  => rent, utilities, insurance, subscriptions, other  // Regular monthly overhead costs
+  Overheads = CostGA()                     => rent, utilities, insurance, subscriptions, other       // Regular monthly overhead costs
 `;
 
 export default function Editor({ params }: { params: { id: string } }) {
@@ -48,11 +48,11 @@ export default function Editor({ params }: { params: { id: string } }) {
     const isScrolling = useRef(false);
     const [name, setName] = useState('Untitled Model');
     const [description, setDescription] = useState('');
-    const [selectedModel, setSelectedModel] = useState('GPT-5.1');
+    const [selectedModel, setSelectedModel] = useState('gpt-5.1');
     const [reasoningEffort, setReasoningEffort] = useState('medium');
     const [generating, setGenerating] = useState(false);
     const [thoughts, setThoughts] = useState('');
-    const [modelYears, setModelYears] = useState(2);
+    const [modelYears, setModelYears] = useState(3);
     const [viewMode, setViewMode] = useState<'model' | 'code' | 'financials'>('model');
     const router = useRouter();
 
@@ -113,7 +113,15 @@ export default function Editor({ params }: { params: { id: string } }) {
 
                         setResult(rehydrated);
 
-                        setOverrides(data.overrides || {});
+                        // Clean overrides: remove 'cum' channel overrides as they should be calculated only
+                        const cleanOverrides = { ...(data.overrides || {}) };
+                        for (const alias in cleanOverrides) {
+                            if (cleanOverrides[alias]?.cum) {
+                                const { cum, ...rest } = cleanOverrides[alias];
+                                cleanOverrides[alias] = rest;
+                            }
+                        }
+                        setOverrides(cleanOverrides);
 
                         // Load assumptions if they exist
                         if (data.assumptions) {
@@ -298,6 +306,29 @@ export default function Editor({ params }: { params: { id: string } }) {
         runClientEngine();
     }, [runClientEngine]);
 
+    // Calculate used channels for conditional visibility
+    const usedChannels = useMemo(() => {
+        if (!result?.ast) return new Set<string>();
+        const used = new Set<string>();
+
+        for (const obj of result.ast.objects) {
+            for (const arg of obj.args) {
+                if (arg.kind === 'ref') {
+                    // arg.name is object name or alias
+                    // arg.field is the channel (e.g. 'val', 'cum')
+                    // But wait, parser puts alias in arg.name?
+                    // Let's check parser.ts:
+                    // ref = token.match(/^([A-Za-z0-9_]+)\.([A-Za-z0-9_]+)$/);
+                    // return { kind: 'ref', name: ref[1], field: ref[2] ... }
+                    // So name is the object/alias name, field is the channel.
+                    // We want to track usage of "Alias.Channel".
+                    used.add(`${arg.name}.${arg.field}`);
+                }
+            }
+        }
+        return used;
+    }, [result?.ast]);
+
     // Build financial data
     const financialData = useMemo(() => {
         if (!engineResult || !result?.index) return null;
@@ -347,7 +378,7 @@ export default function Editor({ params }: { params: { id: string } }) {
                 body: JSON.stringify({
                     description,
                     model: selectedModel,
-                    reasoningEffort: selectedModel === 'GPT-5.1' ? reasoningEffort : undefined
+                    reasoningEffort: selectedModel === 'gpt-5.1' ? reasoningEffort : undefined
                 }),
             });
 
@@ -634,6 +665,11 @@ export default function Editor({ params }: { params: { id: string } }) {
                                         <option value="high">High Reasoning</option>
                                     </select>
                                 )}
+                                {selectedModel === 'gpt-5.1' && generating && !thoughts && (
+                                    <span className="text-xs text-gray-500 italic animate-pulse">
+                                        Thinking...
+                                    </span>
+                                )}
                                 {thoughts && (
                                     <span className="text-xs text-gray-500 italic truncate max-w-[500px] animate-pulse">
                                         {thoughts.split('\n').pop()}
@@ -723,11 +759,13 @@ export default function Editor({ params }: { params: { id: string } }) {
                                                                     months={modelYears * 12}
                                                                     channelDefs={channelDefs}
                                                                     onOverride={handleOverride}
-                                                                    objAss={assumptions[objName]}
-                                                                    seasonalEnabled={assumptions[objName]?.seasonalEnabled ?? false}
+                                                                    objAss={assumptions?.[objName]}
+                                                                    seasonalEnabled={assumptions?.[objName]?.seasonalEnabled}
                                                                     objName={objName}
                                                                     onAssumptionChange={handleAssumptionChange}
                                                                     showMonthlyAssumptions={typeName ? (objectSchema as any)[typeName]?.showMonthlyAssumptions : false}
+                                                                    uiMode={assumptions?.[objName]?.uiMode || (objectSchema as any)[typeName]?.options?.ui?.defaultMode || 'single'}
+                                                                    usedChannels={usedChannels}
                                                                 />
                                                             </div>
                                                         </div>

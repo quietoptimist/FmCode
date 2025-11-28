@@ -149,6 +149,7 @@ export function runEngine({ ast, index, outGraph, assumptions, ctx, fnRegistry, 
       outputNames: [alias],
       outputIndex,
       dateRangeEnabled: objAss.dateRangeEnabled ?? true,
+      overrides: overrides ? overrides[alias] : null,
     }) || {};
 
     // --------------------- 4) store results (strict) ---------------------
