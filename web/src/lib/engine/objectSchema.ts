@@ -1030,6 +1030,60 @@ function createVariant(base: any, overrides: any) {
 // Define Variants
 // ==========================================
 
+// QuantMth - Monthly Quant
+(objectSchema as any).QuantMth = createVariant(objectSchema.Quant, {
+  options: {
+    single: false,
+    monthly: true
+  }
+});
+
+// QuantSeas - Seasonal Quant
+(objectSchema as any).QuantSeas = createVariant(objectSchema.Quant, {
+  options: {
+    seasonal: true,
+    smoothing: true
+  }
+});
+
+
+// CostDC - Direct Costs
+(objectSchema as any).CostDC = createVariant(objectSchema.Cost, {
+  channels: {
+    val: { destinations: ["pnl.cogs.direct", "cash.ops.out.cogs"] }
+  }
+});
+
+// CostSM - S&M Costs
+(objectSchema as any).CostSM = createVariant(objectSchema.Cost, {
+  channels: {
+    val: { destinations: ["pnl.opex.sm", "cash.ops.out.opex"] }
+  }
+});
+
+// CostGA - G&A Costs
+(objectSchema as any).CostGA = createVariant(objectSchema.Cost, {
+  channels: {
+    val: { destinations: ["pnl.opex.ga", "cash.ops.out.opex"] }
+  }
+});
+
+// CostRD - R&D Costs
+(objectSchema as any).CostRD = createVariant(objectSchema.Cost, {
+  channels: {
+    val: { destinations: ["pnl.opex.rd", "cash.ops.out.opex"] }
+  }
+});
+
+// CostOE - Other Expenses
+(objectSchema as any).CostOE = createVariant(objectSchema.Cost, {
+  channels: {
+    val: { destinations: ["pnl.otherExpenses", "cash.ops.out.opex"] }
+  }
+});
+
+
+
 // CostMulDC - Direct Costs (same as base)
 (objectSchema as any).CostMulDC = createVariant(objectSchema.CostMul, {
   channels: {
@@ -1057,6 +1111,30 @@ function createVariant(base: any, overrides: any) {
     val: { destinations: ["pnl.opex.rd", "cash.ops.out.opex"] }
   }
 });
+
+
+// RevMulNew - New Revenue
+(objectSchema as any).RevMulNew = createVariant(objectSchema.RevMul, {
+  channels: {
+    val: { destinations: ["pnl.revenue.new", "cash.ops.in.sales"] }
+  }
+});
+
+// RevMulDel - Delayed Revenue
+(objectSchema as any).RevMulDel = createVariant(objectSchema.RevMul, {
+  channels: {
+    val: { destinations: ["pnl.revenue.recur", "balance.assets.current.ar"] }
+  }
+});
+
+// RevMulNewDel - New Delayed Revenue
+(objectSchema as any).RevMulNewDel = createVariant(objectSchema.RevMul, {
+  channels: {
+    val: { destinations: ["pnl.revenue.new", "balance.assets.current.ar"] }
+  }
+});
+
+
 
 
 // StaffRoleDC - Direct Staff
@@ -1190,80 +1268,6 @@ function createVariant(base: any, overrides: any) {
   }
 });
 
-
-// CostDC - Direct Costs
-(objectSchema as any).CostDC = createVariant(objectSchema.Cost, {
-  channels: {
-    val: { destinations: ["pnl.cogs.direct", "cash.ops.out.cogs"] }
-  }
-});
-
-// CostSM - S&M Costs
-(objectSchema as any).CostSM = createVariant(objectSchema.Cost, {
-  channels: {
-    val: { destinations: ["pnl.opex.sm", "cash.ops.out.opex"] }
-  }
-});
-
-// CostGA - G&A Costs
-(objectSchema as any).CostGA = createVariant(objectSchema.Cost, {
-  channels: {
-    val: { destinations: ["pnl.opex.ga", "cash.ops.out.opex"] }
-  }
-});
-
-// CostRD - R&D Costs
-(objectSchema as any).CostRD = createVariant(objectSchema.Cost, {
-  channels: {
-    val: { destinations: ["pnl.opex.rd", "cash.ops.out.opex"] }
-  }
-});
-
-// CostOE - Other Expenses
-(objectSchema as any).CostOE = createVariant(objectSchema.Cost, {
-  channels: {
-    val: { destinations: ["pnl.otherExpenses", "cash.ops.out.opex"] }
-  }
-});
-
-
-// RevMulNew - New Revenue
-(objectSchema as any).RevMulNew = createVariant(objectSchema.RevMul, {
-  channels: {
-    val: { destinations: ["pnl.revenue.new", "cash.ops.in.sales"] }
-  }
-});
-
-// RevMulDel - Delayed Revenue
-(objectSchema as any).RevMulDel = createVariant(objectSchema.RevMul, {
-  channels: {
-    val: { destinations: ["pnl.revenue.recur", "balance.assets.current.ar"] }
-  }
-});
-
-// RevMulNewDel - New Delayed Revenue
-(objectSchema as any).RevMulNewDel = createVariant(objectSchema.RevMul, {
-  channels: {
-    val: { destinations: ["pnl.revenue.new", "balance.assets.current.ar"] }
-  }
-});
-
-
-// QuantMth - Monthly Quant
-(objectSchema as any).QuantMth = createVariant(objectSchema.Quant, {
-  options: {
-    single: false,
-    monthly: true
-  }
-});
-
-// QuantSeas - Seasonal Quant
-(objectSchema as any).QuantSeas = createVariant(objectSchema.Quant, {
-  options: {
-    seasonal: true,
-    smoothing: true
-  }
-});
 
 
 // SubTerm - Term subscriptions (placeholder)
