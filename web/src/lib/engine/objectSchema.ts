@@ -237,7 +237,7 @@ export const objectSchema = {
       smoothing: false
     },
     channels: {
-      val: {
+      cost: {
         label: "Value",
         destinations: ["pnl.opex.ga", "cash.ops.out.opex"] // Default to GA
       }
@@ -302,7 +302,7 @@ export const objectSchema = {
       smoothing: true
     },
     channels: {
-      val: {
+      cost: {
         label: "Cost",
         destinations: ["pnl.cogs.direct", "cash.ops.out.cogs"]  // Default to DC
       }
@@ -362,11 +362,12 @@ export const objectSchema = {
       annual: false,
       growth: false,
       monthly: false,
-      dateRange: true,
-      smoothing: true
+      seasonal: false,
+      dateRange: false,
+      smoothing: false
     },
     channels: {
-      val: {
+      rev: {
         label: "Revenue",
         destinations: ["pnl.revenue.recur", "cash.ops.in.sales"]
       }
@@ -383,9 +384,11 @@ export const objectSchema = {
           supports: {
             single: true,
             annual: true,
+            growth: true,
             monthly: true,
+            dateRange: true,
+            seasonal: true,
             smoothing: true,
-            growth: true
           },
           ui: {
             defaultMode: "annual"
@@ -589,8 +592,43 @@ export const objectSchema = {
       object: [],
       output: [
         {
-          name: "delayMonths",
+          name: "months",
           label: "Delay (months)",
+          baseType: "number",
+          format: "integer",
+          default: 1,
+          supports: {
+            single: true
+          },
+          ui: {
+            defaultMode: "single"
+          }
+        }
+      ]
+    }
+  },
+
+  // ============================
+  // Adv - advance outputs (shift forward in time)
+  // ============================
+  Adv: {
+    impl: "Advance",
+    showMonthlyAssumptions: true,
+    options: {
+      single: true
+    },
+    channels: {
+      val: {
+        label: "Advanced value",
+        destinations: []
+      }
+    },
+    assumptions: {
+      object: [],
+      output: [
+        {
+          name: "months",
+          label: "Advance (months)",
           baseType: "number",
           format: "integer",
           default: 1,
@@ -1051,21 +1089,21 @@ function createVariant(base: any, overrides: any) {
 // RevMulNew - New Revenue
 (objectSchema as any).RevMulNew = createVariant(objectSchema.RevMul, {
   channels: {
-    val: { destinations: ["pnl.revenue.new", "cash.ops.in.sales"] }
+    rev: { destinations: ["pnl.revenue.new", "cash.ops.in.sales"] }
   }
 });
 
 // RevMulDel - Delayed Revenue
 (objectSchema as any).RevMulDel = createVariant(objectSchema.RevMul, {
   channels: {
-    val: { destinations: ["pnl.revenue.recur", "balance.assets.current.ar"] }
+    rev: { destinations: ["pnl.revenue.recur", "balance.assets.current.ar"] }
   }
 });
 
 // RevMulNewDel - New Delayed Revenue
 (objectSchema as any).RevMulNewDel = createVariant(objectSchema.RevMul, {
   channels: {
-    val: { destinations: ["pnl.revenue.new", "balance.assets.current.ar"] }
+    rev: { destinations: ["pnl.revenue.new", "balance.assets.current.ar"] }
   }
 });
 
@@ -1078,7 +1116,7 @@ function createVariant(base: any, overrides: any) {
     monthly: true
   },
   channels: {
-    val: { destinations: ["pnl.opex.ga", "cash.ops.out.opex"] }
+    cost: { destinations: ["pnl.opex.ga", "cash.ops.out.opex"] }
   }
 });
 
@@ -1089,7 +1127,7 @@ function createVariant(base: any, overrides: any) {
     monthly: true
   },
   channels: {
-    val: { destinations: ["pnl.opex.sm", "cash.ops.out.opex"] }
+    cost: { destinations: ["pnl.opex.sm", "cash.ops.out.opex"] }
   }
 });
 
@@ -1100,7 +1138,7 @@ function createVariant(base: any, overrides: any) {
     monthly: true
   },
   channels: {
-    val: { destinations: ["pnl.opex.rd", "cash.ops.out.opex"] }
+    cost: { destinations: ["pnl.opex.rd", "cash.ops.out.opex"] }
   }
 });
 
@@ -1111,43 +1149,44 @@ function createVariant(base: any, overrides: any) {
     monthly: true
   },
   channels: {
-    val: { destinations: ["pnl.otherExpenses", "cash.ops.out.opex"] }
+    cost: { destinations: ["pnl.otherExpenses", "cash.ops.out.opex"] }
   }
 });
+
 
 
 // CostDC - Direct Costs
 (objectSchema as any).CostDC = createVariant(objectSchema.Cost, {
   channels: {
-    val: { destinations: ["pnl.cogs.direct", "cash.ops.out.cogs"] }
+    cost: { destinations: ["pnl.cogs.direct", "cash.ops.out.cogs"] }
   }
 });
 
 // CostSM - S&M Costs
 (objectSchema as any).CostSM = createVariant(objectSchema.Cost, {
   channels: {
-    val: { destinations: ["pnl.opex.sm", "cash.ops.out.opex"] }
+    cost: { destinations: ["pnl.opex.sm", "cash.ops.out.opex"] }
   }
 });
 
 // CostGA - G&A Costs
 (objectSchema as any).CostGA = createVariant(objectSchema.Cost, {
   channels: {
-    val: { destinations: ["pnl.opex.ga", "cash.ops.out.opex"] }
+    cost: { destinations: ["pnl.opex.ga", "cash.ops.out.opex"] }
   }
 });
 
 // CostRD - R&D Costs
 (objectSchema as any).CostRD = createVariant(objectSchema.Cost, {
   channels: {
-    val: { destinations: ["pnl.opex.rd", "cash.ops.out.opex"] }
+    cost: { destinations: ["pnl.opex.rd", "cash.ops.out.opex"] }
   }
 });
 
 // CostOE - Other Expenses
 (objectSchema as any).CostOE = createVariant(objectSchema.Cost, {
   channels: {
-    val: { destinations: ["pnl.otherExpenses", "cash.ops.out.opex"] }
+    cost: { destinations: ["pnl.otherExpenses", "cash.ops.out.opex"] }
   }
 });
 
@@ -1156,31 +1195,30 @@ function createVariant(base: any, overrides: any) {
 // CostMulDC - Direct Costs (same as base)
 (objectSchema as any).CostMulDC = createVariant(objectSchema.CostMul, {
   channels: {
-    val: { destinations: ["pnl.cogs.direct", "cash.ops.out.cogs"] }
+    cost: { destinations: ["pnl.cogs.direct", "cash.ops.out.cogs"] }
   }
 });
 
 // CostMulSM - S&M Costs
 (objectSchema as any).CostMulSM = createVariant(objectSchema.CostMul, {
   channels: {
-    val: { destinations: ["pnl.opex.sm", "cash.ops.out.opex"] }
+    cost: { destinations: ["pnl.opex.sm", "cash.ops.out.opex"] }
   }
 });
 
 // CostMulGA - G&A Costs
 (objectSchema as any).CostMulGA = createVariant(objectSchema.CostMul, {
   channels: {
-    val: { destinations: ["pnl.opex.ga", "cash.ops.out.opex"] }
+    cost: { destinations: ["pnl.opex.ga", "cash.ops.out.opex"] }
   }
 });
 
 // CostMulRD - R&D Costs
 (objectSchema as any).CostMulRD = createVariant(objectSchema.CostMul, {
   channels: {
-    val: { destinations: ["pnl.opex.rd", "cash.ops.out.opex"] }
+    cost: { destinations: ["pnl.opex.rd", "cash.ops.out.opex"] }
   }
 });
-
 
 
 
@@ -1217,6 +1255,7 @@ function createVariant(base: any, overrides: any) {
 });
 
 
+
 // StaffTeamDC - Direct Staff
 (objectSchema as any).StaffTeamDC = createVariant(objectSchema.StaffTeam, {
   channels: {
@@ -1250,6 +1289,7 @@ function createVariant(base: any, overrides: any) {
 });
 
 
+
 // StaffMulDC - Direct Staff
 (objectSchema as any).StaffMulDC = createVariant(objectSchema.StaffMul, {
   channels: {
@@ -1281,6 +1321,7 @@ function createVariant(base: any, overrides: any) {
     cost: { destinations: ["pnl.opex.rd", "cash.ops.out.opex"] }
   }
 });
+
 
 
 // StaffDivDC - Direct Staff

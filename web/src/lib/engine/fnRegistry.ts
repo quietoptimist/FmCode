@@ -57,6 +57,9 @@ export const fnRegistry = {
     return {
       [alias]: outSeries,
       [channelName]: outSeries,
+      val: outSeries, // Alias for QuantMul
+      rev: outSeries, // Alias for RevMul
+      cost: outSeries, // Alias for CostMul
       cum: cumSeries,
     };
   },
@@ -168,6 +171,7 @@ export const fnRegistry = {
     return {
       [outName]: outSeries,
       val: outSeries,
+      cost: outSeries, // Alias for Cost objects
       cum: cumSeries
     };
   },
@@ -337,9 +341,10 @@ export const fnRegistry = {
 
     // we let the pipeline give us a monthly array of delays,
     // but most of the time it will just be the same number repeated
-    const delayArr = outAss.delayMonths
-      ? outAss.delayMonths.value
-      : new Float64Array(months).fill(0);
+    // Support both 'months' (new) and 'delayMonths' (legacy)
+    const delayArr = outAss.months ? outAss.months.value
+      : outAss.delayMonths ? outAss.delayMonths.value
+        : new Float64Array(months).fill(0);
 
     // we expect exactly one input series for this output
     const src = inputs[0] || new Float64Array(months).fill(0);
@@ -352,6 +357,37 @@ export const fnRegistry = {
       const target = m + d;
       if (target < months) {
         out[target] += src[m];   // += in case user ever stacks inputs
+      }
+    }
+
+    return { [outName]: out };
+  },
+
+  // ==================================
+  // Advance inputs (shift forward in time)
+  // ==================================
+  Advance(ctx, inputs, cfg) {
+    const months = ctx.months;
+    const outName = (cfg.outputNames && cfg.outputNames[0]) ? cfg.outputNames[0] : "val";
+    const outAss = cfg.output || {};
+
+    // Support both 'months' and 'delayMonths' just in case
+    const advanceArr = outAss.months ? outAss.months.value
+      : outAss.delayMonths ? outAss.delayMonths.value
+        : new Float64Array(months).fill(0);
+
+    const src = inputs[0] || new Float64Array(months).fill(0);
+    const out = new Float64Array(months);
+
+    for (let m = 0; m < months; m++) {
+      const d = Math.floor(advanceArr[m] ?? 0);
+      // Shift forward: output at m comes from input at m + d
+      // OR: input at m goes to output at m - d
+
+      // Implementation: Input at m goes to m - d
+      const target = m - d;
+      if (target >= 0 && target < months) {
+        out[target] += src[m];
       }
     }
 

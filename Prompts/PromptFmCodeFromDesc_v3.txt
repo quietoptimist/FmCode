@@ -1325,10 +1325,10 @@ Notes:
 
 
 ----------------------------------------------------
-<AdvQuant_spec>
+<Adv_spec>
 ----------------------------------------------------
 
-ObjectType: `AdvQuant()`
+ObjectType: `Adv()`
 
 Description:
 - Advances an input quantity series by N months (shifts earlier).
@@ -1351,9 +1351,9 @@ Example:
 FM
     Funnel:
         LeadsNeeded   = QuantDrv(newCustomers.val) > leadsNeeded   // Leads per customer
-        AdvancedLeads = AdvQuant(leadsNeeded.val) > marketingLeads // Leads generated ahead of customers
+        AdvancedLeads = Adv(leadsNeeded.val) > marketingLeads // Leads generated ahead of customers
 
-</AdvQuant_spec>
+</Adv_spec>
 
 
 
