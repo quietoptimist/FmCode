@@ -13,7 +13,39 @@ export function buildModelAssumptions(ast: any, index: any, objectSchema: any, c
       continue;
     }
 
-    const objAss: any = { type: typeName, object: {}, outputs: {}, uiMode: 'single', seasonalEnabled: false, dateRangeEnabled: false, integersEnabled: false, comment: obj.comment };
+    // Determine object-level defaults from schema.options
+    const options = schema.options || {};
+
+    // Helper to get default boolean state (true means enabled by default)
+    // If key exists, use its value. If not, false.
+    const seasonalEnabled = options.seasonal === true;
+    const dateRangeEnabled = options.dateRange === true;
+    const integersEnabled = options.integers === true;
+    const smoothingEnabled = options.smoothing !== false; // Default to true if missing or true
+
+    // Determine default UI mode
+    let defaultUiMode = 'single';
+    if (options.modes) {
+      // Legacy: use first mode or 'single'
+      defaultUiMode = options.modes[0] || 'single';
+    } else {
+      // New: find the mode set to true
+      const modes = ['single', 'annual', 'growth', 'monthly'];
+      const found = modes.find(m => options[m] === true);
+      if (found) defaultUiMode = found;
+    }
+
+    const objAss: any = {
+      type: typeName,
+      object: {},
+      outputs: {},
+      uiMode: defaultUiMode,
+      seasonalEnabled,
+      dateRangeEnabled,
+      integersEnabled,
+      smoothingEnabled,
+      comment: obj.comment
+    };
 
     // 1) object-level assumptions
     const objectDefs = (schema.assumptions && schema.assumptions.object) || [];
@@ -49,18 +81,24 @@ function buildAssumptionField(def: any, ctx: any, seasonalEnabled: boolean = fal
   const months = ctx.months ?? 60;
   const years = ctx.years ?? Math.ceil(months / 12);
 
+  // Determine defaults from supports
+  const supports = def.supports || {};
+  const smoothingDefault = supports.smoothing === true;
+
   const raw: any = {
     annual: Array.from({ length: years }, () => null),
     monthly: Array.from({ length: months }, () => null),
     growth: Array.from({ length: years }, () => 0), // Array for YoY growth, init to 0
     seasonal: Array.from({ length: 12 }, () => 1), // 12 monthly factors, default to 100% (no scaling)
-    smoothing: def.supports?.smoothing ? true : false,
+    smoothing: smoothingDefault,
     dateRange: null,       // could be { start: 0, end: 59 }
     single: def.default ?? null // Initialize single value from default
   };
 
   // prefill annual if default is meaningful and annual is supported
-  if (def.supports?.annual && typeof def.default === "number") {
+  // "Supported" now means present in supports (true or false)
+  const annualSupported = supports.annual !== undefined;
+  if (annualSupported && typeof def.default === "number") {
     raw.annual = Array.from({ length: years }, () => def.default);
   }
 

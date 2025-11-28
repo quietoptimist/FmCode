@@ -9,10 +9,13 @@ export const objectSchema = {
     impl: "QuantStart",
     showMonthlyAssumptions: false,  // Assumptions = outputs, no need to show both
     options: {
-      modes: ['single', 'annual', 'growth'],
-      dateRange: true,
-      smoothing: true,
-      integers: true
+      single: true,
+      annual: false,
+      growth: false,
+      dateRange: false,
+      smoothing: false,
+      integers: true,
+      seasonal: false
     },
     channels: {
       val: {
@@ -31,15 +34,12 @@ export const objectSchema = {
           default: 10,
           supports: {
             single: true,
-            annual: true,
-            monthly: true,
-            smoothing: true,
-            growth: true,
-            seasonal: true,
+            annual: false,
+            monthly: false,
+            smoothing: false,
+            growth: false,
+            seasonal: false,
             integers: true
-          },
-          ui: {
-            defaultMode: "annual"
           }
         },
         {
@@ -50,9 +50,6 @@ export const objectSchema = {
           default: 1,
           supports: {
             single: true
-          },
-          ui: {
-            defaultMode: "single"
           }
         },
         {
@@ -63,9 +60,6 @@ export const objectSchema = {
           default: null,
           supports: {
             single: true
-          },
-          ui: {
-            defaultMode: "single"
           }
         }
       ]
@@ -79,10 +73,12 @@ export const objectSchema = {
     impl: "QuantStart",
     showMonthlyAssumptions: false,  // Assumptions = outputs, no need to show both
     options: {
-      modes: ['single', 'annual', 'growth'],
-      dateRange: true,
+      single: false,
+      annual: true,
+      growth: false,
+      dateRange: false,
       smoothing: true,
-      integers: true,
+      integers: false,
       seasonal: true
     },
     channels: {
@@ -101,16 +97,13 @@ export const objectSchema = {
           format: "integer",
           default: 10,
           supports: {
-            single: true,
+            single: false,
             annual: true,
-            monthly: true,
+            monthly: false,
             smoothing: true,
-            growth: true,
+            growth: false,
             seasonal: true,
-            integers: true
-          },
-          ui: {
-            defaultMode: "annual"
+            integers: false
           }
         },
         {
@@ -121,9 +114,6 @@ export const objectSchema = {
           default: 1,
           supports: {
             single: true
-          },
-          ui: {
-            defaultMode: "single"
           }
         },
         {
@@ -134,9 +124,6 @@ export const objectSchema = {
           default: null,
           supports: {
             single: true
-          },
-          ui: {
-            defaultMode: "single"
           }
         }
       ]
@@ -188,9 +175,6 @@ export const objectSchema = {
           default: 1,
           supports: {
             single: true
-          },
-          ui: {
-            defaultMode: "single"
           }
         },
         {
@@ -201,9 +185,6 @@ export const objectSchema = {
           default: null,
           supports: {
             single: true
-          },
-          ui: {
-            defaultMode: "single"
           }
         }
       ]
@@ -255,9 +236,6 @@ export const objectSchema = {
           default: 1,
           supports: {
             single: true
-          },
-          ui: {
-            defaultMode: "single"
           }
         },
         {
@@ -268,9 +246,6 @@ export const objectSchema = {
           default: null,
           supports: {
             single: true
-          },
-          ui: {
-            defaultMode: "single"
           }
         }
       ]
@@ -323,9 +298,6 @@ export const objectSchema = {
           default: 1,
           supports: {
             single: true
-          },
-          ui: {
-            defaultMode: "single"
           }
         },
         {
@@ -336,9 +308,6 @@ export const objectSchema = {
           default: null,
           supports: {
             single: true
-          },
-          ui: {
-            defaultMode: "single"
           }
         }
       ]
@@ -352,8 +321,10 @@ export const objectSchema = {
     impl: "ScaleDrv",
     showMonthlyAssumptions: true,
     options: {
-      modes: ['single', 'annual', 'growth'],
-      dateRange: true,
+      single: true,
+      annual: false,
+      growth: false,
+      dateRange: false,
       smoothing: true
     },
     channels: {
@@ -373,13 +344,10 @@ export const objectSchema = {
           default: 1,
           supports: {
             single: true,
-            annual: true,
-            monthly: true,
+            annual: false,
+            monthly: false,
             smoothing: true,
-            growth: true
-          },
-          ui: {
-            defaultMode: "single"
+            growth: false
           }
         },
         {
@@ -390,9 +358,6 @@ export const objectSchema = {
           default: 1,
           supports: {
             single: true
-          },
-          ui: {
-            defaultMode: "single"
           }
         },
         {
@@ -403,9 +368,6 @@ export const objectSchema = {
           default: null,
           supports: {
             single: true
-          },
-          ui: {
-            defaultMode: "single"
           }
         }
       ]
@@ -457,9 +419,6 @@ export const objectSchema = {
           default: 1,
           supports: {
             single: true
-          },
-          ui: {
-            defaultMode: "single"
           }
         },
         {
@@ -470,9 +429,6 @@ export const objectSchema = {
           default: null,
           supports: {
             single: true
-          },
-          ui: {
-            defaultMode: "single"
           }
         }
       ]
@@ -524,9 +480,6 @@ export const objectSchema = {
           default: 1,
           supports: {
             single: true
-          },
-          ui: {
-            defaultMode: "single"
           }
         },
         {
@@ -537,9 +490,6 @@ export const objectSchema = {
           default: null,
           supports: {
             single: true
-          },
-          ui: {
-            defaultMode: "single"
           }
         }
       ]
@@ -591,9 +541,6 @@ export const objectSchema = {
           default: 1,
           supports: {
             single: true
-          },
-          ui: {
-            defaultMode: "single"
           }
         },
         {
@@ -604,9 +551,6 @@ export const objectSchema = {
           default: null,
           supports: {
             single: true
-          },
-          ui: {
-            defaultMode: "single"
           }
         }
       ]
@@ -658,9 +602,6 @@ export const objectSchema = {
           default: 1,
           supports: {
             single: true
-          },
-          ui: {
-            defaultMode: "single"
           }
         },
         {
@@ -671,9 +612,6 @@ export const objectSchema = {
           default: null,
           supports: {
             single: true
-          },
-          ui: {
-            defaultMode: "single"
           }
         }
       ]
@@ -725,9 +663,6 @@ export const objectSchema = {
           default: 1,
           supports: {
             single: true
-          },
-          ui: {
-            defaultMode: "single"
           }
         },
         {
@@ -738,9 +673,6 @@ export const objectSchema = {
           default: null,
           supports: {
             single: true
-          },
-          ui: {
-            defaultMode: "single"
           }
         }
       ]
@@ -792,9 +724,6 @@ export const objectSchema = {
           default: 1,
           supports: {
             single: true
-          },
-          ui: {
-            defaultMode: "single"
           }
         },
         {
@@ -805,9 +734,6 @@ export const objectSchema = {
           default: null,
           supports: {
             single: true
-          },
-          ui: {
-            defaultMode: "single"
           }
         }
       ]
@@ -862,9 +788,6 @@ export const objectSchema = {
           default: 1,
           supports: {
             single: true
-          },
-          ui: {
-            defaultMode: "single"
           }
         },
         {
@@ -875,9 +798,6 @@ export const objectSchema = {
           default: null,
           supports: {
             single: true
-          },
-          ui: {
-            defaultMode: "single"
           }
         }
       ]
@@ -985,9 +905,6 @@ export const objectSchema = {
           default: 1,
           supports: {
             single: true
-          },
-          ui: {
-            defaultMode: "single"
           }
         },
         {
@@ -998,9 +915,6 @@ export const objectSchema = {
           default: null,
           supports: {
             single: true
-          },
-          ui: {
-            defaultMode: "single"
           }
         }
       ]
@@ -1075,9 +989,6 @@ export const objectSchema = {
           default: 1,
           supports: {
             single: true
-          },
-          ui: {
-            defaultMode: "single"
           }
         },
         {
@@ -1088,9 +999,6 @@ export const objectSchema = {
           default: null,
           supports: {
             single: true
-          },
-          ui: {
-            defaultMode: "single"
           }
         }
       ]
@@ -1147,9 +1055,6 @@ export const objectSchema = {
           default: 1,
           supports: {
             single: true
-          },
-          ui: {
-            defaultMode: "single"
           }
         },
         {
@@ -1160,9 +1065,6 @@ export const objectSchema = {
           default: null,
           supports: {
             single: true
-          },
-          ui: {
-            defaultMode: "single"
           }
         }
       ]

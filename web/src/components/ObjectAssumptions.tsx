@@ -27,11 +27,18 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
     const typeName = objAss.type;
     const schema = typeName ? (objectSchema as any)[typeName] : null;
     const options = schema?.options || {};
-    const availableModes = (options.modes || ['single']) as InputMode[];
+    let availableModes = (options.modes || []) as InputMode[];
 
-    const hasSmoothing = options.smoothing && mode !== 'single';
-    const hasDateRange = options.dateRange;
-    const hasIntegers = options.integers;
+    if (availableModes.length === 0) {
+        // Derive from boolean keys
+        const allModes: InputMode[] = ['single', 'annual', 'growth'];
+        availableModes = allModes.filter(m => options[m] !== undefined); // If key exists (true or false), it's available
+        if (availableModes.length === 0) availableModes = ['single'];
+    }
+
+    const hasSmoothing = options.smoothing !== undefined; // Check existence
+    const hasDateRange = options.dateRange !== undefined;
+    const hasIntegers = options.integers !== undefined;
     const hasMultipleModes = availableModes.length > 1;
     const hasOptions = hasSmoothing || hasDateRange || hasIntegers || hasMultipleModes;
 
@@ -51,7 +58,7 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
                             return (
                                 <>
                                     {/* Smoothing Toggle - only show in multi-year modes */}
-                                    {options.smoothing && mode !== 'single' && (
+                                    {hasSmoothing && mode !== 'single' && (
                                         <label className="flex items-center gap-1 text-xs font-medium text-gray-600 cursor-pointer select-none">
                                             <input
                                                 type="checkbox"
@@ -64,7 +71,7 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
                                     )}
 
                                     {/* Date Range Toggle */}
-                                    {options.dateRange && (
+                                    {hasDateRange && (
                                         <label className="flex items-center gap-1 text-xs font-medium text-gray-600 cursor-pointer select-none">
                                             <input
                                                 type="checkbox"
@@ -77,7 +84,7 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
                                     )}
 
                                     {/* Integers Toggle */}
-                                    {options.integers && (
+                                    {hasIntegers && (
                                         <label className="flex items-center gap-1 text-xs font-medium text-gray-600 cursor-pointer select-none">
                                             <input
                                                 type="checkbox"
@@ -91,9 +98,6 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
 
                                     {/* Mode Switcher */}
                                     {(() => {
-                                        // Read available modes from schema
-                                        const availableModes = (options.modes || ['single']) as InputMode[];
-
                                         if (availableModes.length <= 1) return null;
 
                                         return (
