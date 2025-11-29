@@ -734,11 +734,11 @@ export default function Editor({ params }: { params: { id: string } }) {
                                                 {(!assumptions[objName]) ? null : (
                                                     <>
                                                         {showSection && (
-                                                            <div className="w-full border-b-2 border-gray-200 mb-6 mt-4 pb-2">
-                                                                <h2 className="text-2xl font-bold text-gray-800">{formatName(obj.section)}</h2>
+                                                            <div className="w-full border-b-4 border-blue-600 mb-6 mt-8 pb-2">
+                                                                <h2 className="text-4xl font-bold text-blue-600">{formatName(obj.section)}</h2>
                                                             </div>
                                                         )}
-                                                        <div className="flex flex-col lg:flex-row gap-3 border-b border-gray-200 pb-4">
+                                                        <div className={`flex flex-col lg:flex-row gap-3 border-b border-gray-200 pb-4 ${obj.section ? 'ml-8' : ''}`}>
                                                             <div
                                                                 className="flex-none pl-2 overflow-x-auto"
                                                                 style={{ width: `${assumptionsWidth}px` }}

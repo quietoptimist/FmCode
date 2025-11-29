@@ -1737,3 +1737,12 @@ function createVariant(base: any, overrides: any) {
 // SubTerm - Term subscriptions (placeholder)
 // This is just a temporary placeholder to provide a valid name, but the term functionality hasn't been implemented.
 (objectSchema as any).SubTerm = createVariant(objectSchema.SubMth, {});
+
+// SubTermDel - Term subscriptions with delayed payment
+(objectSchema as any).SubTermDel = createVariant(objectSchema.SubMth, {
+  channels: {
+    rev: {
+      destinations: ["pnl.revenue.recur", "balance.assets.current.ar"]
+    }
+  }
+});

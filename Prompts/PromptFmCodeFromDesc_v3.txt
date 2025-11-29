@@ -694,14 +694,14 @@ One-off fees with delay:
 FM
     Revenues:
         ImplementationRevenues = RevMulNewDel(newClients.val) > setupFees
-        SetupPayments          = DelRev(setupFees.val)        > setupPaid
+        SetupPayments          = DelRev(setupFees.rev)        > setupPaid
 
 Recurring invoiced software:
 
 FM
     Revenues:
         SoftwareRevenues = RevMulDel(activeClients.val) > softwareLicences
-        SoftwarePayments = DelRev(softwareLicences.val) > softwarePaid
+        SoftwarePayments = DelRev(softwareLicences.rev) > softwarePaid
 
 </RevMulDel_spec>
 
@@ -829,8 +829,8 @@ Example:
 
 FM
     Costs:
-        OverheadCosts = CostGA() > officeRent, utilities, insurance, softwareSubscriptions
-        AcquisitionCosts = CostSM() > crmSubscription, eventSponsorship
+        SetupCosts = CostMthOE() > registration, licenses, legalFees
+        OccasionalCosts = CostMthSM() > corporateEvents, sponsorships
 
 </Cost_spec>
 
@@ -1318,8 +1318,8 @@ Non-recurring revenues:
 
 FM
     Revenues:
-        OnboardingFees   = RevDrvNewDel(newCustomers.val) > setupFees
-        SetupCollections = DelRev(setupFees.val) > setupFeesPaid
+        OnboardingFees   = RevMulNewDel(newCustomers.val) > setupFees
+        SetupCollections = DelRev(setupFees.rev) > setupFeesPaid
 
 Supplier payment delay:
 
@@ -1787,6 +1787,8 @@ Use this checklist when generating FM Code:
   - All content must be inside a single `FM` code block.
   - Add concise inline `//` comments for each object describing purpose and assumption units.
   - You may output a brief thinking process enclosed in `<thinking>` tags before the code block.
+
+N.B. DO NOT add any DashChart or DashTable objects to the FM Code as they are not yet supported. Remove any such objects from your boilerplate for now.
 
 Create the FM Code for the following startup description:
 """

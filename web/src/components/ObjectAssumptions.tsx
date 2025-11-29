@@ -517,11 +517,13 @@ function ValueInput({ field, mode, years, showLabels = true, onChange }: { field
 
     if (mode === 'single' || !field.supports?.annual) {
         return (
-            <SingleValueInput
-                value={field.raw.single ?? field.raw.annual?.[0] ?? null}
-                onChange={(v) => onChange(v, 'single')}
-                format={format}
-            />
+            <div className="w-[76px]">
+                <SingleValueInput
+                    value={field.raw.single ?? field.raw.annual?.[0] ?? null}
+                    onChange={(v) => onChange(v, 'single')}
+                    format={format}
+                />
+            </div>
         );
     }
 
