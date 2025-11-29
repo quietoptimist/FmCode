@@ -644,6 +644,74 @@ export const objectSchema = {
   },
 
   // ============================
+  // Ramp - ramp up values over time
+  // ============================
+  Ramp: {
+    impl: "Ramp",
+    showMonthlyAssumptions: true,
+    options: {
+      single: true,
+      annual: false,
+      monthly: false,
+      dateRange: false,
+      smoothing: false,
+      growth: false,
+      seasonal: false
+    },
+    channels: {
+      val: {
+        label: "Ramped value",
+        destinations: []
+      },
+      mom: {
+        label: "MoM Change",
+        destinations: []
+      }
+    },
+    assumptions: {
+      object: [],
+      output: [
+        {
+          name: "months",
+          label: "Ramp Months",
+          baseType: "number",
+          format: "integer",
+          default: 6,
+          supports: {
+            single: true,
+            annual: true,
+            monthly: true,
+            smoothing: true,
+            growth: true,
+            seasonal: true
+          },
+          ui: {
+            defaultMode: "single"
+          }
+        },
+        {
+          name: "startPerc",
+          label: "Start %",
+          baseType: "number",
+          format: "percent",
+          default: 0,
+          supports: {
+            single: true,
+            annual: true,
+            monthly: true,
+            smoothing: true,
+            growth: true,
+            seasonal: true
+          },
+          ui: {
+            defaultMode: "single"
+          }
+        }
+      ]
+    }
+  },
+
+  // ============================
   // StaffDiv - teams of people driven by input activity and their productivity
   // ============================
   StaffDiv: {

@@ -635,7 +635,7 @@ Outputs:
 - One or more outputNames (e.g. `smallCandleRev`, `upsellRev`).
 
 Attributes:
-- `.val`   = monthly revenue.
+- `.rev`   = monthly revenue.
 - `.cum`   = cumulative revenue.
 - `.assum` = unit price (per outputName only).
 
@@ -673,7 +673,7 @@ Outputs:
 - One or more outputNames (e.g. `softwareLicences`, `setupFees`).
 
 Attributes:
-- `.val` = recognised revenue.
+- `.rev` = recognised revenue.
 - `.cum` = cumulative revenue.
 - `.assum` = unit price (per outputName only).
 - Available at object and outputName level.
@@ -758,6 +758,8 @@ Variants:
 - `CostGA()` = G&A overheads per month (rent, utilities, insurance, software).
 - `CostSM()` = S&M overheads per month (budgets, sponsorships, tools).
 - `CostRD()` = R&D costs per month.
+- `CostDC()` = Direct cost per month (supplies, components, etc.). Rarely used as direct costs are normally driven by sales volumes.
+- `CostOE()` = Other expenses per month (Company setup, legal fees, etc.).
 
 Description:
 - Allows monthly cost assumptions.
@@ -1032,7 +1034,7 @@ Inputs:
 Assumptions (Parameters):
 - `start` (int): Role start month.
 - `end` (int): Role end month.
-- `salary` (number): Role salary, bonus, taxes per month.
+- `salary` (number): Monthly payroll, bonus, taxes for the role.
 
 Outputs:
 - One or more outputNames (e.g. `ceo`, `headOfMarketing`).
@@ -1073,7 +1075,7 @@ Assumptions (Parameters):
 - `start` (int): Team start month.
 - `end` (int): Team end month.
 - `heads` (number): Team Headcount.
-- `salary` (number): Average salary, bonus, taxes per head per month.
+- `salary` (number): Average monthly salary, bonus, taxes per head.
 
 Outputs:
 - One or more outputNames (e.g. `financeTeam`, `marketingTeam`).
@@ -1114,7 +1116,7 @@ Inputs:
 
 Assumptions (Parameters):
 - `productivity` (number): Activity handled per head per month.
-- `salary` (number): Salaries, taxes, bonus per head per month.
+- `salary` (number): Monthly payroll, taxes, bonus per head.
 
 Outputs:
 - One or more outputNames (e.g. `fulfilmentTeam`, `supportTeam`).
@@ -1155,7 +1157,7 @@ Inputs:
 
 Assumptions (Parameters):
 - `heads` (number): Headcount per location (may be fractional).
-- `salary` (number): Salaries, taxes, bonus per head.
+- `salary` (number): Monthly payroll, taxes, bonus per head.
 
 Outputs:
 - One or more outputNames (roles), e.g. `manager`, `receptionist`, `security`.

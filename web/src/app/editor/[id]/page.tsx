@@ -25,7 +25,7 @@ CustomerRetention:
   TiersMix = QuantMul(NewCustomers.val)    => newFree, newPrem, newGold        // Mix of new customers joining each product tier
   Users    = SubRetain(...TiersMix.val)    => freeUsers, premUsers, goldUsers  // Active users and churning users by product tier
   Revenues = RevMulDel(...Users.act)       => freeRev, premRev, goldRev        // Revenues we generate from active users on each tier
-  Payments = DelRev(Revenues.val)          => paid                             // Cash received when users pay us
+  Payments = DelRev(Revenues.rev)          => paid                             // Cash received when users pay us
 
 People:
   CustomerSupport = StaffDiv(NewCustomers.val, Users.act) => onboardingTeam, serviceTeam             // Customer support teams for onboarding and in-life assistance

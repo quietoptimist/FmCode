@@ -395,6 +395,61 @@ export const fnRegistry = {
   },
 
   // ==================================
+  // Ramp - ramp up values over time
+  // ==================================
+  Ramp(ctx, inputs, cfg) {
+    const months = ctx.months;
+    const outAss = cfg.output || {};
+
+    // Assumptions
+    const rampMonthsArr = outAss.months ? outAss.months.value : new Float64Array(months).fill(6);
+    const startPercArr = outAss.startPerc ? outAss.startPerc.value : new Float64Array(months).fill(0);
+
+    // Input: Max value per cohort (starting in month m)
+    const src = inputs[0] || new Float64Array(months).fill(0);
+
+    const valSeries = new Float64Array(months);
+    const momSeries = new Float64Array(months);
+
+    // Iterate through time (m)
+    for (let m = 0; m < months; m++) {
+      let currentVal = 0;
+
+      // Iterate through cohorts (c) that started at or before m
+      for (let c = 0; c <= m; c++) {
+        const cohortMax = src[c];
+        if (cohortMax !== 0) {
+          const monthsSinceStart = m - c;
+
+          // Get assumptions for this cohort (based on start month c)
+          const rampMonths = rampMonthsArr[c];
+          const startPerc = startPercArr[c];
+
+          let percent = 1;
+          if (monthsSinceStart < rampMonths) {
+            // Linear interpolation
+            // t=0: startPerc
+            // t=rampMonths: 100%
+            percent = startPerc + (1 - startPerc) * (monthsSinceStart / rampMonths);
+          }
+
+          currentVal += cohortMax * percent;
+        }
+      }
+      valSeries[m] = currentVal;
+
+      // Calculate MoM change
+      const prevVal = (m > 0) ? valSeries[m - 1] : 0;
+      momSeries[m] = currentVal - prevVal;
+    }
+
+    return {
+      val: valSeries,
+      mom: momSeries
+    };
+  },
+
+  // ==================================
   // Sum unchanged
   // ==================================
   Sum(ctx, inputs) {
