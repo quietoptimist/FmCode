@@ -17,23 +17,23 @@ import Link from 'next/link';
 
 const SAMPLE_CODE = `
 CustomerAcquisition:
-  NewCustomers = QuantSeas()               => newOrganic, newPaid  // Forecast number of new customers added per month from organic and paid channels
-  LeadsFromAds = QuantDiv(newPaid.val)     => paidLeads            // Determine how many visitors we need to achieve those new customers using conversion rate
-  AdsExpense   = CostMulSM(paidLeads.val)  => adsCost              // Estimate our marketing spend to generate those leads
+  NewCustomers = QuantSeas()               > newOrganic, newPaid  // Forecast number of new customers added per month from organic and paid channels
+  LeadsFromAds = QuantDiv(newPaid.val)     > paidLeads            // Determine how many visitors we need to achieve those new customers using conversion rate
+  AdsExpense   = CostMulSM(paidLeads.val)  > adsCost              // Estimate our marketing spend to generate those leads
 
 CustomerRetention:
-  TiersMix = QuantMul(NewCustomers.val)    => newFree, newPrem, newGold        // Mix of new customers joining each product tier
-  Users    = SubRetain(...TiersMix.val)    => freeUsers, premUsers, goldUsers  // Active users and churning users by product tier
-  Revenues = RevMulDel(...Users.act)       => freeRev, premRev, goldRev        // Revenues we generate from active users on each tier
-  Payments = DelRev(Revenues.rev)          => paid                             // Cash received when users pay us
+  TiersMix = QuantMul(NewCustomers.val)    > newFree, newPrem, newGold        // Mix of new customers joining each product tier
+  Users    = SubRetain(...TiersMix.val)    > freeUsers, premUsers, goldUsers  // Active users and churning users by product tier
+  Revenues = RevMulDel(...Users.act)       > freeRev, premRev, goldRev        // Revenues we generate from active users on each tier
+  Payments = DelRev(Revenues.rev)          > paid                             // Cash received when users pay us
 
 People:
-  CustomerSupport = StaffDiv(NewCustomers.val, Users.act) => onboardingTeam, serviceTeam             // Customer support teams for onboarding and in-life assistance
-  CentralTeams    = StaffTeam()                           => financeTeam, marketingTeam, otherTeam   // Central team headcounts and salaries
-  Leadership      = StaffRole()                           => CEO, CFO, COO, OtherRole1, OtherRole2   // Key people start dates and salaries
+  CustomerSupport = StaffDivDC(NewCustomers.val, Users.act) > onboardingTeam, serviceTeam             // Customer support teams for onboarding and in-life assistance
+  CentralTeams    = StaffTeamGA()                           > financeTeam, marketingTeam, otherTeam   // Central team headcounts and salaries
+  Leadership      = StaffRoleGA()                           > CEO, CFO, COO, OtherRole1, OtherRole2   // Key people start dates and salaries
   
 OperatingCosts:
-  Overheads = CostGA()                     => rent, utilities, insurance, subscriptions, other       // Regular monthly overhead costs
+  Overheads = CostGA()                     > rent, utilities, insurance, subscriptions, other       // Regular monthly overhead costs
 `;
 
 export default function Editor({ params }: { params: { id: string } }) {
@@ -53,7 +53,7 @@ export default function Editor({ params }: { params: { id: string } }) {
     const [generating, setGenerating] = useState(false);
     const [thoughts, setThoughts] = useState('');
     const [modelYears, setModelYears] = useState(3);
-    const [viewMode, setViewMode] = useState<'model' | 'code' | 'financials'>('model');
+    const [viewMode, setViewMode] = useState<'model' | 'code' | 'financials'>(params.id === 'new' ? 'code' : 'model');
     const router = useRouter();
 
     // Helper to rehydrate Maps from JSON
@@ -524,23 +524,36 @@ export default function Editor({ params }: { params: { id: string } }) {
         });
     };
 
-    // Calculate dynamic column spans based on years
-    // We must use full class strings for Tailwind to detect them
-    let leftColClass = "lg:col-span-4";
-    let rightColClass = "lg:col-span-8";
+    // Calculate consistent width for assumptions panel to ensure alignment
+    // We calculate the maximum width required by any object and apply it to all
+    let assumptionsWidth = 0;
+    if (result?.ast?.objects) {
+        let maxNeeded = 0;
+        result.ast.objects.forEach((obj: any) => {
+            const typeName = obj.fnName;
+            const def = (objectSchema as any)[typeName];
 
-    if (modelYears >= 3) {
-        leftColClass = "lg:col-span-5";
-        rightColClass = "lg:col-span-7";
+            // Check supported features
+            const outputFields = def?.assumptions?.output || [];
+            const supportsSmoothing = outputFields.some((f: any) => f.supports?.smoothing);
+            const supportsDateRange = outputFields.some((f: any) => f.supports?.dateRange);
+
+            // Calculate needed width
+            // Label (160) + Value (Years * 88) + Smooth (80) + DateRange (150) + Padding (80)
+            let needed = 160 + (modelYears * 88) + 80;
+            if (supportsSmoothing) needed += 80;
+            if (supportsDateRange) needed += 150;
+
+            if (needed > maxNeeded) maxNeeded = needed;
+        });
+        assumptionsWidth = Math.max(maxNeeded, 300); // Minimum 300px
     }
-    if (modelYears > 6) {
-        leftColClass = "lg:col-span-6";
-        rightColClass = "lg:col-span-6";
-    }
+
+
 
     return (
-        <main className="flex min-h-screen flex-col items-center p-4 bg-gray-50 text-black">
-            <div className="w-full max-w-[1600px] flex justify-between items-center mb-4">
+        <main className="flex min-h-screen flex-col items-center bg-gray-50 text-black">
+            <div className="w-full sticky top-0 z-50 bg-gray-50/95 backdrop-blur border-b border-gray-200 px-4 py-3 flex justify-start gap-8 items-center mb-4 shadow-sm">
                 <div className="flex items-center gap-4">
                     <button
                         onClick={() => router.push('/dashboard')}
@@ -617,7 +630,7 @@ export default function Editor({ params }: { params: { id: string } }) {
             </div>
 
             {viewMode === 'code' && (
-                <div className="w-full max-w-[1600px] mb-4">
+                <div className="w-full px-4 mb-4">
                     <div className="bg-white rounded border border-gray-200 p-4 flex flex-col gap-4 h-[calc(100vh-100px)]">
                         <div className="flex flex-col gap-1">
                             <label className="text-sm font-semibold text-gray-600">Business Description</label>
@@ -702,7 +715,7 @@ export default function Editor({ params }: { params: { id: string } }) {
             {viewMode === 'model' && (
                 <>
 
-                    <div className="w-full max-w-[1600px] flex flex-col gap-4 pb-20">
+                    <div className="w-full flex flex-col gap-4 pb-20 px-4">
                         <div className="flex gap-4">
                             {/* Main Content */}
                             <div className="flex-1 flex flex-col gap-4">
@@ -725,8 +738,11 @@ export default function Editor({ params }: { params: { id: string } }) {
                                                                 <h2 className="text-2xl font-bold text-gray-800">{formatName(obj.section)}</h2>
                                                             </div>
                                                         )}
-                                                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 border-b border-gray-200 pb-4">
-                                                            <div className={leftColClass}>
+                                                        <div className="flex flex-col lg:flex-row gap-3 border-b border-gray-200 pb-4">
+                                                            <div
+                                                                className="flex-none pl-2 overflow-x-auto"
+                                                                style={{ width: `${assumptionsWidth}px` }}
+                                                            >
                                                                 <ObjectAssumptions
                                                                     objName={objName}
                                                                     objAss={assumptions[objName]}
@@ -737,7 +753,7 @@ export default function Editor({ params }: { params: { id: string } }) {
                                                             </div>
                                                             <div
                                                                 ref={(el) => { outputScrollRefs.current[index] = el; }}
-                                                                className={`${rightColClass} overflow-x-auto`}
+                                                                className="flex-1 min-w-0 overflow-x-auto"
                                                                 onScroll={(e) => {
                                                                     if (isScrolling.current) return;
                                                                     isScrolling.current = true;

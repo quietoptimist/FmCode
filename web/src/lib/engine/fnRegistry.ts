@@ -16,7 +16,9 @@ export const fnRegistry = {
     const outAss = cfg.output || {};
     const factor = outAss.factor
       ? outAss.factor.value
-      : new Float64Array(months).fill(1);
+      : outAss.mix
+        ? outAss.mix.value
+        : new Float64Array(months).fill(1);
     const startMonthVal = outAss.start ? outAss.start.value : 0;
     const startMonth = (startMonthVal instanceof Float64Array || Array.isArray(startMonthVal)) ? startMonthVal[0] : startMonthVal;
 
@@ -446,6 +448,218 @@ export const fnRegistry = {
     return {
       val: valSeries,
       mom: momSeries
+    };
+  },
+
+  // ==================================
+  // Spread - spread input over time
+  // ==================================
+  Spread(ctx, inputs, cfg) {
+    const months = ctx.months;
+    const outAss = cfg.output || {};
+    const outName = (cfg.outputNames && cfg.outputNames[0]) ? cfg.outputNames[0] : "val";
+
+    // Assumptions
+    const durationArr = outAss.months ? outAss.months.value : new Float64Array(months).fill(12);
+
+    // Input: Value to be spread starting in month m
+    const src = inputs[0] || new Float64Array(months).fill(0);
+
+    const out = new Float64Array(months);
+
+    // Iterate through time (m)
+    for (let m = 0; m < months; m++) {
+      const valToSpread = src[m];
+      if (valToSpread !== 0) {
+        // Get duration for this cohort (based on start month m)
+        // Round to nearest integer and ensure at least 1 month
+        const duration = Math.max(1, Math.round(durationArr[m]));
+        const monthlyVal = valToSpread / duration;
+
+        // Add to output for duration months
+        for (let i = 0; i < duration; i++) {
+          const targetMonth = m + i;
+          if (targetMonth < months) {
+            out[targetMonth] += monthlyVal;
+          }
+        }
+      }
+    }
+
+    return { [outName]: out };
+  },
+
+  // ==================================
+  // FundDebt - Interest only debt funding
+  // ==================================
+  FundDebt(ctx, inputs, cfg) {
+    const months = ctx.months;
+    const outAss = cfg.output || {};
+
+    // Assumptions (robust access)
+    const startMonthVal = outAss.startMonth ? outAss.startMonth.value : 1;
+    const startMonth = Math.max(1, Math.round((startMonthVal instanceof Float64Array || Array.isArray(startMonthVal)) ? startMonthVal[0] : startMonthVal));
+
+    const amountVal = outAss.amount ? outAss.amount.value : 0;
+    const amount = (amountVal instanceof Float64Array || Array.isArray(amountVal)) ? amountVal[0] : amountVal;
+
+    const rateVal = outAss.rate ? outAss.rate.value : 0.01;
+    const rate = (rateVal instanceof Float64Array || Array.isArray(rateVal)) ? rateVal[0] : rateVal;
+
+    const termVal = outAss.term ? outAss.term.value : 12;
+    const term = Math.max(1, Math.round((termVal instanceof Float64Array || Array.isArray(termVal)) ? termVal[0] : termVal));
+
+    const raised = new Float64Array(months);
+    const repaid = new Float64Array(months);
+    const bal = new Float64Array(months);
+    const int = new Float64Array(months);
+    const debtMove = new Float64Array(months);
+
+    if (amount !== 0) {
+      // 0-indexed start month
+      const m = startMonth - 1;
+
+      if (m < months) {
+        // 1. Debt Raised
+        raised[m] = amount;
+        debtMove[m] += amount;
+
+        // 2. Debt Repaid (at end of term)
+        const repayMonth = m + term;
+        if (repayMonth < months) {
+          repaid[repayMonth] = amount;
+          debtMove[repayMonth] -= amount;
+        }
+
+        // 3. Interest and Balance
+        // Interest is paid for each month the loan is active (from m to m + term - 1)
+        for (let i = 0; i < term; i++) {
+          const targetMonth = m + i;
+          if (targetMonth < months) {
+            bal[targetMonth] = amount;
+            int[targetMonth] = amount * rate;
+          }
+        }
+      }
+    }
+
+    return {
+      raised,
+      repaid,
+      bal,
+      int,
+      debtMove
+    };
+  },
+
+  // ==================================
+  // CapexEquip - Equipment purchase based on demand
+  // ==================================
+  CapexEquip(ctx, inputs, cfg) {
+    const months = ctx.months;
+    const outAss = cfg.output || {};
+
+    // Assumptions
+    const productivity = outAss.productivity ? outAss.productivity.value : new Float64Array(months).fill(100);
+    const price = outAss.price ? outAss.price.value : new Float64Array(months).fill(1000);
+    const lifetime = outAss.lifetime ? outAss.lifetime.value : new Float64Array(months).fill(36);
+    const residualValue = outAss.residualValue ? outAss.residualValue.value : new Float64Array(months).fill(0);
+
+    // Input: Demand
+    const demand = inputs[0] || new Float64Array(months).fill(0);
+
+    const val = new Float64Array(months);
+    const depr = new Float64Array(months);
+    const nbuy = new Float64Array(months);
+    const nown = new Float64Array(months);
+    const nsell = new Float64Array(months);
+    const res = new Float64Array(months);
+    const writeOff = new Float64Array(months);
+    const accumWriteOff = new Float64Array(months);
+
+    // Track active cohorts: { amount, age, price, lifetime, residual }
+    let cohorts: { amount: number; age: number; price: number; lifetime: number; residual: number }[] = [];
+
+    for (let m = 0; m < months; m++) {
+      const mProductivity = productivity[m];
+      const mPrice = price[m];
+      const mLifetime = Math.max(1, Math.round(lifetime[m]));
+      const mResidual = residualValue[m];
+      const mDemand = demand[m];
+
+      // 1. Retire expired equipment
+      // Check if any cohort reached its lifetime
+      // Note: We increment age at the end of the month, so check age >= lifetime
+      const activeCohorts = [];
+      let currentUnits = 0;
+
+      for (const cohort of cohorts) {
+        if (cohort.age >= cohort.lifetime) {
+          // Retire
+          nsell[m] += cohort.amount;
+          res[m] += cohort.amount * cohort.residual; // Use cohort's residual expectation? Or current? Usually original expectation or market. Using cohort's.
+
+          // Write off gross asset value (negative)
+          writeOff[m] -= cohort.amount * cohort.price;
+
+          // Write off accumulated depreciation (negative)
+          // Assuming fully depreciated at end of life
+          accumWriteOff[m] -= cohort.amount * (cohort.price - cohort.residual);
+          // Actually, if we depreciate down to residual, accum depr is (price - residual).
+        } else {
+          activeCohorts.push(cohort);
+          currentUnits += cohort.amount;
+        }
+      }
+      cohorts = activeCohorts;
+
+      // 2. Calculate required units
+      const requiredUnits = mProductivity > 0 ? Math.ceil(mDemand / mProductivity) : 0;
+
+      // 3. Buy new equipment if needed
+      if (requiredUnits > currentUnits) {
+        const buyAmount = requiredUnits - currentUnits;
+        nbuy[m] = buyAmount;
+        val[m] = buyAmount * mPrice;
+
+        cohorts.push({
+          amount: buyAmount,
+          age: 0,
+          price: mPrice,
+          lifetime: mLifetime,
+          residual: mResidual
+        });
+        currentUnits += buyAmount;
+      }
+
+      nown[m] = currentUnits;
+
+      // 4. Calculate Depreciation
+      // Straight line: (Price - Residual) / Lifetime
+      let monthlyDepr = 0;
+      for (const cohort of cohorts) {
+        if (cohort.age < cohort.lifetime) {
+          const deprPerUnit = (cohort.price - cohort.residual) / cohort.lifetime;
+          monthlyDepr += cohort.amount * deprPerUnit;
+        }
+      }
+      depr[m] = monthlyDepr;
+
+      // 5. Increment Age
+      for (const cohort of cohorts) {
+        cohort.age++;
+      }
+    }
+
+    return {
+      val,
+      depr,
+      nbuy,
+      nown,
+      nsell,
+      res,
+      writeOff,
+      accumWriteOff
     };
   },
 

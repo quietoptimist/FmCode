@@ -325,7 +325,7 @@ ObjectType: `FundDebt()`
 
 Description:
 - Models fixed-term loans used to fund the business.
-- Each outputName is a distinct loan facility.
+- Each outputName is a distinct loan.
 
 Inputs:
 - None (starting object).
@@ -334,6 +334,7 @@ Assumptions (Parameters):
 - `start` (int): Loan start month.
 - `amount` (number): Amount borrowed.
 - `rate` (number): Interest rate percentage.
+- `term` (int): Loan term in months.
 
 Outputs:
 - One or more outputNames (e.g. `sbaLoan`, `bankLoan`, `ventureDebt`, `equipmentLoan`).
@@ -342,7 +343,6 @@ Attributes:
 - `.int`   = monthly interest due.
 - `.raised` = principal borrowed in each month.
 - `.repaid` = principal repaid in each month.
-- `.mom`   = month-on-month change in outstanding debt.
 - `.bal`   = outstanding principal balance.
 - Available at object level and per outputName.
 
@@ -350,12 +350,10 @@ Example:
 
 FM
     SetupAndFunding:
-        DebtFunding = FundDebt() > sbaLoan, bankLoan, ventureDebt, equipmentLoan // Loans with specific repayment terms
+        DebtFunding = FundDebt() > sbaLoan, bankLoan, ventureDebt, equipmentLoan // Enter loan details in month they are taken out
 
 Notes:
-- `DebtFunding.bal` = total debt balance across all facilities.
-- Grace periods delay interest and repayments.
-- After an interest-only period, amortisation begins if a repayment term is set.
+- `DebtFunding.bal` = total debt balance across all loans.
 
 </FundDebt_spec>
 
@@ -430,6 +428,7 @@ ObjectType: `QuantMul()`
 Variants:
 - `QuantMul()` = multiply input by user assumptions.
 - `QuantDiv()`  = divide input by user assumptions.
+- `QuantMulSeas()` = multiply input by user assumptions adjusted using a seasonality scalar (% by calendar month).
 
 Description:
 - Scales monthly input quantities by internal assumptions (multipliers or divisors).
@@ -466,6 +465,12 @@ Multiplication (e.g. orders × items per order):
 FM
     Orders:
         ItemsBought = QuantMul(orders.val) > items(factor: 2) // Total items per month driven by orders and items per order
+
+Seasonal Multiplication (e.g. orders × items per order adjusted by calendar month):
+
+FM
+    Orders:
+        CustomerOrders = QuantMulSeas(Customers.act) > orders(factor: 2) // Seasonally adjusted orders per month driven by active customers and average orders per customer
 
 </QuantMul_spec>
 
@@ -619,6 +624,7 @@ ObjectType: `RevMul()`
 Variants:
 - `RevMul()`    = recurring revenues.
 - `RevMulNew()` = new / one-off revenues (joining, setup, implementation fees).
+- `RevMulSeas()` = seasonally adjusted prices driving recurring revenues.
 
 Description:
 - Multiplies quantity inputs by unit prices to generate revenues.
@@ -645,6 +651,9 @@ FM
     Revenues:
         ProductRevenues = RevMul(...ProductsSold.val) > smallCandleRev, largeCandleRev, giftSetRev
         OnboardingRevenues = RevMulNew(newCustomers.val) > joiningFeeRev, setupFeeRev
+        
+    Seasonal Pricing Alternative:
+        SeasonalRevenues = RevMulSeas(...ProductsSold.val) > smallCandleRev, largeCandleRev, giftSetRev // Seasonally adjusted prices driving recurring revenues
 
 </RevMul_spec>
 
@@ -1611,33 +1620,37 @@ FM
         EquityFunding = FundEquity() > startingCash(amount:50000, month: 1) // Cash raised from founders and investors
 
     CustomerAcquisition:
-        Acquisition = QuantAnnSeas() > socialCustomers, organicCustomers   // New customers by source
+        Acquisition = QuantSeas() > socialCustomers, organicCustomers   // New customers by source
         TierMix     = Split(Acquisition.val) > newFree(mix:0.6), newBoosted(mix:0.3), newUnlimited(mix:0.1) // New customers by tier
 
     Subscriptions:
-        Subscribers = SubMth(...TierMix.val) > freeSubs(), boostedSubs, unlimitedSubs // MRR, actives, churn by tier
-
+        // Subscriber retention with prices and churn by tier
+        Subscribers = SubMth(...TierMix.val) >
+            freeSubs(price:10, churn:0.05),
+            boostedSubs(price:20, churn:0.05),
+            unlimitedSubs(price:50, churn:0.05) 
+        
     SupplementsDemand:
-        SuppOrders = QuantDrv(Subscribers.act) > suppBuyers  // % of actives buying supplements
-        SuppPacks  = QuantDrv(suppBuyers.val) > suppPacks    // Packs per order
+        SuppOrders = QuantMulSeas(Subscribers.act) > suppBuyers  // % of actives buying supplements
+        SuppPacks  = QuantMul(suppBuyers.val) > suppPacks    // Packs per order
 
     SupplyChain:
         SuppPurchasing = SupplyMths(suppPacks.val) > supplements // Inventory & COGS for packs
 
     Sales:
-        SupplementsRevenue = RevDrv(supplements.nsell) > supplementsRev
+        SupplementsRevenue = RevMul(supplements.nsell) > supplementsRev
 
     People:
-        Leadership = StaffRole() > ceo, cfo, headMarketing, opsManager
+        Leadership = StaffRoleGA() > ceo, cfo, headMarketing, opsManager
         DevTeams   = StaffTeamRD() > appDevs, backEndDevs, aiDevs
         TotalHeads = Sum(Leadership.heads, DevTeams.heads)
 
     Costs:
-        AcqCosts        = CostDrvSM(socialCustomers.val) > socialAdsCost
-        PlatformFees    = CostDrvDC(Subscribers.val) > appStoreFees
-        ServiceCosts    = CostDrvDC(Subscribers.act) > hostingCost, inferenceCost
-        FulfilmentCosts = CostDrvDC(suppBuyers.val) > packingCost, shippingCost
-        Overheads       = CostAnnGA() > servicedOffice, insurance, travel, software, storageSpace
+        AcqCosts        = CostMulSM(socialCustomers.val) > socialAdsCost
+        PlatformFees    = CostMulDC(Subscribers.act) > appStoreFees
+        ServiceCosts    = CostMulDC(Subscribers.act) > hostingCost, inferenceCost
+        FulfilmentCosts = CostMulDC(suppBuyers.val) > packingCost, shippingCost
+        Overheads       = CostGA() > servicedOffice, insurance, travel, software, storageSpace
 
     Capex:
         StaffDevices = CapexEquip(TotalHeads.val) > laptops, phones
@@ -1667,15 +1680,15 @@ FM
         Suppliers    = SupplyMths(...ProductsSold.val) > prodA, prodB, prodC
 
     Sales:
-        Revenues = RevDrv(...ProductsSold.val) > prodRevA, prodRevB, prodRevC
+        Revenues = RevMul(...ProductsSold.val) > prodRevA, prodRevB, prodRevC
 
     People:
-        Leadership = StaffRole() > ceo, cfo, headProduct, headMarketing, headOperations, supportRole1, otherRole1, otherRole2
+        Leadership = StaffRoleGA() > ceo, cfo, headProduct, headMarketing, headOperations, supportRole1, otherRole1, otherRole2
 
     Costs:
-        Advertising = CostDrvSM(advertOrders.val) > advertCost
-        Fulfilment  = CostDrvDC(WebOrders.val) > packagingCost, outboundShippingCost
-        Overheads   = CostAnnGA() > rent, utilities, software, insurance, otherOverhead1, otherOverhead2
+        Advertising = CostMulSM(advertOrders.val) > advertCost
+        Fulfilment  = CostMulDC(WebOrders.val) > packagingCost, outboundShippingCost
+        Overheads   = CostGA() > rent, utilities, software, insurance, otherOverhead1, otherOverhead2
         OneOffCosts = CostMthOE() > companySetup, legalFees, otherSetup1
 
     // Dashboard as per boilerplate
@@ -1694,27 +1707,27 @@ FM
     // initial boilerplate
     
     CustomerOrders:
-        WebOrders      = QuantAnnSeas() > advertOrders, organicOrders
-        AdvertVisitors = QuantDrv(advertOrders.val) > adVisitors   // Visitors per order
-        Basket         = QuantDrv(WebOrders.val) > items          // Items per order
+        WebOrders      = QuantSeas() > advertOrders, organicOrders
+        AdvertVisitors = QuantMul(advertOrders.val) > adVisitors   // Visitors per order
+        Basket         = QuantMul(WebOrders.val) > items          // Items per order
 
     SupplyChain:
-        ProductsSold = Split(items.val) > prodSoldA, prodSoldB, prodSoldC
+        ProductsSold = Split(items.val) > prodSoldA(mix:0.6), prodSoldB(mix:0.3), prodSoldC(mix:0.1)
         Suppliers    = SupplyMths(...ProductsSold.val) > prodA, prodB, prodC
 
     Sales:
-        Revenues = RevDrv(...ProductsSold.val) > prodRevA, prodRevB, prodRevC
+        Revenues = RevMul(...ProductsSold.val) > prodRevA(price:10), prodRevB(price:20), prodRevC(price:50)
 
     People:
-        CustomerSupport = StaffDrvDC(WebOrders.val) > supportTeam
-        FulfilmentTeam  = StaffDrvDC(WebOrders.val) > fulfilTeam
+        CustomerSupport = StaffDivDC(WebOrders.val) > supportTeam
+        FulfilmentTeam  = StaffDivDC(WebOrders.val) > fulfilTeam
         MarketingTeam   = StaffTeamSM() > mktgTeam
         CentralTeams    = StaffTeamGA() > financeTeam, legalTeam, hrTeam
-        Leadership      = StaffRole() > ceo, cfo, headProduct, headMarketing, headOperations, otherRole1, otherRole2
+        Leadership      = StaffRoleGA() > ceo, cfo, headProduct, headMarketing, headOperations, otherRole1, otherRole2
 
     Costs:
-        Advertising = CostDrvSM(adVisitors.val) > advertCost  // Driven by CPC
-        Fulfilment  = CostDrvDC(WebOrders.val) > packagingCost, outboundShippingCost
+        Advertising = CostMulSM(adVisitors.val) > advertCost  // Driven by CPC
+        Fulfilment  = CostMulDC(WebOrders.val) > packagingCost, outboundShippingCost
         Overheads   = CostAnnGA() > rent, utilities, software, insurance, otherOverhead1, otherOverhead2
         OneOffCosts = CostMthOE() > companySetup, legalFees, otherSetup1
 
@@ -1738,15 +1751,15 @@ Example (before):
 
 FM
     Delivery:
-        DesignCheckHrs = QuantDrv(NewClients.val) > designCheckHrs // Hours per client
-        BuildModelHrs  = QuantDrv(NewClients.val) > buildHrs       // Hours per client
-        FollowupHrs    = QuantDrv(NewClients.val) > followupHrs    // Hours per client
+        DesignCheckHrs = QuantMul(NewClients.val) > designCheckHrs // Hours per client
+        BuildModelHrs  = QuantMul(NewClients.val) > buildHrs       // Hours per client
+        FollowupHrs    = QuantMul(NewClients.val) > followupHrs    // Hours per client
 
 Combined:
 
 FM
     Delivery:
-        ModelHrs = QuantDrv(NewClients.val) > designCheckHrs, buildHrs, followupHrs // Hours per client by task
+        ModelHrs = QuantMul(NewClients.val) > designCheckHrs, buildHrs, followupHrs // Hours per client by task
 
 </combining_objects_with_common_theme>
 
@@ -1761,17 +1774,18 @@ Use this checklist when generating FM Code:
 
 - Set up the boilerplate (Company info & timestamp, Setup, Funding, Results, Dashboard skeleton).
 - Choose only the object types from `<Object_specifications>` that are actually needed.
-- Use the correct object variant for P&L classification (e.g. `CostDrvDC/SM`, `CostAnnGA/SM/RD`, `RevDrvNew`, `RevDrvDel`, etc.).
+- Use the correct object variant for P&L classification, e.g. `CostMulDC/SM`, `CostGA/SM/RD`, `RevMulNew`, `RevMulDel`, etc.
 - Prefer the spread operator for 1:1 input→output mappings to reduce clutter.
 - Prefer object totals; use `Sum()` only across objects or subsets of outputs.
-- Add concise section titles that match the purpose of their objects.
-- Ensure every input from FM objects has the correct attribute (e.g. `.val`); standard outputs `output_*` never have attributes.
-- Ensure each object’s code is entirely on a single line.
+- Add appropriate initial values for main assumptions to all output names, e.g. productRev(price:10)
+- Group related objects into sections.
+- Add concise section titles that match the purpose of their constituent objects.
+- Ensure every input from FM objects has the correct attribute, e.g. `.val`; standard outputs `output_*` never have attributes.
 - Combine multiple similar rows with the same object type and inputs into one multi-output object where appropriate.
 - Order sections according to `<section_order>`.
 - Produce **FM Code only** in your final answer:
   - All content must be inside a single `FM` code block.
-  - Add concise inline `//` comments for each object.
+  - Add concise inline `//` comments for each object describing purpose and assumption units.
   - You may output a brief thinking process enclosed in `<thinking>` tags before the code block.
 
 Create the FM Code for the following startup description:

@@ -52,7 +52,7 @@ export function FinancialsPanel({ financialData, startMonth = 0 }: FinancialsPan
     return (
         <div className="h-full flex flex-col bg-white border-l border-gray-200">
             {/* Header */}
-            <div className="flex-none p-4 border-b border-gray-200 flex justify-between items-center">
+            <div className="flex-none p-4 border-b border-gray-200 flex justify-start gap-8 items-center">
                 <h2 className="text-xl font-bold text-gray-900">Financial Statements</h2>
 
                 {/* View Mode Toggle */}

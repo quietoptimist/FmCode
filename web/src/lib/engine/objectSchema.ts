@@ -653,10 +653,7 @@ export const objectSchema = {
       single: true,
       annual: false,
       monthly: false,
-      dateRange: false,
-      smoothing: false,
-      growth: false,
-      seasonal: false
+      smoothing: false
     },
     channels: {
       val: {
@@ -681,9 +678,7 @@ export const objectSchema = {
             single: true,
             annual: true,
             monthly: true,
-            smoothing: true,
-            growth: true,
-            seasonal: true
+            smoothing: true
           },
           ui: {
             defaultMode: "single"
@@ -699,9 +694,7 @@ export const objectSchema = {
             single: true,
             annual: true,
             monthly: true,
-            smoothing: true,
-            growth: true,
-            seasonal: true
+            smoothing: true
           },
           ui: {
             defaultMode: "single"
@@ -1091,6 +1084,283 @@ export const objectSchema = {
   },
 
   // ============================
+  // FundDebt - Interest only debt funding
+  // ============================
+  FundDebt: {
+    impl: "FundDebt",
+    showMonthlyAssumptions: false,
+    options: {
+      single: true,
+    },
+    channels: {
+      int: {
+        label: "Interest Expense",
+        destinations: ["pnl.interest"]
+      },
+      raised: {
+        label: "Debt Raised",
+        destinations: ["cash.finance.in.debt"]
+      },
+      repaid: {
+        label: "Debt Repaid",
+        destinations: ["cash.finance.out.debtRepay"]
+      },
+      bal: {
+        label: "Debt Balance",
+        destinations: []
+      },
+      debtMove: {
+        label: "Net Debt Movement",
+        destinations: ["balance.liabilities.longTerm.debt"]
+      }
+    },
+    assumptions: {
+      object: [],
+      output: [
+        {
+          name: "startMonth",
+          label: "Start Month",
+          baseType: "number",
+          format: "integer",
+          default: 1,
+          supports: {
+            single: true
+          },
+          ui: {
+            defaultMode: "single"
+          }
+        },
+        {
+          name: "amount",
+          label: "Amount Borrowed",
+          baseType: "number",
+          format: "currency",
+          default: 0,
+          supports: {
+            single: true
+          },
+          ui: {
+            defaultMode: "single"
+          }
+        },
+        {
+          name: "rate",
+          label: "Interest Rate (Monthly)",
+          baseType: "number",
+          format: "percent",
+          default: 0.01,
+          supports: {
+            single: true
+          },
+          ui: {
+            defaultMode: "single"
+          }
+        },
+        {
+          name: "term",
+          label: "Term (Months)",
+          baseType: "number",
+          format: "integer",
+          default: 12,
+          supports: {
+            single: true
+          },
+          ui: {
+            defaultMode: "single"
+          }
+        }
+      ]
+    }
+  },
+
+  // ============================
+  // CapexEquip - Equipment purchase based on demand
+  // ============================
+  CapexEquip: {
+    impl: "CapexEquip",
+    options: {
+      single: true,
+      annual: true,
+      monthly: false,
+      smoothing: true
+    },
+    channels: {
+      val: {
+        label: "Capex Spend",
+        destinations: ["cash.invest.out.capex", "balance.assets.fixed.gross"]
+      },
+      depr: {
+        label: "Depreciation",
+        destinations: ["pnl.da", "balance.assets.fixed.accumDepreciation"]
+      },
+      nbuy: {
+        label: "Units Purchased",
+        destinations: []
+      },
+      nown: {
+        label: "Units Owned",
+        destinations: []
+      },
+      nsell: {
+        label: "Units Retired",
+        destinations: []
+      },
+      res: {
+        label: "Residual Value",
+        destinations: ["cash.invest.in.assetSale"]
+      },
+      writeOff: {
+        label: "Asset Disposal (Cost)",
+        destinations: ["balance.assets.fixed.gross"],
+        hidden: true
+      },
+      accumWriteOff: {
+        label: "Asset Disposal (Accum Depr)",
+        destinations: ["balance.assets.fixed.accumDepreciation"],
+        hidden: true
+      }
+    },
+    assumptions: {
+      object: [],
+      output: [
+        {
+          name: "productivity",
+          label: "Productivity (Units/Machine/Month)",
+          baseType: "number",
+          format: "integer",
+          default: 100,
+          supports: {
+            single: true,
+            annual: true,
+            monthly: true,
+            smoothing: true
+          }
+        },
+        {
+          name: "price",
+          label: "Purchase Price",
+          baseType: "number",
+          format: "currency",
+          default: 1000,
+          supports: {
+            single: true,
+            annual: true,
+            monthly: true,
+            smoothing: true
+          }
+        },
+        {
+          name: "lifetime",
+          label: "Useful Life (Months)",
+          baseType: "number",
+          format: "integer",
+          default: 36,
+          supports: {
+            single: true,
+            annual: true,
+            monthly: true,
+            smoothing: true
+          }
+        },
+        {
+          name: "residualValue",
+          label: "Residual Value",
+          baseType: "number",
+          format: "currency",
+          default: 0,
+          supports: {
+            single: true,
+            annual: true,
+            monthly: true,
+            smoothing: true
+          }
+        }
+      ]
+    }
+  },
+
+  // ============================
+  // Spread - spread input over time
+  // ============================
+  Spread: {
+    impl: "Spread",
+    showMonthlyAssumptions: true,
+    options: {
+      single: true,
+      annual: true,
+      monthly: true,
+      smoothing: true
+    },
+    channels: {
+      val: {
+        label: "Value",
+        destinations: []
+      }
+    },
+    assumptions: {
+      object: [],
+      output: [
+        {
+          name: "months",
+          label: "Duration (Months)",
+          baseType: "number",
+          format: "integer",
+          default: 4,
+          supports: {
+            single: true,
+            annual: true,
+            monthly: true,
+            smoothing: true
+          },
+          ui: {
+            defaultMode: "single"
+          }
+        }
+      ]
+    }
+  },
+
+  // ============================
+  // Split - split input across multiple outputs
+  // ============================
+  Split: {
+    impl: "Multiply",
+    showMonthlyAssumptions: true,
+    options: {
+      single: true,
+      annual: true,
+      smoothing: true
+    },
+    channels: {
+      val: {
+        label: "Value",
+        destinations: []
+      }
+    },
+    assumptions: {
+      object: [],
+      output: [
+        {
+          name: "mix",
+          label: "Mix %",
+          baseType: "number",
+          format: "percent",
+          default: 1,
+          supports: {
+            single: true,
+            annual: true,
+            smoothing: true,
+            totals: true
+          },
+          ui: {
+            defaultMode: "single"
+          }
+        }
+      ]
+    }
+  },
+
+  // ============================
   // Sum
   // ============================
   Sum: {
@@ -1152,7 +1422,21 @@ function createVariant(base: any, overrides: any) {
   }
 });
 
+// QuantMulSeas - Seasonal QuantMul
+(objectSchema as any).QuantMulSeas = createVariant(objectSchema.QuantMul, {
+  options: {
+    seasonal: true
+  }
+});
 
+
+
+// RevMulSeas - Seasonal Revenue
+(objectSchema as any).RevMulSeas = createVariant(objectSchema.RevMul, {
+  options: {
+    seasonal: true
+  }
+});
 
 // RevMulNew - New Revenue
 (objectSchema as any).RevMulNew = createVariant(objectSchema.RevMul, {

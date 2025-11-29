@@ -7,7 +7,7 @@ interface ObjectOutputsProps {
     store: Map<string, Float64Array> | null;
     overrides: any;
     months: number;
-    channelDefs?: Record<string, { label: string }>;
+    channelDefs?: Record<string, { label: string; hidden?: boolean }>;
     onOverride: (alias: string, channel: string, month: number, value: number | null) => void;
     objAss?: any; // assumptions for this object
     seasonalEnabled?: boolean;
@@ -30,6 +30,7 @@ export function ObjectOutputs({ aliases, store, overrides, months, channelDefs, 
     const [optionsExpanded, setOptionsExpanded] = useState(false);
     const [showTotals, setShowTotals] = useState(true);
     const [showAssumptions, setShowAssumptions] = useState(true);
+    const [showHidden, setShowHidden] = useState(false);
 
     // Only show totals if there are multiple aliases (otherwise it's just a duplicate row)
     const shouldShowTotals = aliases.length > 1 && showTotals;
@@ -48,8 +49,10 @@ export function ObjectOutputs({ aliases, store, overrides, months, channelDefs, 
     const showSeasonalOption = seasonalEnabled !== undefined && onAssumptionChange && objName && supportsSeasonal && seasonalOptionAvailable;
     const showTotalsOption = aliases.length > 1;
     const showAssumptionsOption = showMonthlyAssumptions;
+    const hasHiddenChannels = channelDefs && Object.values(channelDefs).some(c => c.hidden);
+    const showHiddenOption = hasHiddenChannels;
 
-    const hasOptions = showTotalsOption || showAssumptionsOption || showSeasonalOption;
+    const hasOptions = showTotalsOption || showAssumptionsOption || showSeasonalOption || showHiddenOption;
 
     if (!store) return <div className="p-4 text-gray-400 italic">No results calculated.</div>;
 
@@ -181,6 +184,18 @@ export function ObjectOutputs({ aliases, store, overrides, months, channelDefs, 
                                     </label>
                                 );
                             })()}
+                            {/* Show All Toggle */}
+                            {showHiddenOption && (
+                                <label className="flex items-center gap-1 text-xs font-medium text-gray-600 cursor-pointer select-none" title="Show hidden output channels">
+                                    <input
+                                        type="checkbox"
+                                        checked={showHidden}
+                                        onChange={(e) => setShowHidden(e.target.checked)}
+                                        className="w-3.5 h-3.5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                                    />
+                                    Show All
+                                </label>
+                            )}
                         </>
                     )}
                 </div>
@@ -205,11 +220,11 @@ export function ObjectOutputs({ aliases, store, overrides, months, channelDefs, 
                                     Seasonal %
                                 </td>
                                 {months_names.map((monthName, i) => (
-                                    <td key={i} className="p-1.5 min-w-[80px] text-center border-b border-purple-100 text-xs uppercase tracking-wider font-semibold text-purple-600">
+                                    <td key={i} className="p-1.5 min-w-[60px] text-center border-b border-purple-100 text-xs uppercase tracking-wider font-semibold text-purple-600">
                                         {monthName}
                                     </td>
                                 ))}
-                                <td className="p-1.5 min-w-[80px] text-center border-b border-purple-100 text-xs uppercase tracking-wider font-semibold text-purple-700 bg-purple-100/70">
+                                <td className="p-1.5 min-w-[60px] text-center border-b border-purple-100 text-xs uppercase tracking-wider font-semibold text-purple-700 bg-purple-100/70">
                                     AVG
                                 </td>
                                 {months > 12 && (
@@ -235,7 +250,7 @@ export function ObjectOutputs({ aliases, store, overrides, months, channelDefs, 
                                             {formatName(alias)}
                                         </td>
                                         {months_names.map((_, i) => (
-                                            <td key={i} className="p-1 text-center">
+                                            <td key={i} className="p-1 min-w-[60px] text-center">
                                                 <div className="relative inline-block">
                                                     <input
                                                         type="number"
@@ -247,7 +262,7 @@ export function ObjectOutputs({ aliases, store, overrides, months, channelDefs, 
                                                 </div>
                                             </td>
                                         ))}
-                                        <td className="p-1 text-center bg-purple-100/50">
+                                        <td className="p-1 min-w-[60px] text-center bg-purple-100/50">
                                             <div className="relative inline-block">
                                                 <div className="w-16 p-1.5 pr-4 border border-purple-300 rounded text-sm bg-purple-50 text-right font-semibold text-purple-700">
                                                     {(() => {
@@ -416,6 +431,11 @@ export function ObjectOutputs({ aliases, store, overrides, months, channelDefs, 
                                 if (!isUsed) return null;
                             }
 
+                            // Check hidden property
+                            if (channelDefs?.[channel]?.hidden && !showHidden) {
+                                return null;
+                            }
+
                             // Calculate totals for this channel
                             const channelTotals = new Float64Array(months);
                             for (const alias of aliases) {
@@ -489,7 +509,7 @@ export function ObjectOutputs({ aliases, store, overrides, months, channelDefs, 
                     )}
                 </tbody>
             </table>
-        </div>
+        </div >
     );
 }
 

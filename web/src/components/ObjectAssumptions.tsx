@@ -176,7 +176,7 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
                                     ) : mode === 'annual' ? (
                                         <div className="flex gap-2">
                                             {Array.from({ length: years }).map((_, i) => (
-                                                <div key={i} className="w-20 text-[10px] text-gray-500 uppercase text-center flex justify-center">
+                                                <div key={i} className="w-[76px] flex-shrink-0 text-[10px] text-gray-500 uppercase text-center flex justify-center">
                                                     Y{i + 1}
                                                 </div>
                                             ))}
@@ -185,7 +185,7 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
                                         <div className="flex gap-2">
                                             <div className="w-20 text-[10px] text-gray-500 uppercase text-center flex justify-center">Base (Y1)</div>
                                             {Array.from({ length: years - 1 }).map((_, i) => (
-                                                <div key={i} className="w-20 text-[10px] text-gray-500 uppercase text-center flex justify-center">
+                                                <div key={i} className="w-[76px] flex-shrink-0 text-[10px] text-gray-500 uppercase text-center flex justify-center">
                                                     Gr% (Y{i + 2})
                                                 </div>
                                             ))}
@@ -206,7 +206,6 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
 
                                 for (const [alias, outAss] of Object.entries(objAss.outputs)) {
                                     for (const [fieldName, field] of Object.entries(outAss as any)) {
-                                        if (fieldName === 'startMonth') continue;
                                         // Skip start/end assumptions from main rows - they appear in the date range column
                                         if (fieldName === 'start' || fieldName === 'end') continue;
                                         if (!field || typeof field !== 'object') continue;
@@ -302,6 +301,51 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
                                                     </tr>
                                                 </React.Fragment>
                                             ))}
+
+                                            {/* Totals Row */}
+                                            {firstField?.supports?.totals && (
+                                                <tr className="border-t border-gray-200 bg-gray-50">
+                                                    <td className="px-2 py-1 font-bold text-gray-600 text-xs text-right pr-6 align-middle">
+                                                        TOTAL:
+                                                    </td>
+                                                    <td className="px-2 py-1 align-middle">
+                                                        {mode === 'single' ? (
+                                                            <div className={`w-24 text-right pr-4 font-bold text-sm ${Math.abs(aliasFields.reduce((sum, [_, f]) => sum + (Number(f.raw?.single) || 0), 0) - 1) < 0.001 ? 'text-green-600' : 'text-red-500'}`}>
+                                                                {Math.round(aliasFields.reduce((sum, [_, f]) => sum + (Number(f.raw?.single) || 0), 0) * 100)}%
+                                                            </div>
+                                                        ) : mode === 'annual' ? (
+                                                            <div className="flex gap-2">
+                                                                {Array.from({ length: years }).map((_, i) => {
+                                                                    const total = aliasFields.reduce((sum, [_, f]) => sum + (Number(f.raw?.annual?.[i]) || 0), 0);
+                                                                    return (
+                                                                        <div key={i} className={`w-24 text-right pr-4 font-bold text-sm ${Math.abs(total - 1) < 0.001 ? 'text-green-600' : 'text-red-500'}`}>
+                                                                            {Math.round(total * 100)}%
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        ) : mode === 'growth' ? (
+                                                            <div className="flex gap-2">
+                                                                {/* Base Year */}
+                                                                <div className={`w-24 text-right pr-4 font-bold text-sm ${Math.abs(aliasFields.reduce((sum, [_, f]) => sum + (Number(f.raw?.annual?.[0]) || 0), 0) - 1) < 0.001 ? 'text-green-600' : 'text-red-500'}`}>
+                                                                    {Math.round(aliasFields.reduce((sum, [_, f]) => sum + (Number(f.raw?.annual?.[0]) || 0), 0) * 100)}%
+                                                                </div>
+                                                                {/* Growth Years */}
+                                                                {Array.from({ length: years - 1 }).map((_, i) => {
+                                                                    const total = aliasFields.reduce((sum, [_, f]) => sum + (Number(f.raw?.growth?.[i + 1]) || 0), 0);
+                                                                    return (
+                                                                        <div key={i} className="w-24 text-right pr-4 font-bold text-sm text-gray-600">
+                                                                            {Math.round(total * 100)}%
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        ) : null}
+                                                    </td>
+                                                    {showSmoothing && <td></td>}
+                                                    {showDateRange && <td></td>}
+                                                </tr>
+                                            )}
                                         </React.Fragment>
                                     );
                                 });
@@ -458,14 +502,14 @@ function SingleValueInput({ value, onChange, format, placeholder, showLabel, lab
 
     if (showLabel && label) {
         return (
-            <div className="flex flex-col gap-0.5 w-24">
+            <div className="flex flex-col gap-0.5 w-full">
                 <label className="text-[10px] text-gray-400 uppercase">{label}</label>
                 {wrappedInput}
             </div>
         );
     }
 
-    return <div className="w-24">{wrappedInput}</div>;
+    return <div className="w-full">{wrappedInput}</div>;
 }
 
 function ValueInput({ field, mode, years, showLabels = true, onChange }: { field: any, mode: InputMode, years: number, showLabels?: boolean, onChange: (val: any, subField?: string | null, index?: number | null) => void }) {
@@ -485,14 +529,15 @@ function ValueInput({ field, mode, years, showLabels = true, onChange }: { field
         return (
             <div className="flex gap-2">
                 {Array.from({ length: years }).map((_, i) => (
-                    <SingleValueInput
-                        key={i}
-                        value={field.raw.annual?.[i] ?? null}
-                        onChange={(v) => onChange(v, 'annual', i)}
-                        format={format}
-                        showLabel={showLabels}
-                        label={`Y${i + 1}`}
-                    />
+                    <div key={i} className="w-[76px] flex-shrink-0">
+                        <SingleValueInput
+                            value={field.raw.annual?.[i] ?? null}
+                            onChange={(v) => onChange(v, 'annual', i)}
+                            format={format}
+                            showLabel={showLabels}
+                            label={`Y${i + 1}`}
+                        />
+                    </div>
                 ))}
             </div>
         );
@@ -502,26 +547,29 @@ function ValueInput({ field, mode, years, showLabels = true, onChange }: { field
         return (
             <div className="flex gap-2">
                 {/* Year 1 is Base Value */}
-                <SingleValueInput
-                    value={field.raw.annual?.[0] ?? null}
-                    onChange={(v) => onChange(v, 'annual', 0)}
-                    format={format}
-                    showLabel={showLabels}
-                    label="Base (Y1)"
-                />
+                <div className="w-[76px] flex-shrink-0">
+                    <SingleValueInput
+                        value={field.raw.annual?.[0] ?? null}
+                        onChange={(v) => onChange(v, 'annual', 0)}
+                        format={format}
+                        showLabel={showLabels}
+                        label="Base (Y1)"
+                    />
+                </div>
                 {/* Subsequent years are Growth % */}
                 {Array.from({ length: years - 1 }).map((_, i) => {
                     const yearIndex = i + 1;
                     const growthVal = field.raw.growth?.[yearIndex] ?? 0;
                     return (
-                        <SingleValueInput
-                            key={yearIndex}
-                            value={growthVal}
-                            onChange={(v) => onChange(v, 'growth', yearIndex)}
-                            format="percent" // Growth is always percent
-                            showLabel={showLabels}
-                            label={`Gr% (Y${yearIndex + 1})`}
-                        />
+                        <div key={yearIndex} className="w-[76px] flex-shrink-0">
+                            <SingleValueInput
+                                value={growthVal}
+                                onChange={(v) => onChange(v, 'growth', yearIndex)}
+                                format="percent" // Growth is always percent
+                                showLabel={showLabels}
+                                label={`Gr% (Y${yearIndex + 1})`}
+                            />
+                        </div>
                     );
                 })}
             </div>
