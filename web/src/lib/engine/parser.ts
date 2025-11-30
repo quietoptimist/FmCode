@@ -230,6 +230,9 @@ function parseFM(source) {
   currentSection = null;
   let currentComments = [];
 
+  // Comments belonging to the object currently being buffered
+  let bufferComments = [];
+
   // Re-scan lines for the actual parsing pass
   // We need to handle the "buffer" logic dynamically.
 
@@ -246,12 +249,11 @@ function parseFM(source) {
 
     if (!line) {
       if (buffer) {
-        processBuffer(buffer, bufferStartLine, currentComments);
+        processBuffer(buffer, bufferStartLine, bufferComments);
         buffer = '';
-        currentComments = []; // Comments consumed by the object
-      } else {
-        currentComments = []; // Abandon comments on blank lines (orphaned)
+        bufferComments = []; // Comments consumed
       }
+      currentComments = []; // Abandon comments on blank lines (orphaned)
       continue;
     }
 
@@ -274,9 +276,9 @@ function parseFM(source) {
     // Section
     if (line.match(sectionRe)) {
       if (buffer) {
-        processBuffer(buffer, bufferStartLine, currentComments);
+        processBuffer(buffer, bufferStartLine, bufferComments);
         buffer = '';
-        currentComments = [];
+        bufferComments = [];
       }
       const s = line.match(sectionRe);
       currentSection = { name: s[1], line: lineNo, objects: [] };
@@ -285,7 +287,7 @@ function parseFM(source) {
       continue;
     }
 
-    // Comment
+    // Comment (standalone line)
     if (line.startsWith('//')) {
       currentComments.push(line.substring(2).trim());
       continue;
@@ -294,33 +296,36 @@ function parseFM(source) {
     // Object Start
     if (line.match(/^\s*[A-Za-z][A-Za-z0-9_]*\s*=/)) {
       if (buffer) {
-        processBuffer(buffer, bufferStartLine, currentComments);
-        // Note: currentComments should have been cleared by processBuffer if it used them.
-        // But wait, comments precede the object. 
-        // If we had a buffer, the comments we just collected belong to the NEW object?
-        // No, comments usually immediately precede.
-        // If we are flushing a buffer, that buffer *already* had its comments associated when it started.
-        // So we don't pass `currentComments` to the *old* buffer flush.
-        // We pass `currentComments` to the *new* buffer start.
+        processBuffer(buffer, bufferStartLine, bufferComments);
+        buffer = '';
+        bufferComments = [];
       }
 
       // Start new buffer
-      buffer = line;
+      // Transfer preceding comments to this new object
+      bufferComments = [...currentComments];
+      currentComments = [];
+
       bufferStartLine = lineNo;
-      // We attach the comments we've collected so far to this new object.
-      // Store them in a temp property on the buffer? No, just keep them until flush?
-      // No, if we encounter more comments while building the multi-line object, they are likely inline/assumption comments.
-      // So we should capture the "preceding comments" now.
-      // Let's store them in a side-variable `bufferComments`.
-      // But wait, `processBuffer` needs to know them.
+
+      // Check for trailing comment on this start line
+      const commentIdx = line.indexOf('//');
+      if (commentIdx !== -1) {
+        bufferComments.push(line.substring(commentIdx + 2).trim());
+        buffer = line.substring(0, commentIdx).trim();
+      } else {
+        buffer = line;
+      }
     } else {
       // Continuation
       if (buffer) {
-        // Strip trailing comment
+        // Strip trailing comment from continuation line
         const commentIdx = line.indexOf('//');
         let content = line;
         if (commentIdx !== -1) {
           content = line.substring(0, commentIdx).trim();
+          // Capture the comment!
+          bufferComments.push(line.substring(commentIdx + 2).trim());
         }
         buffer += ' ' + content;
       } else {
@@ -332,7 +337,7 @@ function parseFM(source) {
 
   // Flush final buffer
   if (buffer) {
-    processBuffer(buffer, bufferStartLine, currentComments);
+    processBuffer(buffer, bufferStartLine, bufferComments);
   }
 
   function processBuffer(text, lineNo, comments) {

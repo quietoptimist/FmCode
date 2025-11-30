@@ -49,6 +49,7 @@ I attract customers through my instagram profile, and pay for some Facebook ads.
 
 Currently I only have 2 lamp designs (both large), but let's model large, medium and small categories.
 I make the lamp shades myself on 3d printers. I will need to invest in more printers if volumes grow as I am currently limited to around 50 shades per month.
+The different sizes of lamps will each consume different amounts of filament, but will all have the same electricals.
 Printer capacity is determined by Kg of filament used, as that drives printing time.
 
 I also buy the sockets, cables and plugs from china, one of each per lamp. I assemble them myself.

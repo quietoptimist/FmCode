@@ -58,21 +58,66 @@ export async function POST(req: Request) {
         const readableStream = new ReadableStream({
             async start(controller) {
                 try {
+                    let isThinking = false;
+                    console.log('Starting stream processing...');
+
+                    // Immediate feedback for gpt-5.1 to prevent buffering/latency perception
+                    if (modelId === 'gpt-5.1') {
+                        controller.enqueue(new TextEncoder().encode('<thinking>'));
+                        isThinking = true;
+                    }
+
                     for await (const chunk of stream) {
+                        // console.log('Chunk type:', chunk.type);
                         let content = '';
+                        let reasoning = '';
 
                         // Responses API stream format
                         if (chunk.type === 'response.output_text.delta' && chunk.delta) {
                             content = chunk.delta;
+                        } else if (chunk.type === 'response.output_text.reasoning_delta' && chunk.delta) {
+                            reasoning = chunk.delta;
                         }
                         // Fallback for Chat Completions API format (if used)
                         else if (chunk.choices?.[0]?.delta?.content) {
                             content = chunk.choices[0].delta.content;
                         }
 
+                        // Check for 'reasoning' property in delta (User suggestion)
+                        if (chunk.choices?.[0]?.delta?.reasoning) {
+                            reasoning = chunk.choices[0].delta.reasoning;
+                        }
+                        // Also check reasoning_content as another potential property
+                        else if (chunk.choices?.[0]?.delta?.reasoning_content) {
+                            reasoning = chunk.choices[0].delta.reasoning_content;
+                        }
+                        // Fallback: Check top-level reasoning property (some API versions)
+                        else if ((chunk as any).reasoning) {
+                            reasoning = (chunk as any).reasoning;
+                        }
+
+                        // Handle reasoning stream
+                        if (reasoning) {
+                            if (!isThinking) {
+                                controller.enqueue(new TextEncoder().encode('<thinking>'));
+                                isThinking = true;
+                            }
+                            controller.enqueue(new TextEncoder().encode(reasoning));
+                        }
+
+                        // Handle content stream
                         if (content) {
+                            if (isThinking) {
+                                controller.enqueue(new TextEncoder().encode('</thinking>'));
+                                isThinking = false;
+                            }
                             controller.enqueue(new TextEncoder().encode(content));
                         }
+                    }
+
+                    // Close thinking tag if stream ends while thinking
+                    if (isThinking) {
+                        controller.enqueue(new TextEncoder().encode('</thinking>'));
                     }
                 } catch (e) {
                     console.error('Stream error:', e);
@@ -85,7 +130,10 @@ export async function POST(req: Request) {
 
         return new NextResponse(readableStream, {
             headers: {
-                'Content-Type': 'text/plain; charset=utf-8',
+                'Content-Type': 'text/event-stream; charset=utf-8',
+                'Cache-Control': 'no-cache, no-transform',
+                'X-Accel-Buffering': 'no',
+                'Connection': 'keep-alive',
             },
         });
 

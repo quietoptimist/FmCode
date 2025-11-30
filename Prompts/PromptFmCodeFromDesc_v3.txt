@@ -613,6 +613,9 @@ FM
         CustomersAcquired = QuantSeas() > newCustomers
         RetainedCustomers = SubRetain(newCustomers.val) > customers(churn: 0.1) // Retained customer base churning monthly
 
+Notes:
+- Initial orders from new customers should be handled separately to retained customer orders.
+
 </SubRetain_spec>
 
 
@@ -1277,6 +1280,7 @@ FM
 
 Notes:
 - ObjectNames already expose object-level totals (e.g. `ProductRevenues.val`), so `Sum()` is only needed across **objects** or subsets of outputs.
+- **DO NOT** use `Sum()` to aggregate all **outputNames** from the same object
 
 </Sum_spec>
 
@@ -1801,7 +1805,6 @@ Use this checklist when generating FM Code:
 - Produce **FM Code only** in your final answer:
   - All content must be inside a single `FM` code block.
   - Add concise inline `//` comments for each object describing purpose and assumption units.
-  - You may output a brief thinking process enclosed in `<thinking>` tags before the code block.
 
 N.B. DO NOT add any DashChart or DashTable objects to the FM Code as they are not yet supported. Remove any such objects from your boilerplate for now.
 

@@ -15,26 +15,7 @@ import { FinancialsPanel } from '@/components/FinancialsPanel';
 import { buildFinancialsFromEngine } from '@/lib/engine/buildFinancialsHelper';
 import Link from 'next/link';
 
-const SAMPLE_CODE = `
-CustomerAcquisition:
-  NewCustomers = QuantSeas()               > newOrganic, newPaid  // Forecast number of new customers added per month from organic and paid channels
-  LeadsFromAds = QuantDiv(newPaid.val)     > paidLeads            // Determine how many visitors we need to achieve those new customers using conversion rate
-  AdsExpense   = CostMulSM(paidLeads.val)  > adsCost              // Estimate our marketing spend to generate those leads
-
-CustomerRetention:
-  TiersMix = QuantMul(NewCustomers.val)    > newFree, newPrem, newGold        // Mix of new customers joining each product tier
-  Users    = SubRetain(...TiersMix.val)    > freeUsers, premUsers, goldUsers  // Active users and churning users by product tier
-  Revenues = RevMulDel(...Users.act)       > freeRev, premRev, goldRev        // Revenues we generate from active users on each tier
-  Payments = DelRev(Revenues.rev)          > paid                             // Cash received when users pay us
-
-People:
-  CustomerSupport = StaffDivDC(NewCustomers.val, Users.act) > onboardingTeam, serviceTeam             // Customer support teams for onboarding and in-life assistance
-  CentralTeams    = StaffTeamGA()                           > financeTeam, marketingTeam, otherTeam   // Central team headcounts and salaries
-  Leadership      = StaffRoleGA()                           > CEO, CFO, COO, OtherRole1, OtherRole2   // Key people start dates and salaries
-  
-OperatingCosts:
-  Overheads = CostGA()                     > rent, utilities, insurance, subscriptions, other       // Regular monthly overhead costs
-`;
+const SAMPLE_CODE = ``;
 
 export default function Editor({ params }: { params: { id: string } }) {
     const [code, setCode] = useState(SAMPLE_CODE);
@@ -683,13 +664,23 @@ export default function Editor({ params }: { params: { id: string } }) {
                                         Thinking...
                                     </span>
                                 )}
-                                {thoughts && (
-                                    <span className="text-xs text-gray-500 italic truncate max-w-[500px] animate-pulse">
-                                        {thoughts.split('\n').pop()}
-                                    </span>
-                                )}
                             </div>
                         </div>
+
+                        {/* Reasoning Block */}
+                        {thoughts && (
+                            <div
+                                className="w-full max-h-[5em] overflow-y-auto bg-gray-50 p-2 rounded text-xs font-mono text-gray-600 border border-gray-100"
+                                ref={(el) => {
+                                    if (el) {
+                                        el.scrollTop = el.scrollHeight;
+                                    }
+                                }}
+                            >
+                                <div className="whitespace-pre-wrap">{thoughts}</div>
+                            </div>
+                        )}
+
                         <div className="flex flex-col gap-1 flex-1 min-h-0">
                             <label className="text-sm font-semibold text-gray-600">FM Code</label>
                             <textarea
