@@ -38,7 +38,7 @@ export const objectSchema = {
           label: "Monthly Quantity",
           baseType: "number",
           format: "integer",
-          default: 10,
+          default: 0,
           supports: {
             // modes in dropdown menu with one of them set to true to indicate inital state when model is created
             single: true,
@@ -315,7 +315,7 @@ export const objectSchema = {
           label: "Cost per unit",
           baseType: "number",
           format: "currency",
-          default: 1,
+          default: 5,
           supports: {
             single: true,
             annual: true,
@@ -380,7 +380,7 @@ export const objectSchema = {
           label: "Unit Price",
           baseType: "number",
           format: "currency",
-          default: 100,
+          default: 10,
           supports: {
             single: true,
             annual: true,
@@ -451,7 +451,7 @@ export const objectSchema = {
           label: "Monthly churn rate",
           baseType: "number",
           format: "percent",
-          default: 0.08,
+          default: 0.05,
           supports: {
             single: true,
             annual: true,
@@ -653,7 +653,7 @@ export const objectSchema = {
           name: "churn",
           label: "Term Churn %",
           baseType: "percentage",
-          default: 0.1,
+          default: 0.2,
           description: "Churn rate applied at end of term",
           supports: {
             single: true,
@@ -1174,7 +1174,7 @@ export const objectSchema = {
           label: "Amount",
           baseType: "number",
           format: "currency",
-          default: 100000,
+          default: 50000,
           supports: {
             single: true
           },
@@ -1277,7 +1277,7 @@ export const objectSchema = {
           label: "Term (Months)",
           baseType: "number",
           format: "integer",
-          default: 12,
+          default: 24,
           supports: {
             single: true
           },
@@ -1585,7 +1585,7 @@ export const objectSchema = {
           label: "Duration (Months)",
           baseType: "number",
           format: "integer",
-          default: 4,
+          default: 6,
           supports: {
             single: true,
             annual: true,

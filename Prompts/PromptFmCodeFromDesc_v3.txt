@@ -408,13 +408,16 @@ Higher volume B2C customer acquisition spread evenly:
 
 FM
     CustomerAcquisition:
-        NewUsers = Quant() > organicUsers, paidAdsUsers // Annual new users by source
+        NewUsers = Quant() > organicUsers(value: 100), paidAdsUsers(value: 500) // Annual new users by source
 
 Seasonal customer bookings varying by calendar month:
 
 FM
     Demand:
-        TravelBookings = QuantSeas() > consumerBookings, corporateBookings // Seasonal bookings by segment
+        TravelBookings = QuantSeas() > consumerBookings(value: 100), corporateBookings(value: 500) // Seasonal bookings by segment
+
+Notes:
+- Do not set assumptions when using QuantMth as they are **not** currently supported.
 
 </Quant_spec>
 
