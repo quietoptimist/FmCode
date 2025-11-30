@@ -864,7 +864,7 @@ Assumptions (Parameters):
 - `case` (int): Case pack / order multiple (order step size when above MOQ).
 
 Outputs:
-- One or more outputNames (e.g. `blouses`, `zippers`, `wax`, `wicks`).
+- One or more outputNames (e.g. `blouses`, `zippers`, `wax`, `wicks`), nouns only without suffixes or prefixes.
 
 Attributes (per outputName and object totals):
 - `.cogs`   = cost of goods sold.
@@ -944,7 +944,10 @@ Example:
 
 FM
     Capex:
-        CompanySetupCapex = CapexMth() > officeFurniture(capex: 1000, life: 60), officeFitout(capex: 2000, life: 60) // Capitalised setup spend
+        CompanySetupCapex = CapexMth() > officeFurniture, officeFitout // Capitalised setup spend
+
+Notes / guidance:
+- Do not set assumption values for CapexMth(), as they are currently **not** supported
 
 </CapexMth_spec>
 
@@ -958,6 +961,7 @@ ObjectType: `CapexProj()`
 Description:
 - Models multi-period project capex (stores, factories, housing, ships, etc.).
 - Each project’s spend is spread over months by category; overlapping projects sum together.
+- A series of similar projects (e.g. new stores) are all handled by a single CapexProj, with each outputName representing categories of investment
 
 Inputs:
 - Driven by number of new projects per month (e.g. `newStores.val`, `newProjects.val`).
@@ -981,11 +985,14 @@ Attributes:
 Examples:
 
 FM
-    Capex:
-        HouseScalars = QuantMul(newHouses.val) > houseSizeFactor
-        HouseCapex   = CapexProj(houseSizeFactor.val) > land, foundations, build, interiors
-
-        StoreCapex   = CapexProj(newStores.val) > design, permissions, construction, fitout, equipment
+    CapexNewHouses:
+        NewHouses = Quant() > housesStarted // Number of houses started in each month
+        HouseScalars = QuantMul(housesStarted.val) > houseSizeFactor // Size of houses started in each month
+        HouseCapex   = CapexProj(houseSizeFactor.val) > land, foundations, build, interiors // Categories and timing of Capex for houses started in each month
+FM
+    CapexNewStores:
+        NewStores   = Quant() > storesStarted // Number of stores started in each month
+        StoreCapex  = CapexProj(storesStarted.val) > design, permissions, construction, fitout, equipment // Categories and timing of Capex for stores started in each month
 
 </CapexProj_spec>
 
@@ -1029,7 +1036,7 @@ FM
 
 FM
     Capex:
-        RentalDemand = QuantAnnSeas() > rentalDays
+        RentalDemand = QuantSeas() > rentalDays // Rental days in each season
         CarMix       = Split(rentalDays.val) > economyDays(mix: 0.5), standardDays(mix: 0.4), suvDays(mix: 0.1)
         // We own a mix of cars in the fleet to cover rental days demand for each type of vehicle.
         RentalFleet  = CapexEquip(...CarMix.val) >
@@ -1691,7 +1698,7 @@ FM
     // initial boilerplate
     
     CustomerOrders:
-        WebOrders = QuantAnnSeas() > advertOrders, organicOrders // Orders by source
+        WebOrders = QuantSeas() > advertOrders, organicOrders // Orders by source
         Basket    = QuantDrv(WebOrders.val) > items              // Items per order
 
     SupplyChain:
