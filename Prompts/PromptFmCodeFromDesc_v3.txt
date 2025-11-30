@@ -865,6 +865,7 @@ Assumptions (Parameters):
 
 Outputs:
 - One or more outputNames (e.g. `blouses`, `zippers`, `wax`, `wicks`), nouns only without suffixes or prefixes.
+- Do **not** include words like "supply", "orders", "inventory" etc. in outputNames, as the object will add those automatically. Use the item name only (nouns)
 
 Attributes (per outputName and object totals):
 - `.cogs`   = cost of goods sold.
