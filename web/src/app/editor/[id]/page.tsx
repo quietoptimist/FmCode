@@ -539,8 +539,8 @@ export default function Editor({ params }: { params: { id: string } }) {
             const supportsDateRange = outputFields.some((f: any) => f.supports?.dateRange);
 
             // Calculate needed width
-            // Label (160) + Value (Years * 88) + Smooth (80) + DateRange (150) + Padding (80)
-            let needed = 160 + (modelYears * 88) + 80;
+            // Label (160) + Value (Years * 88) + Smooth (80) + DateRange (150) + Padding (40)
+            let needed = 160 + (modelYears * 88) + 40;
             if (supportsSmoothing) needed += 80;
             if (supportsDateRange) needed += 150;
 
@@ -552,7 +552,7 @@ export default function Editor({ params }: { params: { id: string } }) {
 
 
     return (
-        <main className="flex min-h-screen flex-col items-center bg-gray-50 text-black">
+        <main className="flex min-h-screen flex-col bg-gray-50 text-black">
             <div className="w-full sticky top-0 z-50 bg-gray-50/95 backdrop-blur border-b border-gray-200 px-4 py-3 flex justify-start gap-8 items-center mb-4 shadow-sm">
                 <div className="flex items-center gap-4">
                     <button
@@ -715,10 +715,10 @@ export default function Editor({ params }: { params: { id: string } }) {
             {viewMode === 'model' && (
                 <>
 
-                    <div className="w-full flex flex-col gap-4 pb-20 px-4">
+                    <div className="w-full flex flex-col gap-4 pb-20 pl-8 pr-4 overflow-x-hidden">
                         <div className="flex gap-4">
                             {/* Main Content */}
-                            <div className="flex-1 flex flex-col gap-4">
+                            <div className="flex-1 flex flex-col gap-4 min-w-0">
                                 {result?.ast?.objects && assumptions ? (
                                     result.ast.objects.map((obj: any, index: number) => {
                                         const objName = obj.name;
@@ -730,7 +730,7 @@ export default function Editor({ params }: { params: { id: string } }) {
                                         const showSection = obj.section && (!prevObj || obj.section !== prevObj.section);
 
                                         return (
-                                            <div key={objName} className="flex flex-col">
+                                            <div key={objName} className="flex flex-col min-w-0">
                                                 {(!assumptions[objName]) ? null : (
                                                     <>
                                                         {showSection && (
@@ -738,10 +738,10 @@ export default function Editor({ params }: { params: { id: string } }) {
                                                                 <h2 className="text-4xl font-bold text-blue-600">{formatName(obj.section)}</h2>
                                                             </div>
                                                         )}
-                                                        <div className={`flex flex-col lg:flex-row gap-3 border-b border-gray-200 pb-4 ${obj.section ? 'ml-8' : ''}`}>
+                                                        <div className={`flex flex-row gap-3 border-b border-gray-200 pb-4 min-w-0 ${obj.section ? 'pl-8' : ''}`}>
                                                             <div
                                                                 className="flex-none pl-2 overflow-x-auto"
-                                                                style={{ width: `${assumptionsWidth}px` }}
+                                                                style={{ width: `${assumptionsWidth}px`, maxWidth: '45vw' }}
                                                             >
                                                                 <ObjectAssumptions
                                                                     objName={objName}
