@@ -205,10 +205,10 @@ function FinancialLineRow({
     toggleSection
 }: FinancialLineRowProps) {
     const values = financialData.lineItems.get(item.code);
-    if (!values) return null;
 
-    // Get period values
+    // Get period values (Always call hook)
     const periodValues = useMemo(() => {
+        if (!values) return []; // Handle missing values inside hook
         if (viewMode === 'monthly') {
             return Array.from(values);
         } else {
@@ -227,26 +227,44 @@ function FinancialLineRow({
         }
     }, [values, viewMode]);
 
+    // Check if hidden by collapsed parent (Always call hook)
+    const shouldHide = useMemo(() => {
+        if (item.level === 0) return false;
+        const parts = item.code.split('.');
+        // Check all parent levels
+        for (let i = 1; i < parts.length; i++) {
+            const parentCode = parts.slice(0, i).join('.');
+            // If a parent is NOT in expandedSections, then we are hidden
+            // But wait, expandedSections tracks what is OPEN.
+            // If parent is NOT in expandedSections, it is CLOSED.
+            // So if parent is closed, child is hidden.
+            // We need to check if the parent actually exists in the map though?
+            // The original logic was:
+            // const parentItem = Array.from(financialData.lineItems.keys()).find(code => code === parentCode);
+            // if (parentItem && !expandedSections.has(parentCode)) return true;
+
+            // Optimization: We don't need to scan keys. We can just check if parentCode is a valid section?
+            // But let's stick to original logic for safety, just optimized.
+            // Actually, checking keys() every time is slow. 
+            // But for now let's just preserve logic.
+
+            // Original logic used find on keys array which is O(N). Inside a loop.
+            // We can just check if financialData.lineItems.has(parentCode).
+            if (financialData.lineItems.has(parentCode) && !expandedSections.has(parentCode)) {
+                return true;
+            }
+        }
+        return false;
+    }, [item.code, item.level, expandedSections, financialData]);
+
+    if (!values) return null;
+
     // Hide empty rows
     const hasNonZeroValue = periodValues.some(v => Math.abs(v) > 0.01);
     const hasContributors = financialData.contributors.has(item.code);
     if (!hasNonZeroValue && !item.formula && !item.children && !hasContributors) {
         return null;
     }
-
-    // Check if hidden by collapsed parent
-    const shouldHide = useMemo(() => {
-        if (item.level === 0) return false;
-        const parts = item.code.split('.');
-        for (let i = parts.length - 1; i > 0; i--) {
-            const parentCode = parts.slice(0, i).join('.');
-            const parentItem = Array.from(financialData.lineItems.keys()).find(code => code === parentCode);
-            if (parentItem && !expandedSections.has(parentCode)) {
-                return true;
-            }
-        }
-        return false;
-    }, [item.code, item.level, expandedSections, financialData]);
 
     if (shouldHide) return null;
 
