@@ -298,7 +298,7 @@ export const objectSchema = {
       annual: false,
       growth: false,
       monthly: false,
-      dateRange: true,
+      dateRange: false,
       smoothing: true
     },
     channels: {
@@ -430,7 +430,7 @@ export const objectSchema = {
       single: true,
       annual: false,
       monthly: false,
-      dateRange: true,
+      dateRange: false,
       smoothing: true
     },
     channels: {
@@ -496,7 +496,7 @@ export const objectSchema = {
       single: true,
       annual: false,
       monthly: false,
-      dateRange: true,
+      dateRange: false,
       smoothing: true
     },
     channels: {
@@ -567,6 +567,125 @@ export const objectSchema = {
           default: null,
           supports: {
             single: true
+          }
+        }
+      ]
+    }
+  },
+
+
+  // ============================
+  // SubTerm - Term subscriptions
+  // ============================
+  SubTerm: {
+    impl: "SubTerm",
+    showMonthlyAssumptions: false,
+    options: {
+      single: true,
+      annual: false,
+      monthly: false,
+      dateRange: false,
+      smoothing: true,
+      integers: true
+    },
+    inputs: {
+      newUsers: {
+        label: "New Users",
+        type: "series",
+        description: "Number of new users acquired per month"
+      }
+    },
+    channels: {
+      rev: {
+        label: "Revenue",
+        format: "currency",
+        description: "Recognised revenue (P&L)",
+        destinations: ["pnl.revenue.recur"]
+      },
+      act: {
+        label: "Active Contracts",
+        format: "number",
+        description: "Active contracts in month",
+        destinations: []
+      },
+      chu: {
+        label: "Churned Contracts",
+        format: "number",
+        description: "Non-renewing contracts at term end",
+        destinations: []
+      },
+      invoice: {
+        label: "Invoice Value",
+        format: "currency",
+        description: "Invoice value raised in the month",
+        destinations: ["cash.ops.in.sales"]
+      },
+      defer: {
+        label: "Deferred Revenue",
+        format: "currency",
+        description: "Deferred revenue balance at month end",
+        destinations: ["balance.liabilities.current.accrued"]
+      },
+      billnum: {
+        label: "Invoiced Count",
+        format: "number",
+        description: "Number of contracts invoiced in the month",
+        destinations: []
+      }
+    },
+    assumptions: {
+      object: [],
+      output: [
+        {
+          name: "price",
+          label: "Monthly Price",
+          baseType: "currency",
+          default: 10,
+          description: "Revenue per user per month",
+          supports: {
+            single: true,
+            annual: true,
+            monthly: true,
+            smoothing: true
+          }
+        },
+        {
+          name: "churn",
+          label: "Term Churn %",
+          baseType: "percentage",
+          default: 0.1,
+          description: "Churn rate applied at end of term",
+          supports: {
+            single: true,
+            annual: true,
+            monthly: true,
+            smoothing: true
+          }
+        },
+        {
+          name: "term",
+          label: "Term (Months)",
+          baseType: "number",
+          default: 12,
+          description: "Contract term length (months)",
+          supports: {
+            single: true,
+            annual: true,
+            monthly: true,
+            smoothing: true
+          }
+        },
+        {
+          name: "pay",
+          label: "Pay Interval (Months)",
+          baseType: "number",
+          default: 1,
+          description: "Payment interval in months",
+          supports: {
+            single: true,
+            annual: true,
+            monthly: true,
+            smoothing: true
           }
         }
       ]
@@ -714,7 +833,7 @@ export const objectSchema = {
       single: true,
       annual: false,
       monthly: false,
-      dateRange: true,
+      dateRange: false,
       smoothing: true,
       integers: true
     },
@@ -800,7 +919,7 @@ export const objectSchema = {
       single: true,
       annual: false,
       monthly: false,
-      dateRange: true,
+      dateRange: false,
       smoothing: true,
       integers: true
     },
@@ -884,7 +1003,7 @@ export const objectSchema = {
       single: true,
       annual: false,
       monthly: false,
-      dateRange: true,
+      dateRange: false,
       smoothing: true,
       integers: true,
       seasonal: true
@@ -970,7 +1089,7 @@ export const objectSchema = {
       single: true,
       annual: false,
       monthly: false,
-      dateRange: true,
+      dateRange: false,
       smoothing: true,
       integers: true
     },
@@ -1036,9 +1155,6 @@ export const objectSchema = {
     showMonthlyAssumptions: false,
     options: {
       single: true,
-      dateRange: false,
-      smoothing: false,
-      integers: false
     },
     channels: {
       val: {
@@ -1173,6 +1289,170 @@ export const objectSchema = {
     }
   },
 
+
+  // ============================
+  // CapexMth - Monthly Capex Spend
+  // ============================
+  CapexMth: {
+    impl: "CapexMth",
+    showMonthlyAssumptions: false,
+    options: {
+      single: true,
+      annual: false,
+      monthly: false,
+      dateRange: false,
+      smoothing: false,
+      integers: false
+    },
+    channels: {
+      val: {
+        label: "Capex Spend",
+        format: "currency",
+        description: "Monthly capital expenditure",
+        destinations: ["cash.invest.out.capex", "balance.assets.fixed.ppe"]
+      },
+      depr: {
+        label: "Depreciation",
+        format: "currency",
+        description: "Monthly depreciation expense",
+        destinations: ["pnl.da"]
+      }
+    },
+    assumptions: {
+      object: [],
+      output: [
+        {
+          name: "capex",
+          label: "Monthly Capex",
+          baseType: "currency",
+          default: 0,
+          description: "Capital expenditure in this month",
+          supports: {
+            single: true,
+            annual: true,
+            dateRange: true,
+            smoothing: true,
+            integers: true
+          }
+        },
+        {
+          name: "life",
+          label: "Useful Life (Months)",
+          baseType: "number",
+          default: 36,
+          description: "Useful life for depreciation",
+          supports: {
+            single: true,
+            annual: true,
+            smoothing: true,
+            integers: true
+          }
+        }
+      ]
+    }
+  },
+
+
+  // ============================
+  // CapexProj - Project-based Capex
+  // ============================
+  CapexProj: {
+    impl: "CapexProj",
+    showMonthlyAssumptions: false,
+    options: {
+      single: true,
+      annual: false,
+      monthly: false,
+      dateRange: false,
+      smoothing: false,
+      integers: true
+    },
+    inputs: {
+      projects: {
+        label: "New Projects",
+        type: "series",
+        description: "Number of new projects starting per month"
+      }
+    },
+    channels: {
+      val: {
+        label: "Capex Spend",
+        format: "currency",
+        description: "Monthly capital expenditure",
+        destinations: ["cash.invest.out.capex", "balance.assets.fixed.ppe"]
+      },
+      depr: {
+        label: "Depreciation",
+        format: "currency",
+        description: "Monthly depreciation expense",
+        destinations: ["pnl.da"]
+      },
+      proj: {
+        label: "Committed Value",
+        format: "currency",
+        description: "Total committed capex per project start month",
+        destinations: []
+      }
+    },
+    assumptions: {
+      object: [],
+      output: [
+        {
+          name: "capex",
+          label: "Total Capex",
+          baseType: "currency",
+          default: 10000,
+          description: "Total capex per project",
+          supports: {
+            single: true,
+            annual: true,
+            monthly: true,
+            smoothing: true
+          }
+        },
+        {
+          name: "delay",
+          label: "Delay (Months)",
+          baseType: "number",
+          default: 0,
+          description: "Spend start delay relative to project start",
+          supports: {
+            single: true,
+            annual: true,
+            monthly: true,
+            smoothing: true
+          }
+        },
+        {
+          name: "span",
+          label: "Span (Months)",
+          baseType: "number",
+          default: 1,
+          description: "Duration of spend spreading (>= 1)",
+          supports: {
+            single: true,
+            annual: true,
+            monthly: true,
+            smoothing: true
+          }
+        },
+        {
+          name: "life",
+          label: "Useful Life (Months)",
+          baseType: "number",
+          default: 36,
+          description: "Useful life for depreciation",
+          supports: {
+            single: true,
+            annual: true,
+            monthly: true,
+            smoothing: true
+          }
+        }
+      ]
+    }
+  },
+
   // ============================
   // CapexEquip - Equipment purchase based on demand
   // ============================
@@ -1250,7 +1530,7 @@ export const objectSchema = {
           }
         },
         {
-          name: "lifetime",
+          name: "life",
           label: "Useful Life (Months)",
           baseType: "number",
           format: "integer",
@@ -1263,7 +1543,7 @@ export const objectSchema = {
           }
         },
         {
-          name: "residualValue",
+          name: "residual",
           label: "Residual Value",
           baseType: "number",
           format: "currency",
@@ -1359,6 +1639,150 @@ export const objectSchema = {
       ]
     }
   },
+
+
+  // SupplyMths - Supply Chain with Lead Times and MOQs
+  SupplyMths: {
+    impl: "SupplyMths",
+    showMonthlyAssumptions: false,
+    options: {
+      single: true,
+      annual: false,
+      monthly: false,
+      dateRange: false,
+      smoothing: false,
+      integers: true
+    },
+    inputs: {
+      demand: {
+        label: "Monthly Demand",
+        type: "series",
+        description: "Monthly demand for the item (units)"
+      }
+    },
+    channels: {
+      cogs: {
+        label: "COGS",
+        format: "currency",
+        description: "Cost of Goods Sold",
+        destinations: ["pnl.cogs.direct"]
+      },
+      cost: {
+        label: "Cash Outflow",
+        format: "currency",
+        description: "Cash outflow for purchases",
+        destinations: ["cash.ops.out.cogs"]
+      },
+      nsell: {
+        label: "Units Sold",
+        format: "number",
+        description: "Units sold (capped by inventory)",
+        destinations: []
+      },
+      nbuy: {
+        label: "Units Ordered",
+        format: "number",
+        description: "Units ordered",
+        destinations: []
+      },
+      nrec: {
+        label: "Units Received",
+        format: "number",
+        description: "Units received into inventory",
+        destinations: []
+      },
+      ninvent: {
+        label: "Ending Inventory (Units)",
+        format: "number",
+        description: "Units in inventory at month end",
+        destinations: []
+      },
+      prepay: {
+        label: "Prepayments",
+        format: "currency",
+        description: "Value of orders placed but not yet received",
+        destinations: ["balance.assets.current.other"]
+      },
+      invent: {
+        label: "Inventory Value",
+        format: "currency",
+        description: "Value of inventory at month end",
+        destinations: ["balance.assets.current.inventory"]
+      }
+    },
+    assumptions: {
+      object: [],
+      output: [
+        {
+          name: "inventory",
+          label: "Target Inv (Months)",
+          baseType: "percentage",
+          default: 0.5,
+          description: "Target inventory level as months of forward demand coverage",
+          supports: {
+            single: true,
+            annual: true,
+            monthly: true,
+            smoothing: true
+          }
+        },
+        {
+          name: "cost",
+          label: "Unit Cost",
+          baseType: "currency",
+          default: 5,
+          description: "Cost per unit",
+          supports: {
+            single: true,
+            annual: true,
+            monthly: true,
+            smoothing: true
+          }
+        },
+        {
+          name: "leadTime",
+          label: "Lead Time (Months)",
+          baseType: "number",
+          default: 1,
+          description: "Lead time in months (>= 1)",
+          supports: {
+            single: true,
+            annual: true,
+            monthly: true,
+            smoothing: true
+          }
+        },
+        {
+          name: "moq",
+          label: "MOQ",
+          baseType: "number",
+          default: 10,
+          description: "Minimum Order Quantity",
+          supports: {
+            single: true,
+            annual: true,
+            monthly: true,
+            smoothing: true
+          }
+        },
+        {
+          name: "case",
+          label: "Case Size",
+          baseType: "number",
+          default: 5,
+          description: "Order multiple (step size)",
+          supports: {
+            single: true,
+            annual: true,
+            monthly: true,
+            smoothing: true
+          }
+        }
+      ]
+    }
+
+  },
+
 
   // ============================
   // Sum
@@ -1734,15 +2158,11 @@ function createVariant(base: any, overrides: any) {
 
 
 
-// SubTerm - Term subscriptions (placeholder)
-// This is just a temporary placeholder to provide a valid name, but the term functionality hasn't been implemented.
-(objectSchema as any).SubTerm = createVariant(objectSchema.SubMth, {});
-
 // SubTermDel - Term subscriptions with delayed payment
-(objectSchema as any).SubTermDel = createVariant(objectSchema.SubMth, {
+(objectSchema as any).SubTermDel = createVariant(objectSchema.SubTerm, {
   channels: {
-    rev: {
-      destinations: ["pnl.revenue.recur", "balance.assets.current.ar"]
+    invoice: {
+      destinations: ["balance.assets.current.ar"]
     }
   }
 });

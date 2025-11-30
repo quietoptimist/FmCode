@@ -537,6 +537,7 @@ Inputs:
 Assumptions (Parameters):
 - `churn` (number): Term-end churn % per tier.
 - `term` (number): Contract term length (months) per tier.
+- `pay` (number): Payment interval (months) per tier.
 - `price` (number): Price per term (revenue recognised straight-line over term).
 
 Outputs:
@@ -872,7 +873,7 @@ Attributes (per outputName and object totals):
 - `.prepay` = prepayments for orders not yet received.
 - `.invent` = inventory value at month end.
 
-Examples (finished goods):
+Example with finished goods:
 
 FM
     Demand:
@@ -890,8 +891,22 @@ FM
     Revenues:
         Revenues = RevDrv(...ProductsSold.val) > blousesRev(price: 30), shortsRev(price: 25), sweatersRev(price: 50) // Revenues are driven by sales volumes
 
-Notes:
-- Use either `SupplyMths()` **or** `CostMulDC()` for COGS, not both.
+Example with products made from raw materials or components:
+
+FM
+    Demand:
+        ProductsSold    = Split(items.val)                      => smallCandles, mediumCandles, largeCandles    // Mix of demand by product
+
+    SupplyChain:
+        // Bills of Material per component (units of components or materials per finished unit)
+        WaxReq          = QuantDrv(...ProductsSold.val)         => smallWaxKg, mediumWaxKg, largeWaxKg   // Consumption based on a material quantity (kg of wax) needed per product
+        WickReq         = QuantDrv(...ProductsSold.val)         => smallWickM, mediumWickM, largeWickM  // Consumption based on a material quantity (metres of wick) needed per product
+
+        // Supplier orders and COGS
+        Materials       = SupplyMths(WaxReq.val, WickReq.val, items.val) => wax, wicks, boxes    // Purchase materials & components based on total demand for each and lead times/MOQs/case sizes
+
+Notes / guidance:
+- Use either `SupplyMths()` **or** `CostMulDC()` for COGS, not both. Use SupplyMths() when leadtimes > 1 month are mentioned.
 - `CostMulDC()` may still be needed for fees (card, platform, fulfilment, etc.).
 
 </SupplyMths_spec>
@@ -912,7 +927,7 @@ Inputs:
 
 Assumptions (Parameters):
 - `capex` (number): Capex in first month.
-- `lifetime` (int): Months asset typically lasts before being replaced.
+- `life` (int): Months asset typically lasts before being replaced.
 
 Outputs:
 - One or more outputNames (e.g. `officeFurniture`, `officeFitout`).
@@ -926,7 +941,7 @@ Example:
 
 FM
     Capex:
-        CompanySetupCapex = CapexMth() > officeFurniture(capex: 1000, lifetime: 60), officeFitout(capex: 2000, lifetime: 60) // Capitalised setup spend
+        CompanySetupCapex = CapexMth() > officeFurniture(capex: 1000, life: 60), officeFitout(capex: 2000, life: 60) // Capitalised setup spend
 
 </CapexMth_spec>
 
@@ -942,17 +957,17 @@ Description:
 - Each project’s spend is spread over months by category; overlapping projects sum together.
 
 Inputs:
-- Single input (e.g. `newStores.val`, `newProjects.val`) representing projects started per month.
-- Inputs can be scaled (e.g. 1.5 = 150% of baseline size).
+- Driven by number of new projects per month (e.g. `newStores.val`, `newProjects.val`).
+- Inputs can be scaled (e.g. 1.5 = 150% of baseline size) with an intermediate step.
 
-Assumptions:
-- Spend profile over months relative to start (per category).
-- Baseline cost per project by category.
-- Inflation over time.
-- Lifetime (months) per category for depreciation.
+Assumptions (Parameters):
+- `capex` (number): Total capex per project spend category.
+- `delay` (integer): Spend starts this number of months relative to project start month.
+- `span` (integer): Duration of project that capitalised spend is spread over.
+- `life` (int): Months asset typically lasts before being replaced.
 
 Outputs:
-- One or more outputNames (e.g. `design`, `permissions`, `construction`, `fitout`, `equipment`).
+- One or more outputNames as spend categories(e.g. `design`, `permissions`, `construction`, `fitout`, `equipment`).
 
 Attributes:
 - `.val`   = monthly capex spend (sum of overlapping projects).
@@ -988,8 +1003,8 @@ Inputs:
 Assumptions (Parameters):
 - `productivity` (int): Units per machine per month.
 - `price` (int): Purchase price.
-- `lifetime` (int): Months.
-- `residualValue` (number): Residual value at disposal.
+- `life` (int): Months.
+- `residual` (number): Residual value at disposal.
 
 Outputs:
 - One or more outputNames (e.g. `mouldingMachines`, `assemblyRobots`, `packagingLines`, `cars`).
@@ -1007,7 +1022,7 @@ Examples:
 FM
     Capex:
         FactoryEquip = CapexEquip(widgetDemand.val) > mouldingMachines, assemblyRobots, packagingLines
-        RentalFleet  = CapexEquip(rentalDays.val) > cars(productivity: 10, price: 10000, lifetime: 60, residualValue: 1000)
+        RentalFleet  = CapexEquip(rentalDays.val) > cars(productivity: 10, price: 10000, life: 60, residual: 1000)
 
 FM
     Capex:
@@ -1015,9 +1030,9 @@ FM
         CarMix       = Split(rentalDays.val) > economyDays(mix: 0.5), standardDays(mix: 0.4), suvDays(mix: 0.1)
         // We own a mix of cars in the fleet to cover rental days demand for each type of vehicle.
         RentalFleet  = CapexEquip(...CarMix.val) >
-            economyCars(productivity: 25, price: 10000, lifetime: 60, residualValue: 1000),
-            standardCars(productivity: 22, price: 20000, lifetime: 60, residualValue: 2000),
-            suvCars(productivity: 20, price: 30000, lifetime: 60, residualValue: 3000)
+            economyCars(productivity: 25, price: 10000, life: 60, residual: 1000),
+            standardCars(productivity: 22, price: 20000, life: 60, residual: 2000),
+            suvCars(productivity: 20, price: 30000, life: 60, residual: 3000)
 
 </CapexEquip_spec>
 

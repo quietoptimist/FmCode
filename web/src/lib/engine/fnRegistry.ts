@@ -333,6 +333,122 @@ export const fnRegistry = {
     };
   },
 
+
+  // ==================================
+  // SubTerm — Term subscriptions with periodic payments and term-end churn
+  // ==================================
+  SubTerm(ctx, inputs, cfg) {
+    const months = ctx.months;
+    const alias = (cfg.outputNames && cfg.outputNames[0]) ? cfg.outputNames[0] : "val";
+    const outAss = cfg.output || {};
+
+    // Helper to get value for month m
+    const getValue = (source, m, defaultVal) => {
+      if (!source) return defaultVal;
+      const val = source.value;
+      if (val instanceof Float64Array || Array.isArray(val)) {
+        return val[m] !== undefined ? val[m] : defaultVal;
+      }
+      return val;
+    };
+
+    // Inputs
+    const newUsers = inputs[0] || new Float64Array(months).fill(0);
+
+    // Outputs
+    const rev = new Float64Array(months);
+    const act = new Float64Array(months);
+    const chu = new Float64Array(months);
+    const invoice = new Float64Array(months);
+    const defer = new Float64Array(months);
+    const billnum = new Float64Array(months);
+
+    // Track active cohorts: { startMonth: number; units: number; term: number; pay: number; price: number; churn: number }
+    let cohorts: { startMonth: number; units: number; term: number; pay: number; price: number; churn: number }[] = [];
+
+    let currentDeferred = 0;
+
+    for (let m = 0; m < months; m++) {
+      // 1. Add New Users
+      const added = newUsers[m];
+      if (added > 0) {
+        const term = Math.max(1, Math.round(getValue(outAss.term, m, 12)));
+        const pay = Math.max(1, Math.round(getValue(outAss.pay, m, 1)));
+        const price = getValue(outAss.price, m, 10);
+        const churn = getValue(outAss.churn, m, 0.1);
+
+        cohorts.push({
+          startMonth: m,
+          units: added,
+          term: term,
+          pay: pay,
+          price: price,
+          churn: churn
+        });
+      }
+
+      // 2. Process Cohorts
+      let activeUsers = 0;
+      let churnedUsers = 0;
+      let revenue = 0;
+      let invoiceIn = 0;
+      let billedCount = 0;
+
+      const nextCohorts = [];
+      for (const cohort of cohorts) {
+        const age = m - cohort.startMonth;
+
+        // Check for Renewal / Churn
+        // Churn happens at end of term (e.g. month 12 for 12-month term)
+        if (age > 0 && age % cohort.term === 0) {
+          const churned = cohort.units * cohort.churn;
+          cohort.units -= churned;
+          churnedUsers += churned;
+        }
+
+        if (cohort.units > 0.000001) { // Keep if significant
+          activeUsers += cohort.units;
+
+          // Revenue Recognition (Monthly)
+          revenue += cohort.units * cohort.price;
+
+          // Billing / Cash Collection
+          // Bill at start (age=0) and then every 'pay' months.
+          if (age % cohort.pay === 0) {
+            const billAmount = cohort.units * cohort.price * cohort.pay;
+            invoiceIn += billAmount;
+            billedCount += cohort.units;
+          }
+
+          nextCohorts.push(cohort);
+        }
+      }
+      cohorts = nextCohorts;
+
+      // 3. Update Outputs
+      rev[m] = revenue;
+      act[m] = activeUsers;
+      chu[m] = churnedUsers;
+      invoice[m] = invoiceIn;
+      billnum[m] = billedCount;
+
+      // 4. Deferred Revenue
+      // DefRev[m] = DefRev[m-1] + Cash[m] - Revenue[m]
+      currentDeferred += (invoiceIn - revenue);
+      defer[m] = currentDeferred;
+    }
+
+    return {
+      [alias]: rev,
+      rev,
+      act,
+      chu,
+      invoice,
+      defer,
+      billnum
+    };
+  },
+
   // ==================================
   // delay inputs
   // ==================================
@@ -552,8 +668,172 @@ export const fnRegistry = {
     };
   },
 
+
   // ==================================
-  // CapexEquip - Equipment purchase based on demand
+  // CapexMth — Monthly Capex Spend and Depreciation
+  // ==================================
+  CapexMth(ctx, inputs, cfg) {
+    const months = ctx.months;
+    const alias = (cfg.outputNames && cfg.outputNames[0]) ? cfg.outputNames[0] : "val";
+    const outAss = cfg.output || {};
+
+    // Helper to get value for month m
+    const getValue = (source, m, defaultVal) => {
+      if (!source) return defaultVal;
+      const val = source.value;
+      if (val instanceof Float64Array || Array.isArray(val)) {
+        return val[m] !== undefined ? val[m] : defaultVal;
+      }
+      return val;
+    };
+
+    // Outputs
+    const val = new Float64Array(months); // Spend
+    const depr = new Float64Array(months); // Depreciation
+
+    // Track active cohorts: { amount, life, age }
+    let cohorts: { amount: number; life: number; age: number }[] = [];
+
+    for (let m = 0; m < months; m++) {
+      const spend = getValue(outAss.capex, m, 0);
+      const life = Math.max(1, Math.round(getValue(outAss.life, m, 36)));
+
+      // 1. Record Spend
+      val[m] = spend;
+
+      // 2. Add new cohort if spend > 0
+      if (spend !== 0) {
+        cohorts.push({
+          amount: spend,
+          life: life,
+          age: 0
+        });
+      }
+
+      // 3. Calculate Depreciation
+      let monthlyDepr = 0;
+      // Filter out expired cohorts in place or create new list
+      const nextCohorts = [];
+      for (const cohort of cohorts) {
+        if (cohort.age < cohort.life) {
+          const deprPerMonth = cohort.amount / cohort.life;
+          monthlyDepr += deprPerMonth;
+
+          cohort.age++;
+          if (cohort.age < cohort.life) {
+            nextCohorts.push(cohort);
+          }
+        }
+      }
+      cohorts = nextCohorts;
+
+      depr[m] = monthlyDepr;
+    }
+
+    return {
+      [alias]: val,
+      val,
+      depr
+    };
+  },
+
+
+  // ==================================
+  // CapexProj — Project-based Capex with Spreading and Depreciation
+  // ==================================
+  CapexProj(ctx, inputs, cfg) {
+    const months = ctx.months;
+    const alias = (cfg.outputNames && cfg.outputNames[0]) ? cfg.outputNames[0] : "val";
+    const outAss = cfg.output || {};
+
+    // Helper to get value for month m
+    const getValue = (source, m, defaultVal) => {
+      if (!source) return defaultVal;
+      const val = source.value;
+      if (val instanceof Float64Array || Array.isArray(val)) {
+        return val[m] !== undefined ? val[m] : defaultVal;
+      }
+      return val;
+    };
+
+    // Inputs
+    const projects = inputs[0] || new Float64Array(months).fill(0);
+
+    // Outputs
+    const val = new Float64Array(months); // Spend
+    const depr = new Float64Array(months); // Depreciation
+    const proj = new Float64Array(months); // Committed Value
+
+    // Track active cohorts for depreciation: { amount, life, age }
+    let cohorts: { amount: number; life: number; age: number }[] = [];
+
+    for (let m = 0; m < months; m++) {
+      // 1. Process New Projects
+      const newProjects = projects[m];
+      if (newProjects > 0) {
+        const totalCapex = getValue(outAss.capex, m, 10000);
+        const delay = Math.round(getValue(outAss.delay, m, 0));
+        const span = Math.max(1, Math.round(getValue(outAss.span, m, 1)));
+
+        // Record committed value
+        proj[m] += newProjects * totalCapex;
+
+        // Spread spend
+        const monthlySpend = (newProjects * totalCapex) / span;
+        const startMonth = m + delay;
+        const endMonth = startMonth + span;
+
+        for (let i = startMonth; i < endMonth; i++) {
+          if (i < months && i >= 0) {
+            val[i] += monthlySpend;
+          }
+        }
+      }
+    }
+
+    // 2. Calculate Depreciation (Cohort Method on Total Monthly Spend)
+    // We iterate months again to process the aggregated spend 'val'
+    for (let m = 0; m < months; m++) {
+      const spend = val[m];
+      // Use life assumption from current month for new spend
+      const life = Math.max(1, Math.round(getValue(outAss.life, m, 36)));
+
+      // Add new cohort if spend > 0
+      if (spend > 0) {
+        cohorts.push({
+          amount: spend,
+          life: life,
+          age: 0
+        });
+      }
+
+      // Calculate Depreciation
+      let monthlyDepr = 0;
+      const nextCohorts = [];
+      for (const cohort of cohorts) {
+        if (cohort.age < cohort.life) {
+          const deprPerMonth = cohort.amount / cohort.life;
+          monthlyDepr += deprPerMonth;
+
+          cohort.age++;
+          if (cohort.age < cohort.life) {
+            nextCohorts.push(cohort);
+          }
+        }
+      }
+      cohorts = nextCohorts;
+
+      depr[m] = monthlyDepr;
+    }
+
+    return {
+      [alias]: val,
+      val,
+      depr,
+      proj
+    };
+  },
+
   // ==================================
   CapexEquip(ctx, inputs, cfg) {
     const months = ctx.months;
@@ -562,8 +842,8 @@ export const fnRegistry = {
     // Assumptions
     const productivity = outAss.productivity ? outAss.productivity.value : new Float64Array(months).fill(100);
     const price = outAss.price ? outAss.price.value : new Float64Array(months).fill(1000);
-    const lifetime = outAss.lifetime ? outAss.lifetime.value : new Float64Array(months).fill(36);
-    const residualValue = outAss.residualValue ? outAss.residualValue.value : new Float64Array(months).fill(0);
+    const life = outAss.life ? outAss.life.value : new Float64Array(months).fill(36);
+    const residual = outAss.residual ? outAss.residual.value : new Float64Array(months).fill(0);
 
     // Input: Demand
     const demand = inputs[0] || new Float64Array(months).fill(0);
@@ -577,24 +857,24 @@ export const fnRegistry = {
     const writeOff = new Float64Array(months);
     const accumWriteOff = new Float64Array(months);
 
-    // Track active cohorts: { amount, age, price, lifetime, residual }
-    let cohorts: { amount: number; age: number; price: number; lifetime: number; residual: number }[] = [];
+    // Track active cohorts: { amount, age, price, life, residual }
+    let cohorts: { amount: number; age: number; price: number; life: number; residual: number }[] = [];
 
     for (let m = 0; m < months; m++) {
       const mProductivity = productivity[m];
       const mPrice = price[m];
-      const mLifetime = Math.max(1, Math.round(lifetime[m]));
-      const mResidual = residualValue[m];
+      const mLife = Math.max(1, Math.round(life[m]));
+      const mResidual = residual[m];
       const mDemand = demand[m];
 
       // 1. Retire expired equipment
       // Check if any cohort reached its lifetime
-      // Note: We increment age at the end of the month, so check age >= lifetime
+      // Note: We increment age at the end of the month, so check age >= life
       const activeCohorts = [];
       let currentUnits = 0;
 
       for (const cohort of cohorts) {
-        if (cohort.age >= cohort.lifetime) {
+        if (cohort.age >= cohort.life) {
           // Retire
           nsell[m] += cohort.amount;
           res[m] += cohort.amount * cohort.residual; // Use cohort's residual expectation? Or current? Usually original expectation or market. Using cohort's.
@@ -626,7 +906,7 @@ export const fnRegistry = {
           amount: buyAmount,
           age: 0,
           price: mPrice,
-          lifetime: mLifetime,
+          life: mLife,
           residual: mResidual
         });
         currentUnits += buyAmount;
@@ -635,11 +915,11 @@ export const fnRegistry = {
       nown[m] = currentUnits;
 
       // 4. Calculate Depreciation
-      // Straight line: (Price - Residual) / Lifetime
+      // Straight line: (Price - Residual) / Life
       let monthlyDepr = 0;
       for (const cohort of cohorts) {
-        if (cohort.age < cohort.lifetime) {
-          const deprPerUnit = (cohort.price - cohort.residual) / cohort.lifetime;
+        if (cohort.age < cohort.life) {
+          const deprPerUnit = (cohort.price - cohort.residual) / cohort.life;
           monthlyDepr += cohort.amount * deprPerUnit;
         }
       }
@@ -878,4 +1158,160 @@ export const fnRegistry = {
   Setup(ctx) {
     return { val: new Float64Array(ctx.months) };
   },
+
+  // ==================================
+  // SupplyMths — Supplier purchasing with lead times, MOQs, and inventory targets
+  // ==================================
+  SupplyMths(ctx, inputs, cfg) {
+    const months = ctx.months;
+    const alias = (cfg.outputNames && cfg.outputNames[0]) ? cfg.outputNames[0] : "val";
+    const outAss = cfg.output || {};
+
+    // Assumptions
+    const inventoryTargetMonths = outAss.inventory ? outAss.inventory.value : new Float64Array(months).fill(1);
+    const unitCost = outAss.cost ? outAss.cost.value : new Float64Array(months).fill(0);
+
+    // Helper to get value for month m, handling both scalar and array
+    const getValue = (source, m, defaultVal) => {
+      if (!source) return defaultVal;
+      const val = source.value;
+      if (val instanceof Float64Array || Array.isArray(val)) {
+        return val[m] !== undefined ? val[m] : defaultVal;
+      }
+      return val;
+    };
+
+    // Inputs
+    const demand = inputs[0] || new Float64Array(months).fill(0);
+
+    // Outputs
+    const cogs = new Float64Array(months);
+    const cost = new Float64Array(months); // Cash outflow
+    const nsell = new Float64Array(months);
+    const nbuy = new Float64Array(months); // Orders placed
+    const nrec = new Float64Array(months); // Orders received
+    const ninvent = new Float64Array(months); // Ending inventory units
+    const prepay = new Float64Array(months); // Prepayments
+    const invent = new Float64Array(months); // Inventory value
+
+    let currentInventory = 0;
+    // Track pending receipts: map of month -> quantity
+    const pendingReceipts = new Float64Array(months).fill(0);
+
+    for (let m = 0; m < months; m++) {
+      // 1. Receive goods ordered previously
+      const received = pendingReceipts[m];
+      nrec[m] = received;
+      currentInventory += received;
+
+      // 2. Fulfill demand
+      const demandVal = demand[m];
+      const sold = Math.min(currentInventory, demandVal);
+      nsell[m] = sold;
+      currentInventory -= sold;
+
+      // 3. Calculate COGS
+      cogs[m] = sold * unitCost[m];
+
+      // 4. Determine Order Requirement
+      const leadTime = getValue(outAss.leadTime, m, 1);
+      const moq = getValue(outAss.moq, m, 0);
+      const caseSize = getValue(outAss.case, m, 1);
+
+      const arrivalMonth = m + leadTime;
+      if (arrivalMonth < months) {
+        // Calculate projected inventory at end of arrivalMonth assuming no new order
+        let projectedInv = currentInventory;
+        for (let i = m; i <= arrivalMonth; i++) {
+          if (i < months) {
+            projectedInv -= demand[i];
+            projectedInv += pendingReceipts[i]; // Existing pending receipts
+          }
+        }
+
+        // Target at arrivalMonth
+        // User request: "Ending Inventory has to be a % of that month's forecast orders"
+        // So Target[arrivalMonth] = Coverage[arrivalMonth] * Demand[arrivalMonth]
+        const targetDemand = demand[arrivalMonth];
+        const targetMonths = getValue(outAss.inventory, arrivalMonth, 1);
+        const target = targetMonths * targetDemand;
+
+        let shortfall = target - projectedInv;
+
+        if (shortfall > 0) {
+          // Calculate Order Quantity
+          let orderQty = shortfall;
+
+          // Apply MOQ
+          if (orderQty < moq) orderQty = moq;
+
+          // Apply Case Size
+          if (caseSize > 0) {
+            orderQty = Math.ceil(orderQty / caseSize) * caseSize;
+          }
+
+          // Place Order
+          nbuy[m] = orderQty;
+          cost[m] = orderQty * unitCost[m]; // Cash outflow now
+
+          // Schedule Receipt
+          pendingReceipts[arrivalMonth] += orderQty;
+        }
+      }
+
+      // 5. Update Ending Inventory
+      ninvent[m] = currentInventory;
+      invent[m] = currentInventory * unitCost[m]; // Value at current cost
+
+      // 6. Prepayments
+      // Prepay[m] = Prepay[m-1] + NewOrderCost - ReceivedOrderCost
+      const prevPrepay = (m > 0) ? prepay[m - 1] : 0;
+      const newOrderCost = cost[m];
+
+      // Received cost: We need to know the cost of the goods received at m.
+      // They were ordered at m - leadTime.
+      // But leadTime might have changed!
+      // This is tricky. We need to track the cost of pending receipts.
+      // Let's use a simpler approximation:
+      // Prepay = Sum of (PendingReceipts[i] * UnitCost[m])? No, cost varies.
+
+      // Robust way: Track pending value.
+      // But pendingReceipts is just quantity.
+      // Let's assume FIFO for cost? Or just track "Value of Pending Receipts".
+      // When we place order, we add (Qty * Cost) to PendingValue.
+      // When we receive order, we remove (Qty * Cost) from PendingValue.
+      // But we need to know the cost of the specific order arriving.
+
+      // Since we can't easily track individual orders in this simple loop structure without a queue,
+      // we will approximate ReceivedCost using the CURRENT unit cost or the cost at (m - currentLeadTime).
+      // Given leadTime can vary, (m - leadTime) is ambiguous (which leadTime?).
+      // Let's use the cost at month m (replacement cost) for simplicity, or
+      // better: assume constant lead time for the *receipt* calculation?
+      // No, let's just use `unitCost[m]` for the received value approximation.
+      // This assumes cost doesn't change wildly during lead time.
+      // Or better: `unitCost[Math.max(0, m - leadTime)]`.
+
+      const estimatedOrderMonth = Math.max(0, m - leadTime);
+      const receivedCost = nrec[m] * unitCost[estimatedOrderMonth];
+
+      prepay[m] = Math.max(0, prevPrepay + newOrderCost - receivedCost);
+    }
+
+    // Apply overrides
+    if (cfg.overrides) {
+      // ...
+    }
+
+    return {
+      [alias]: nbuy,
+      cogs,
+      cost,
+      nsell,
+      nbuy,
+      nrec,
+      ninvent,
+      prepay,
+      invent
+    };
+  }
 };
