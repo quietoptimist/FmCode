@@ -1321,6 +1321,7 @@ Outputs:
 
 Attributes:
 - `.val`   = delayed series.
+- `.cum`   = cumulative delayed series.
 - `.assum` = delay in months (per outputName).
 
 Customer delayed start:

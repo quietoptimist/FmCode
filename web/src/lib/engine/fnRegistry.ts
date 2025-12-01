@@ -468,6 +468,7 @@ export const fnRegistry = {
     const src = inputs[0] || new Float64Array(months).fill(0);
 
     const out = new Float64Array(months);
+    const cum = new Float64Array(months);
 
     for (let m = 0; m < months; m++) {
       // get the delay for THIS month
@@ -478,7 +479,18 @@ export const fnRegistry = {
       }
     }
 
-    return { [outName]: out };
+    // Calculate cumulative
+    let runningTotal = 0;
+    for (let m = 0; m < months; m++) {
+      runningTotal += out[m];
+      cum[m] = runningTotal;
+    }
+
+    return {
+      [outName]: out,
+      val: out,
+      cum: cum
+    };
   },
 
   // ==================================

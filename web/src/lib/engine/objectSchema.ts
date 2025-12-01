@@ -705,6 +705,10 @@ export const objectSchema = {
       val: {
         label: "Delayed value",
         destinations: []
+      },
+      cum: {
+        label: "Cum Value",
+        destinations: []  // Initial setup value
       }
     },
     assumptions: {
