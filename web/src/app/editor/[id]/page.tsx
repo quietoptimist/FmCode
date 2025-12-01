@@ -37,6 +37,18 @@ export default function Editor({ params }: { params: { id: string } }) {
     const [viewMode, setViewMode] = useState<'model' | 'code' | 'financials'>(params.id === 'new' ? 'code' : 'model');
     const router = useRouter();
 
+    const lineNumbersRef = useRef<HTMLDivElement>(null);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+    const handleScroll = () => {
+        if (lineNumbersRef.current && textareaRef.current) {
+            lineNumbersRef.current.scrollTop = textareaRef.current.scrollTop;
+        }
+    };
+
+    const lineCount = code.split('\n').length;
+    const lines = Array.from({ length: lineCount }, (_, i) => i + 1);
+
     // Helper to rehydrate Maps from JSON
     const rehydrateParseResult = (data: any) => {
         if (data.index) {
@@ -683,12 +695,26 @@ export default function Editor({ params }: { params: { id: string } }) {
 
                         <div className="flex flex-col gap-1 flex-1 min-h-0">
                             <label className="text-sm font-semibold text-gray-600">FM Code</label>
-                            <textarea
-                                className="w-full h-full p-4 font-mono text-sm border rounded shadow-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none"
-                                value={code}
-                                onChange={(e) => setCode(e.target.value)}
-                                spellCheck={false}
-                            />
+                            <div className="flex w-full h-full border rounded shadow-sm overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 bg-white">
+                                <div
+                                    ref={lineNumbersRef}
+                                    className="bg-gray-50 text-gray-400 text-right pr-3 pt-4 font-mono text-sm select-none border-r border-gray-200 overflow-hidden min-w-[3rem]"
+                                    style={{ lineHeight: '1.5rem' }}
+                                >
+                                    {lines.map(n => (
+                                        <div key={n} className="px-1">{n}</div>
+                                    ))}
+                                </div>
+                                <textarea
+                                    ref={textareaRef}
+                                    className="flex-1 h-full p-4 font-mono text-sm outline-none resize-none border-none focus:ring-0 whitespace-pre overflow-x-auto leading-6"
+                                    style={{ lineHeight: '1.5rem' }}
+                                    value={code}
+                                    onChange={(e) => setCode(e.target.value)}
+                                    onScroll={handleScroll}
+                                    spellCheck={false}
+                                />
+                            </div>
                         </div>
                         <button
                             onClick={() => {
