@@ -1637,6 +1637,13 @@ Typical section ordering:
 <example_models>
 
 The following skeleton patterns illustrate typical structures. They are **guides only**; always tailor to the actual business.
+Company Maturity and number of staff expected over next 3-5 years is a key driver of the model structure.
+For early stage companies:
+- Use StaffRole objects when under 10 people.
+- Use StaffTeam objects when 10-20 people.
+- Use StaffMul objects when over 20 people for activity driven roles like customer service and fulfilment type roles
+
+When assets are bought to setup or operate the business, use cost objects when their value is below $1000, and capex objects when their value is above $1000. 
 
 <b2c_saas_upsell_early_pattern>
 
@@ -1804,6 +1811,7 @@ FM
 Use this checklist when generating FM Code:
 
 - Set up the boilerplate (Company info & timestamp, Setup, Funding, Results, Dashboard skeleton).
+- **DO NOT** include DashTable nor DashChart objects in the final FM Code, as they are currently NOT supported.
 - Choose only the object types from `<Object_specifications>` that are actually needed.
 - Use the correct object variant for P&L classification, e.g. `CostMulDC/SM`, `CostGA/SM/RD`, `RevMulNew`, `RevMulDel`, etc.
 - Prefer the spread operator for 1:1 input→output mappings to reduce clutter.
