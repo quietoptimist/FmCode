@@ -1638,12 +1638,19 @@ Typical section ordering:
 
 The following skeleton patterns illustrate typical structures. They are **guides only**; always tailor to the actual business.
 Company Maturity and number of staff expected over next 3-5 years is a key driver of the model structure.
-For early stage companies:
-- Use StaffRole objects when under 10 people.
+Choosing Staff objects:
+- Use StaffRole objects when under 10 people (early stage companies).
 - Use StaffTeam objects when 10-20 people.
-- Use StaffMul objects when over 20 people for activity driven roles like customer service and fulfilment type roles
+- Use StaffMul objects when over 20 people for activity driven roles like customer service and fulfilment.
 
-When assets are bought to setup or operate the business, use cost objects when their value is below $1000, and capex objects when their value is above $1000. 
+Handling assets:
+- Use cost objects when assets are below $1000, and capex objects when their value is above $1000.
+- For early stage simple businesses, only needing a small numbers of assets, use CapexMth rather than CapexEquip.
+
+Adding 'other' outputs:
+- When using objects like Cost, StaffRole, StaffTeam, CapexMth, always add outputs like 'otherRole1', 'otherRole2', etc. for future proofing.
+- Add 1 'other' output plus 1 'other' output for every 3 staff roles, staff teams, or non-driven costs.
+- When setting assumptions for 'other' outputs set them to zero.
 
 <b2c_saas_upsell_early_pattern>
 
@@ -1679,20 +1686,20 @@ FM
         SupplementsRevenue = RevMul(supplements.nsell) > supplementsRev
 
     People:
-        Leadership = StaffRoleGA() > ceo, cfo, headMarketing, opsManager
-        DevTeams   = StaffTeamRD() > appDevs, backEndDevs, aiDevs
+        Leadership = StaffRoleGA() > ceo, cfo, headMarketing, opsManager, otherRole1, otherRole2
+        DevTeams   = StaffTeamRD() > appDevs, backEndDevs, aiDevs, otherTeam1, otherTeam2
         TotalHeads = Sum(Leadership.heads, DevTeams.heads)
 
     Costs:
         AcqCosts        = CostMulSM(socialCustomers.val) > socialAdsCost
         PlatformFees    = CostMulDC(Subscribers.act) > appStoreFees
         ServiceCosts    = CostMulDC(Subscribers.act) > hostingCost, inferenceCost
-        FulfilmentCosts = CostMulDC(suppBuyers.val) > packingCost, shippingCost
-        Overheads       = CostGA() > servicedOffice, insurance, travel, software, storageSpace
+        FulfilmentCosts = CostMulDC(suppBuyers.val) > packingCost, shippingCost, otherFulfilCost1, otherFulfilCost2
+        Overheads       = CostGA() > servicedOffice, insurance, travel, software, storageSpace, otherOverhead1, otherOverhead2
 
     Capex:
         StaffDevices = CapexEquip(TotalHeads.val) > laptops, phones
-        EquipPlan    = CapexMth() > labelPrinter, barcodeScanner, otherEquip
+        EquipPlan    = CapexMth() > labelPrinter, barcodeScanner, otherEquip1, otherEquip2
 
     // Dashboard code as per boilerplate
 
@@ -1727,7 +1734,7 @@ FM
         Advertising = CostMulSM(advertOrders.val) > advertCost
         Fulfilment  = CostMulDC(WebOrders.val) > packagingCost, outboundShippingCost
         Overheads   = CostGA() > rent, utilities, software, insurance, otherOverhead1, otherOverhead2
-        OneOffCosts = CostMthOE() > companySetup, legalFees, otherSetup1
+        OneOffCosts = CostMthOE() > companySetup, legalFees, otherSetup1, otherSetup2
 
     // Dashboard as per boilerplate
 
@@ -1760,14 +1767,14 @@ FM
         CustomerSupport = StaffDivDC(WebOrders.val) > supportTeam
         FulfilmentTeam  = StaffDivDC(WebOrders.val) > fulfilTeam
         MarketingTeam   = StaffTeamSM() > mktgTeam
-        CentralTeams    = StaffTeamGA() > financeTeam, legalTeam, hrTeam
+        CentralTeams    = StaffTeamGA() > financeTeam, legalTeam, hrTeam, otherTeam1, otherTeam2
         Leadership      = StaffRoleGA() > ceo, cfo, headProduct, headMarketing, headOperations, otherRole1, otherRole2
 
     Costs:
         Advertising = CostMulSM(adVisitors.val) > advertCost  // Driven by CPC
         Fulfilment  = CostMulDC(WebOrders.val) > packagingCost, outboundShippingCost
         Overheads   = CostAnnGA() > rent, utilities, software, insurance, otherOverhead1, otherOverhead2
-        OneOffCosts = CostMthOE() > companySetup, legalFees, otherSetup1
+        OneOffCosts = CostMthOE() > companySetup, legalFees, otherSetup1, otherSetup2
 
     // Dashboard as per boilerplate
 
