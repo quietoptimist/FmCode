@@ -16,9 +16,13 @@ export const fnRegistry = {
     const outAss = cfg.output || {};
     const factor = outAss.factor
       ? outAss.factor.value
-      : outAss.mix
-        ? outAss.mix.value
-        : new Float64Array(months).fill(1);
+      : outAss.price
+        ? outAss.price.value
+        : outAss.cost
+          ? outAss.cost.value
+          : outAss.mix
+            ? outAss.mix.value
+            : new Float64Array(months).fill(1);
     const startMonthVal = outAss.start ? outAss.start.value : 0;
     const startMonth = (startMonthVal instanceof Float64Array || Array.isArray(startMonthVal)) ? startMonthVal[0] : startMonthVal;
 

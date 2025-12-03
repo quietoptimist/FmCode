@@ -315,7 +315,7 @@ export const objectSchema = {
       object: [],
       output: [
         {
-          name: "factor",
+          name: "cost",
           label: "Cost per unit",
           baseType: "number",
           format: "currency",
@@ -384,7 +384,7 @@ export const objectSchema = {
       object: [],
       output: [
         {
-          name: "factor",
+          name: "price",
           label: "Unit Price",
           baseType: "number",
           format: "currency",
