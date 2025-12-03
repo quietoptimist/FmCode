@@ -1163,10 +1163,10 @@ export const objectSchema = {
   // FundEquity - Equity funding rounds
   // ============================
   FundEquity: {
-    impl: "QuantPulse",
+    impl: "QuantStart",
     showMonthlyAssumptions: false,
     options: {
-      single: true,
+      monthly: true
     },
     channels: {
       val: {
@@ -1186,25 +1186,12 @@ export const objectSchema = {
           label: "Amount",
           baseType: "number",
           format: "currency",
-          default: 50000,
+          default: 0,
           supports: {
-            single: true
+            monthly: true
           },
           ui: {
-            defaultMode: "single"
-          }
-        },
-        {
-          name: "month",
-          label: "Month",
-          baseType: "number",
-          format: "integer",
-          default: 1,
-          supports: {
-            single: true
-          },
-          ui: {
-            defaultMode: "single"
+            defaultMode: "monthly"
           }
         }
       ]

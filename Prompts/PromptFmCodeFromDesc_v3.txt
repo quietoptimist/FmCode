@@ -287,13 +287,10 @@ Inputs:
 - None (starting object).
 
 Assumptions (Parameters):
-- `value` (number): Amount raised per round.
-- `month` (int): Month in which each round is received.
+- none
 
 Outputs:
-- One or more outputNames, each a funding round.
-  - The **first** outputName must be `startingCash`.
-  - Other examples: `seedRound`, `seriesA`, `seriesB`.
+- **One** outputName only, as individual funding rounds can be entered in month they occur
 
 Attributes:
 - `.val` = monthly equity raised (cash inflow).
@@ -305,14 +302,11 @@ Example:
 FM
     SetupAndFunding:
         // Cash raised from founders and investors
-        EquityFunding = FundEquity() >
-            startingCash(amount:50000, month: 1),
-            seedRound(amount:300000, month: 12),
-            seriesA(amount:1000000, month: 24) 
+        EquityFunding = FundEquity() > fundingRounds // Enter equity funding rounds in month they occur
 
 Notes:
-- `startingCash.val` is typically the initial cash at model start.
-- `EquityFunding.cum` = total equity raised across all rounds.
+- `fundingRounds.val` = monthly equity raised (cash inflow).
+- `fundingRounds.cum` = total equity raised across all rounds.
 
 </FundEquity_spec>
 
@@ -1575,7 +1569,7 @@ FM
     // Date:         <INSERT DATE>
 
     Funding:
-        EquityFunding = FundEquity() > startingCash  // Initial cash from founders/investors
+        EquityFunding = FundEquity() > fundingRounds  // Enter equity funding rounds in month they occur
 
     ////
     // Model logic goes here: construction, customer acquisition, retention, revenues, people, costs, assets.
@@ -1662,7 +1656,7 @@ Skeleton:
 
 FM
     Funding:
-        EquityFunding = FundEquity() > startingCash(amount:50000, month: 1) // Cash raised from founders and investors
+        EquityFunding = FundEquity() > fundingRounds // Enter equity funding rounds in month they occur
 
     CustomerAcquisition:
         Acquisition = QuantSeas() > socialCustomers, organicCustomers   // New customers by source
