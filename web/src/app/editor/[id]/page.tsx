@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { formatName } from '@/lib/formatters';
+import { formatName, reformatFmCode } from '@/lib/formatters';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import { runEngine } from '@/lib/engine/engine';
@@ -35,6 +35,8 @@ export default function Editor({ params }: { params: { id: string } }) {
     const [thoughts, setThoughts] = useState('');
     const [modelYears, setModelYears] = useState(3);
     const [viewMode, setViewMode] = useState<'model' | 'code' | 'financials'>(params.id === 'new' ? 'code' : 'model');
+    const [reformattedCode, setReformattedCode] = useState('');
+    const [keepAssumptions, setKeepAssumptions] = useState(false);
     const router = useRouter();
 
     const lineNumbersRef = useRef<HTMLDivElement>(null);
@@ -447,12 +449,16 @@ export default function Editor({ params }: { params: { id: string } }) {
             if (!user) throw new Error('Not authenticated');
 
             // Serialize assumptions: Convert Float64Array to Array
-            const serializableAssumptions = JSON.parse(JSON.stringify(assumptions, (key, value) => {
+            let serializableAssumptions = JSON.parse(JSON.stringify(assumptions, (key, value) => {
                 if (value && value.constructor === Float64Array) {
                     return Array.from(value);
                 }
                 return value;
             }));
+
+            if (!serializableAssumptions) {
+                serializableAssumptions = {};
+            }
 
             // Save settings inside assumptions
             serializableAssumptions._settings = { modelYears };
@@ -541,6 +547,16 @@ export default function Editor({ params }: { params: { id: string } }) {
         });
         assumptionsWidth = Math.max(maxNeeded, 300); // Minimum 300px
     }
+
+    const handleFormat = () => {
+        const formatted = reformatFmCode(code, keepAssumptions);
+        setReformattedCode(formatted);
+    };
+
+    const handleCopy = () => {
+        navigator.clipboard.writeText(reformattedCode);
+        // Optional: Show a toast or feedback
+    };
 
 
 
@@ -716,15 +732,52 @@ export default function Editor({ params }: { params: { id: string } }) {
                                 />
                             </div>
                         </div>
-                        <button
-                            onClick={() => {
-                                handleParse();
-                                setViewMode('model');
-                            }}
-                            className="self-start px-4 py-2 bg-blue-600 text-white font-semibold rounded hover:bg-blue-700 transition-colors shadow-sm text-sm"
-                        >
-                            Build model
-                        </button>
+                        <div className="flex gap-4 items-center">
+                            <button
+                                onClick={() => {
+                                    handleParse();
+                                    setViewMode('model');
+                                }}
+                                className="self-start px-4 py-2 bg-blue-600 text-white font-semibold rounded hover:bg-blue-700 transition-colors shadow-sm text-sm"
+                            >
+                                Build model
+                            </button>
+                            <div className="w-4"></div>
+                            <button
+                                onClick={handleFormat}
+                                className="self-start px-4 py-2 bg-gray-600 text-white font-semibold rounded hover:bg-gray-700 transition-colors shadow-sm text-sm"
+                            >
+                                Format for Excel Tool
+                            </button>
+                            <div className="w-1"></div>
+                            <button
+                                onClick={handleCopy}
+                                className="self-start px-4 py-2 bg-gray-600 text-white font-semibold rounded hover:bg-gray-700 transition-colors shadow-sm text-sm"
+                            >
+                                Copy Reformatted code
+                            </button>
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="checkbox"
+                                    id="keepAssumptions"
+                                    checked={keepAssumptions}
+                                    onChange={(e) => setKeepAssumptions(e.target.checked)}
+                                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                                />
+                                <label htmlFor="keepAssumptions" className="text-sm font-medium text-gray-700">Keep Assum values</label>
+                            </div>
+                        </div>
+
+                        {reformattedCode && (
+                            <div className="flex flex-col gap-1 flex-1 min-h-0 mt-4">
+                                <label className="text-sm font-semibold text-gray-600">Reformatted Code</label>
+                                <textarea
+                                    className="w-full h-[200px] p-4 font-mono text-sm outline-none resize-none border rounded shadow-sm focus:ring-2 focus:ring-blue-500 whitespace-pre overflow-x-auto leading-6"
+                                    value={reformattedCode}
+                                    readOnly
+                                />
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

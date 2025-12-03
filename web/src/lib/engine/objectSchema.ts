@@ -240,6 +240,10 @@ export const objectSchema = {
       cost: {
         label: "Value",
         destinations: ["pnl.opex.ga", "cash.ops.out.opex"] // Default to GA
+      },
+      cum: {
+        label: "Cum Cost",
+        destinations: []
       }
     },
     assumptions: {
@@ -370,6 +374,10 @@ export const objectSchema = {
       rev: {
         label: "Revenue",
         destinations: ["pnl.revenue.recur", "cash.ops.in.sales"]
+      },
+      cum: {
+        label: "Cum Revenue",
+        destinations: []
       }
     },
     assumptions: {

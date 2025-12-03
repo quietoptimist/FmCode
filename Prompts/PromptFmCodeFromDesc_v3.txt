@@ -1816,9 +1816,8 @@ Use this checklist when generating FM Code:
 - Order sections according to `<section_order>`.
 - Produce **FM Code only** in your final answer:
   - All content must be inside a single `FM` code block.
-  - Add concise inline `//` comments for each object describing purpose and assumption units.
+  - Add concise inline `//` comments before each object to describe purpose and the main assumption units.
 
-N.B. DO NOT add any DashChart or DashTable objects to the FM Code as they are not yet supported. Remove any such objects from your boilerplate for now.
 
 Create the FM Code for the following startup description:
 """
