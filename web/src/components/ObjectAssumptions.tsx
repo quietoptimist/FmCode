@@ -45,6 +45,11 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
     const showDateRange = objAss.dateRangeEnabled && mode !== 'monthly';
     const showSmoothing = (objAss.smoothingEnabled ?? true) && mode !== 'single';
 
+    // Calculate if there are any visible assumptions
+    const hasVisibleAssumptions = objAss.outputs && Object.values(objAss.outputs).some((out: any) =>
+        Object.values(out).some((field: any) => field && typeof field === 'object' && field !== out.start && field !== out.end)
+    );
+
     return (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 space-y-3 h-fit">
             <div className="border-b pb-2">
@@ -164,12 +169,12 @@ export function ObjectAssumptions({ objName, objAss, years, uiMode = 'single', o
             )}
 
             {/* Output Level Assumptions Table */}
-            {mode !== 'monthly' && objAss.outputs && Object.keys(objAss.outputs).length > 0 && (
+            {mode !== 'monthly' && hasVisibleAssumptions && (
                 <div className="mt-2 overflow-x-auto">
                     <table className="text-sm text-left w-full">
                         <thead className="text-xs text-gray-500 uppercase bg-gray-50">
                             <tr>
-                                <th className="px-2 py-1 font-medium min-w-[140px]">Output</th>
+                                <th className="px-2 py-1 font-medium min-w-[140px]"></th>
                                 <th className="px-2 py-1 font-medium">
                                     {mode === 'single' ? (
                                         'Value'
