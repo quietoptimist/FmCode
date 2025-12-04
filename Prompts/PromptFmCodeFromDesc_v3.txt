@@ -1578,7 +1578,7 @@ FM
     // -------- Dashboard TABLES --------
 
     CashFlow:
-        KpiSourcesAndUses = DashTableSum(output_cash_ops, output_total_investments, output_total_financing) // Include in every model
+        KpiSourcesAndUses = DashTableSum    (output_cash_ops, output_total_investments, output_total_financing) // Include in every model
         KpiCashBalance    = DashTableCum(output_cum_cash)                                                   // Include in every model
 
     IncomeStatement:
