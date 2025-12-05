@@ -1875,6 +1875,16 @@ function createVariant(base: any, overrides: any) {
   }
 });
 
+// RevMulSeasDel - Seasonal Delayed Revenue
+(objectSchema as any).RevMulSeasDel = createVariant(objectSchema.RevMul, {
+  options: {
+    seasonal: true
+  },
+  channels: {
+    rev: { destinations: ["pnl.revenue.recur", "balance.assets.current.ar"] }
+  }
+});
+
 // RevMulNewDel - New Delayed Revenue
 (objectSchema as any).RevMulNewDel = createVariant(objectSchema.RevMul, {
   channels: {

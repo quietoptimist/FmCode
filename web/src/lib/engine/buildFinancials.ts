@@ -5,6 +5,7 @@
 
 import { defaultFinancialTemplate, FinancialTemplate, FinancialLineItem } from './financialSchema';
 import { objectSchema } from './objectSchema';
+import { formatName } from '../formatters';
 
 export interface ModelOutputContributor {
     objectName: string;  // Object type (e.g., "StaffTeams", "StaffRoles")
@@ -23,7 +24,8 @@ export interface FinancialData {
 }
 
 export interface ModelOutput {
-    objectName: string;
+    objectType: string; // Object type for schema lookup (e.g. "StaffDivDC")
+    objectName: string; // Object instance name for grouping (e.g. "CustomerSupportTeam")
     alias: string;
     channel: string;
     values: Float64Array;
@@ -88,9 +90,9 @@ function aggregateOutputs(
 
     for (const output of modelOutputs) {
         // Get destinations from schema
-        const objDef = (objectSchema as any)[output.objectName];
+        const objDef = (objectSchema as any)[output.objectType];
         if (!objDef?.channels?.[output.channel]?.destinations) {
-            console.log('[buildFinancials] No destinations for', output.objectName, output.channel);
+            console.log('[buildFinancials] No destinations for', output.objectType, output.channel);
             continue;
         }
 
@@ -114,7 +116,7 @@ function aggregateOutputs(
                     objectName: output.objectName,  // Object type for grouping
                     alias: output.alias,
                     channel: output.channel,
-                    label: `${output.alias} - ${channelLabel}`,
+                    label: `${formatName(output.alias)} - ${channelLabel}`,
                     values: output.values
                 });
 

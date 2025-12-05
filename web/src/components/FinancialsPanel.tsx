@@ -1,4 +1,23 @@
 import React, { useState, useMemo } from 'react';
+import { formatName } from '@/lib/formatters';
+
+// ... existing code ...
+
+const getFriendlyName = (objName: string) => {
+    const nameMap: Record<string, string> = {
+        'StaffTeams': 'Staff Teams',
+        'StaffRoles': 'Staff Roles',
+        'StaffDriven': 'Staff Driven',
+        'RevDrvNew': 'New Revenue',
+        'RevDrvRecur': 'Recurring Revenue',
+        'CostDrvDC': 'Direct Costs',
+        'CostAnnSM': 'Sales & Marketing',
+        'CostAnnGA': 'General & Admin',
+        'CostAnnRD': 'Research & Dev',
+        'OneTimeCost': 'One-Time Costs',
+    };
+    return nameMap[objName] || formatName(objName);
+};
 import { defaultFinancialTemplate, FinancialStatement, FinancialLineItem } from '@/lib/engine/financialSchema';
 import { FinancialData } from '@/lib/engine/buildFinancials';
 
@@ -430,21 +449,7 @@ function ObjectGroupHeader({ objectName, contributors, parentLevel, viewMode, pe
         }
     };
 
-    const getFriendlyName = (objName: string) => {
-        const nameMap: Record<string, string> = {
-            'StaffTeams': 'Staff Teams',
-            'StaffRoles': 'Staff Roles',
-            'StaffDriven': 'Staff Driven',
-            'RevDrvNew': 'New Revenue',
-            'RevDrvRecur': 'Recurring Revenue',
-            'CostDrvDC': 'Direct Costs',
-            'CostAnnSM': 'Sales & Marketing',
-            'CostAnnGA': 'General & Admin',
-            'CostAnnRD': 'Research & Dev',
-            'OneTimeCost': 'One-Time Costs',
-        };
-        return nameMap[objName] || objName;
-    };
+
 
     return (
         <tr className="bg-blue-100 border-b border-gray-200 text-gray-700 text-xs font-semibold cursor-pointer hover:bg-blue-200" onClick={onToggle}>

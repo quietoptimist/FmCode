@@ -30,13 +30,16 @@ export function buildFinancialsFromEngine(engineResult: any, index: any, months:
             continue;
         }
 
-        // CRITICAL: Use fnName (object type) not objectName (instance name)
+        // CRITICAL: Use object instance name (e.g. "CustomerSupportTeam") not object type (e.g. "StaffDivDC")
+        // This ensures grouping by the actual object the user created
+        const objectName = aliasInfo.node.name || aliasInfo.node.fnName;
         const objectType = aliasInfo.node.fnName;
 
-        console.log('[buildFinancialsHelper] Found:', alias, channel, '→', objectType);
+        console.log('[buildFinancialsHelper] Found:', alias, channel, 'Instance:', objectName, 'Type:', objectType);
 
         modelOutputs.push({
-            objectName: objectType,  // This should be the type like "RevDrvNew", not instance like "ProductRevenue"
+            objectType: objectType,
+            objectName: objectName,  // Use instance name for grouping
             alias,
             channel,
             values: values as Float64Array
