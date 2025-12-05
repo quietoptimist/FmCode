@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { formatName, reformatFmCode } from '@/lib/formatters';
 import { supabase } from '@/lib/supabaseClient';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { runEngine } from '@/lib/engine/engine';
 import { buildOutputGraph } from '@/lib/engine/buildGraph';
 import { buildModelAssumptions, updateAssumption, recalculateAll } from '@/lib/engine/buildModelAssumptions';
@@ -17,7 +17,9 @@ import Link from 'next/link';
 
 const SAMPLE_CODE = ``;
 
-export default function Editor({ params }: { params: { id: string } }) {
+export default function Editor() {
+    const params = useParams();
+    const id = params?.id as string;
     const [code, setCode] = useState(SAMPLE_CODE);
     const [result, setResult] = useState<any>(null);
     const [engineResult, setEngineResult] = useState<any>(null);
@@ -34,7 +36,7 @@ export default function Editor({ params }: { params: { id: string } }) {
     const [generating, setGenerating] = useState(false);
     const [thoughts, setThoughts] = useState('');
     const [modelYears, setModelYears] = useState(3);
-    const [viewMode, setViewMode] = useState<'model' | 'code' | 'financials'>(params.id === 'new' ? 'code' : 'model');
+    const [viewMode, setViewMode] = useState<'model' | 'code' | 'financials'>(id === 'new' ? 'code' : 'model');
     const [reformattedCode, setReformattedCode] = useState('');
     const [keepAssumptions, setKeepAssumptions] = useState(false);
     const router = useRouter();

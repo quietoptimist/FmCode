@@ -26,6 +26,13 @@ const safeParseFloat = (val: string): number => {
     return isNaN(parsed) ? 0 : parsed;
 };
 
+const getMonthlyBorderClass = (index: number) => {
+    const monthNum = index + 1;
+    if (monthNum % 12 === 0) return 'border-r-2 border-r-gray-400';
+    if (monthNum % 3 === 0) return 'border-r border-r-gray-300';
+    return '';
+};
+
 export function ObjectOutputs({ aliases, store, overrides, months, channelDefs, onOverride, objAss, seasonalEnabled, objName, onAssumptionChange, showMonthlyAssumptions, uiMode, usedChannels }: ObjectOutputsProps) {
     const [optionsExpanded, setOptionsExpanded] = useState(false);
     const [showTotals, setShowTotals] = useState(true);
@@ -125,7 +132,7 @@ export function ObjectOutputs({ aliases, store, overrides, months, channelDefs, 
     };
 
     return (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 min-w-full w-fit">
             {/* Options Panel */}
             <div className="border-b border-gray-200 p-3">
                 <div className="flex items-center gap-4">
@@ -206,7 +213,7 @@ export function ObjectOutputs({ aliases, store, overrides, months, channelDefs, 
                     <tr>
                         <th className="p-1.5 sticky left-0 bg-gray-50 z-20 border-b border-r font-semibold text-gray-700 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)] min-w-[150px]"></th>
                         {Array.from({ length: months }).map((_, i) => (
-                            <th key={i} className="p-1.5 min-w-[80px] text-right border-b"></th>
+                            <th key={i} className={`p-1.5 min-w-[80px] text-right border-b ${getMonthlyBorderClass(i)}`}></th>
                         ))}
                     </tr>
                 </thead>
@@ -220,7 +227,7 @@ export function ObjectOutputs({ aliases, store, overrides, months, channelDefs, 
                                     Seasonal %
                                 </td>
                                 {months_names.map((monthName, i) => (
-                                    <td key={i} className="p-1.5 min-w-[60px] text-center border-b border-purple-100 text-xs uppercase tracking-wider font-semibold text-purple-600">
+                                    <td key={i} className={`p-1.5 min-w-[60px] text-center border-b border-purple-100 text-xs uppercase tracking-wider font-semibold text-purple-600 ${getMonthlyBorderClass(i)}`}>
                                         {monthName}
                                     </td>
                                 ))}
@@ -250,7 +257,7 @@ export function ObjectOutputs({ aliases, store, overrides, months, channelDefs, 
                                             {formatName(alias)}
                                         </td>
                                         {months_names.map((_, i) => (
-                                            <td key={i} className="p-1 min-w-[60px] text-center">
+                                            <td key={i} className={`p-1 min-w-[60px] text-center ${getMonthlyBorderClass(i)}`}>
                                                 <div className="relative inline-block">
                                                     <input
                                                         type="number"
@@ -334,7 +341,7 @@ export function ObjectOutputs({ aliases, store, overrides, months, channelDefs, 
                                                         {formatName(alias)}
                                                     </td>
                                                     {Array.from({ length: months }).map((_, i) => (
-                                                        <td key={i} className="p-1.5 min-w-[80px] text-right border-b border-green-100 text-xs text-green-600">
+                                                        <td key={i} className={`p-1.5 min-w-[80px] text-right border-b border-green-100 text-xs text-green-600 ${getMonthlyBorderClass(i)}`}>
                                                             {field.value[i]?.toLocaleString(undefined, { maximumFractionDigits: 2 }) || '0'}
                                                         </td>
                                                     ))}
@@ -357,7 +364,7 @@ export function ObjectOutputs({ aliases, store, overrides, months, channelDefs, 
                             Month
                         </td>
                         {Array.from({ length: months }).map((_, i) => (
-                            <td key={i} className="p-1.5 min-w-[80px] text-right border-t border-b text-xs uppercase tracking-wider font-semibold text-gray-400">
+                            <td key={i} className={`p-1.5 min-w-[80px] text-right border-t border-b text-xs uppercase tracking-wider font-semibold text-gray-400 ${getMonthlyBorderClass(i)}`}>
                                 M{i + 1}
                             </td>
                         ))}
@@ -398,6 +405,7 @@ export function ObjectOutputs({ aliases, store, overrides, months, channelDefs, 
                                                                 overrideValue={overrideVal}
                                                                 onOverride={(newVal) => handleCellChange(alias, channel, m, newVal)}
                                                                 isDirectEdit={uiMode === 'monthly'}
+                                                                borderClass={getMonthlyBorderClass(m)}
                                                             />
                                                         );
                                                     })}
@@ -411,7 +419,7 @@ export function ObjectOutputs({ aliases, store, overrides, months, channelDefs, 
                                                     TOTAL
                                                 </td>
                                                 {Array.from(singleChannelTotals).slice(0, months).map((total, m) => (
-                                                    <td key={m} className="p-1.5 text-right font-bold text-blue-900">
+                                                    <td key={m} className={`p-1.5 text-right font-bold text-blue-900 ${getMonthlyBorderClass(m)}`}>
                                                         {Math.round(total).toLocaleString()}
                                                     </td>
                                                 ))}
@@ -471,7 +479,7 @@ export function ObjectOutputs({ aliases, store, overrides, months, channelDefs, 
                                                 {Array.from(series).slice(0, months).map((val, m) => {
                                                     if (isReadOnly) {
                                                         return (
-                                                            <td key={m} className="p-1.5 text-right text-xs text-gray-500 bg-gray-50/50 cursor-default select-none">
+                                                            <td key={m} className={`p-1.5 text-right text-xs text-gray-500 bg-gray-50/50 cursor-default select-none ${getMonthlyBorderClass(m)}`}>
                                                                 {val.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                                             </td>
                                                         );
@@ -484,6 +492,7 @@ export function ObjectOutputs({ aliases, store, overrides, months, channelDefs, 
                                                             overrideValue={overrideVal}
                                                             onOverride={(newVal) => handleCellChange(alias, channel, m, newVal)}
                                                             isDirectEdit={uiMode === 'monthly'}
+                                                            borderClass={getMonthlyBorderClass(m)}
                                                         />
                                                     );
                                                 })}
@@ -497,7 +506,7 @@ export function ObjectOutputs({ aliases, store, overrides, months, channelDefs, 
                                                 TOTAL
                                             </td>
                                             {Array.from(channelTotals).slice(0, months).map((total, m) => (
-                                                <td key={m} className="p-1.5 text-right font-bold text-blue-900">
+                                                <td key={m} className={`p-1.5 text-right font-bold text-blue-900 ${getMonthlyBorderClass(m)}`}>
                                                     {Math.round(total).toLocaleString()}
                                                 </td>
                                             ))}
@@ -509,7 +518,7 @@ export function ObjectOutputs({ aliases, store, overrides, months, channelDefs, 
                     )}
                 </tbody>
             </table>
-        </div >
+        </div>
     );
 }
 
@@ -518,9 +527,10 @@ interface OverrideCellProps {
     overrideValue: number | undefined;
     onOverride: (val: number | null) => void;
     isDirectEdit?: boolean;
+    borderClass?: string;
 }
 
-function OverrideCell({ calculatedValue, overrideValue, onOverride, isDirectEdit }: OverrideCellProps) {
+function OverrideCell({ calculatedValue, overrideValue, onOverride, isDirectEdit, borderClass }: OverrideCellProps) {
     const isOverridden = overrideValue !== undefined;
     const displayValue = isOverridden ? overrideValue : calculatedValue;
 
@@ -561,7 +571,7 @@ function OverrideCell({ calculatedValue, overrideValue, onOverride, isDirectEdit
     // It should look like a normal input, not an override
     if (isDirectEdit) {
         return (
-            <td className="p-0 border-l border-transparent transition-all hover:bg-blue-50">
+            <td className={`p-0 border-l border-transparent transition-all hover:bg-blue-50 ${borderClass || ''}`}>
                 <input
                     type="text"
                     className="w-full h-full p-1.5 text-right bg-transparent outline-none focus:ring-2 focus:ring-blue-500 focus:z-10 text-gray-700"
@@ -583,7 +593,7 @@ function OverrideCell({ calculatedValue, overrideValue, onOverride, isDirectEdit
             className={`p-0 border-l border-transparent transition-all ${isOverridden
                 ? 'bg-yellow-50 ring-1 ring-inset ring-yellow-200'
                 : 'hover:bg-blue-50'
-                }`}
+                } ${borderClass || ''}`}
         >
             <input
                 type="text"
