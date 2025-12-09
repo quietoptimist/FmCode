@@ -1829,6 +1829,7 @@ Use this checklist when generating FM Code:
   - All content must be inside a single `FM` code block.
   - Add concise inline `//` comments before each object to describe the purpose of the object.
 
+N.B. Please **DO NOT** include any dashboard related code in your output (e.g. DashTable* and DashChart* objects) as these are currently NOT supported.
 
 Create the FM Code for the following startup description:
 """
