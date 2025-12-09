@@ -36,6 +36,8 @@ export default function Editor() {
     const [generating, setGenerating] = useState(false);
     const [thoughts, setThoughts] = useState('');
     const [modelYears, setModelYears] = useState(3);
+    const [startYear, setStartYear] = useState(new Date().getFullYear());
+    const [startMonth, setStartMonth] = useState(1);
     const [viewMode, setViewMode] = useState<'model' | 'code' | 'financials'>(id === 'new' ? 'code' : 'model');
     const [reformattedCode, setReformattedCode] = useState('');
     const [keepAssumptions, setKeepAssumptions] = useState(false);
@@ -129,6 +131,12 @@ export default function Editor() {
                             // Restore settings
                             if (restored._settings && restored._settings.modelYears) {
                                 setModelYears(restored._settings.modelYears);
+                            }
+                            if (restored._settings && restored._settings.startYear) {
+                                setStartYear(restored._settings.startYear);
+                            }
+                            if (restored._settings && restored._settings.startMonth) {
+                                setStartMonth(restored._settings.startMonth);
                             }
 
                             const restoreArrays = (obj: any) => {
@@ -463,7 +471,7 @@ export default function Editor() {
             }
 
             // Save settings inside assumptions
-            serializableAssumptions._settings = { modelYears };
+            serializableAssumptions._settings = { modelYears, startYear, startMonth };
 
             const modelData = {
                 user_id: user.id,
@@ -581,16 +589,41 @@ export default function Editor() {
                 </div>
                 <div className="flex gap-4 items-center">
                     {/* Model Years Control */}
-                    <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded border border-gray-200 shadow-sm">
-                        <label className="text-xs font-medium text-gray-500 uppercase">Years</label>
-                        <input
-                            type="number"
-                            min="1"
-                            max="10"
-                            value={modelYears}
-                            onChange={(e) => setModelYears(Math.max(1, Math.min(10, parseInt(e.target.value) || 1)))}
-                            className="w-12 text-center font-bold text-gray-700 outline-none border-b border-transparent focus:border-blue-500"
-                        />
+                    <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded border border-gray-200 shadow-sm">
+                            <label className="text-xs font-medium text-gray-500 uppercase">Start</label>
+                            <div className="flex items-center gap-1">
+                                <select
+                                    value={startMonth}
+                                    onChange={(e) => setStartMonth(parseInt(e.target.value))}
+                                    className="text-sm font-bold text-gray-700 outline-none bg-transparent cursor-pointer hover:text-blue-600"
+                                >
+                                    {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((m, i) => (
+                                        <option key={i} value={i + 1}>{m}</option>
+                                    ))}
+                                </select>
+                                <input
+                                    type="number"
+                                    min="2000"
+                                    max="2100"
+                                    value={startYear}
+                                    onChange={(e) => setStartYear(Math.max(2000, Math.min(2100, parseInt(e.target.value) || 2024)))}
+                                    className="w-14 text-center font-bold text-gray-700 outline-none border-b border-transparent focus:border-blue-500 bg-transparent"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded border border-gray-200 shadow-sm">
+                            <label className="text-xs font-medium text-gray-500 uppercase">Years</label>
+                            <input
+                                type="number"
+                                min="1"
+                                max="10"
+                                value={modelYears}
+                                onChange={(e) => setModelYears(Math.max(1, Math.min(10, parseInt(e.target.value) || 1)))}
+                                className="w-12 text-center font-bold text-gray-700 outline-none border-b border-transparent focus:border-blue-500"
+                            />
+                        </div>
                     </div>
 
                     {error && <div className="text-red-600 text-sm">{error}</div>}
@@ -854,6 +887,8 @@ export default function Editor() {
                                                                     showMonthlyAssumptions={typeName ? (objectSchema as any)[typeName]?.showMonthlyAssumptions : false}
                                                                     uiMode={assumptions?.[objName]?.uiMode || (objectSchema as any)[typeName]?.options?.ui?.defaultMode || 'single'}
                                                                     usedChannels={usedChannels}
+                                                                    startYear={startYear}
+                                                                    startMonth={startMonth}
                                                                 />
                                                             </div>
                                                         </div>

@@ -17,6 +17,8 @@ interface ObjectOutputsProps {
     showMonthlyAssumptions?: boolean;  // From schema
     uiMode?: 'single' | 'annual' | 'growth' | 'monthly';
     usedChannels?: Set<string>;
+    startYear?: number;
+    startMonth?: number;
 }
 
 const months_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -34,7 +36,7 @@ const getMonthlyBorderClass = (index: number) => {
     return '';
 };
 
-export function ObjectOutputs({ aliases, store, overrides, months, channelDefs, onOverride, objAss, seasonalEnabled, objName, onAssumptionChange, showMonthlyAssumptions, uiMode, usedChannels }: ObjectOutputsProps) {
+export function ObjectOutputs({ aliases, store, overrides, months, channelDefs, onOverride, objAss, seasonalEnabled, objName, onAssumptionChange, showMonthlyAssumptions, uiMode, usedChannels, startYear = 2024, startMonth = 1 }: ObjectOutputsProps) {
     const [optionsExpanded, setOptionsExpanded] = useState(false);
     const [showTotals, setShowTotals] = useState(true);
     const [showAssumptions, setShowAssumptions] = useState(true);
@@ -358,6 +360,24 @@ export function ObjectOutputs({ aliases, store, overrides, months, channelDefs, 
                             </tr>
                         </>
                     )}
+
+                    {/* Calendar Month Row */}
+                    <tr className="bg-gray-50">
+                        <td className="p-1.5 font-bold text-gray-800 sticky left-0 bg-gray-50 z-10 border-t border-r shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)] whitespace-nowrap text-xs uppercase tracking-wider">
+                            Date
+                        </td>
+                        {Array.from({ length: months }).map((_, i) => {
+                            const totalMonths = (startMonth - 1) + i;
+                            const year = startYear + Math.floor(totalMonths / 12);
+                            const monthIndex = totalMonths % 12;
+                            const label = `${months_names[monthIndex]} ${year.toString().slice(-2)}`;
+                            return (
+                                <td key={i} className={`p-1.5 min-w-[80px] text-right border-t text-xs font-bold text-gray-600 ${getMonthlyBorderClass(i)}`}>
+                                    {label}
+                                </td>
+                            );
+                        })}
+                    </tr>
 
                     {/* Month Header Row */}
                     <tr className="bg-gray-50">
