@@ -412,6 +412,7 @@ interface SingleValueInputProps {
 function SingleValueInput({ value, onChange, format, placeholder, showLabel, label }: SingleValueInputProps) {
     const isPercent = format === 'percent';
     const isCurrency = format === 'currency';
+    const isPrice = format === 'price';
     const isInteger = format === 'integer';
 
     // Initialize local state
@@ -426,6 +427,8 @@ function SingleValueInput({ value, onChange, format, placeholder, showLabel, lab
             } else if (isPercent) {
                 setLocalValue((value * 100).toFixed(2));
             } else if (isCurrency) {
+                setLocalValue(value.toFixed(0));
+            } else if (isPrice) {
                 setLocalValue(value.toFixed(2));
             } else {
                 setLocalValue(value.toString());
@@ -454,7 +457,8 @@ function SingleValueInput({ value, onChange, format, placeholder, showLabel, lab
             // Invalid, revert
             if (value !== null) {
                 if (isPercent) setLocalValue((value * 100).toFixed(2));
-                else if (isCurrency) setLocalValue(value.toFixed(2));
+                else if (isCurrency) setLocalValue(value.toFixed(0));
+                else if (isPrice) setLocalValue(value.toFixed(2));
                 else setLocalValue(value.toString());
             } else {
                 setLocalValue('');
@@ -487,8 +491,8 @@ function SingleValueInput({ value, onChange, format, placeholder, showLabel, lab
     const input = (
         <input
             type="text"
-            inputMode={isInteger ? "numeric" : "decimal"}
-            className={`w-full p-1.5 border border-gray-300 rounded text-sm focus:ring-1 focus:ring-blue-500 outline-none text-right ${isCurrency ? 'pl-4' : ''} ${isPercent ? 'pr-4' : ''}`}
+            inputMode={isInteger || isCurrency ? "numeric" : "decimal"}
+            className={`w-full p-1.5 border border-gray-300 rounded text-sm focus:ring-1 focus:ring-blue-500 outline-none text-right ${isCurrency || isPrice ? 'pl-4' : ''} ${isPercent ? 'pr-4' : ''}`}
             value={localValue}
             onChange={handleChange}
             onFocus={() => setIsFocused(true)}
@@ -499,7 +503,7 @@ function SingleValueInput({ value, onChange, format, placeholder, showLabel, lab
 
     const wrappedInput = (
         <div className="relative w-full">
-            {isCurrency && <span className="absolute left-1.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs">$</span>}
+            {(isCurrency || isPrice) && <span className="absolute left-1.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs">$</span>}
             {input}
             {isPercent && <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs">%</span>}
         </div>

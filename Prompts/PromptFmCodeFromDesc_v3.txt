@@ -625,7 +625,8 @@ ObjectType: `RevMul()`
 Variants:
 - `RevMul()`    = recurring revenues.
 - `RevMulNew()` = new / one-off revenues (joining, setup, implementation fees).
-- `RevMulSeas()` = seasonally adjusted prices driving recurring revenues.
+- `RevMulSeas()` = seasonally adjusted prices driving recurring revenues (for B2C credit card).
+- `RevMulSeasDel()` = seasonally adjusted prices driving recurring revenues, with payment delay (for B2B invoices).
 
 Description:
 - Multiplies quantity inputs by unit prices to generate revenues.
@@ -654,7 +655,8 @@ FM
         OnboardingRevenues = RevMulNew(newCustomers.val) > joiningFeeRev, setupFeeRev
         
     Seasonal Pricing Alternative:
-        SeasonalRevenues = RevMulSeas(...ProductsSold.val) > smallCandleRev, largeCandleRev, giftSetRev // Seasonally adjusted prices driving recurring revenues
+        SeasonalRevenues = RevMulSeasDel(...ProductsSold.val) > smallCandleRev, largeCandleRev, giftSetRev // Seasonally adjusted prices driving recurring revenues
+        Payments         = DelRev(SeasonalRevenues.rev) > paymentsReceived // Customer payments received
 
 </RevMul_spec>
 
@@ -1812,8 +1814,8 @@ FM
 Use this checklist when generating FM Code:
 
 - Set up the boilerplate (Company info & timestamp, Setup, Funding, Results, Dashboard skeleton).
-- **DO NOT** include DashTable nor DashChart objects in the final FM Code, as they are currently NOT supported.
-- Choose only the object types from `<Object_specifications>` that are actually needed.
+- Using the business description and your knowledge of how similar business work, think through the design of the financial model.
+- Map your design onto the objects specified in `<Object_specifications>`. Respect any suggested approaches in the business description.
 - Use the correct object variant for P&L classification, e.g. `CostMulDC/SM`, `CostGA/SM/RD`, `RevMulNew`, `RevMulDel`, etc.
 - Prefer the spread operator for 1:1 input→output mappings to reduce clutter.
 - Prefer object totals; use `Sum()` only across objects or subsets of outputs.
@@ -1825,7 +1827,7 @@ Use this checklist when generating FM Code:
 - Order sections according to `<section_order>`.
 - Produce **FM Code only** in your final answer:
   - All content must be inside a single `FM` code block.
-  - Add concise inline `//` comments before each object to describe purpose and the main assumption units.
+  - Add concise inline `//` comments before each object to describe the purpose of the object.
 
 
 Create the FM Code for the following startup description:

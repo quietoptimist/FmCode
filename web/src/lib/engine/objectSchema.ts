@@ -23,10 +23,12 @@ export const objectSchema = {
     channels: {
       val: {
         label: "Value",
+        format: "number",
         destinations: []  // Initial setup value
       },
       cum: {
         label: "Cumulative Value",
+        format: "number",
         destinations: []  // Initial setup value
       }
     },
@@ -98,10 +100,12 @@ export const objectSchema = {
     channels: {
       val: {
         label: "Quantity",
+        format: "number",
         destinations: []  // Generic driver - mapping depends on usage context
       },
       cum: {
         label: "Cum Value",
+        format: "number",
         destinations: []  // Initial setup value
       }
     },
@@ -169,10 +173,12 @@ export const objectSchema = {
     channels: {
       val: {
         label: "Quantity",
+        format: "number",
         destinations: []  // Generic driver - mapping depends on usage context
       },
       cum: {
         label: "Cum Value",
+        format: "number",
         destinations: []  // Initial setup value
       }
     },
@@ -239,10 +245,12 @@ export const objectSchema = {
     channels: {
       cost: {
         label: "Value",
+        format: "currency",
         destinations: ["pnl.opex.ga", "cash.ops.out.opex"] // Default to GA
       },
       cum: {
         label: "Cum Cost",
+        format: "currency",
         destinations: []
       }
     },
@@ -253,7 +261,7 @@ export const objectSchema = {
           name: "cost",
           label: "Monthly amount",
           baseType: "number",
-          format: "currency",
+          format: "price",
           default: 100,
           supports: {
             single: true,
@@ -308,6 +316,7 @@ export const objectSchema = {
     channels: {
       cost: {
         label: "Cost",
+        format: "currency",
         destinations: ["pnl.cogs.direct", "cash.ops.out.cogs"]  // Default to DC
       }
     },
@@ -318,7 +327,7 @@ export const objectSchema = {
           name: "cost",
           label: "Cost per unit",
           baseType: "number",
-          format: "currency",
+          format: "price",
           default: 5,
           supports: {
             single: true,
@@ -373,10 +382,12 @@ export const objectSchema = {
     channels: {
       rev: {
         label: "Revenue",
+        format: "currency",
         destinations: ["pnl.revenue.recur", "cash.ops.in.sales"]
       },
       cum: {
         label: "Cum Revenue",
+        format: "currency",
         destinations: []
       }
     },
@@ -387,7 +398,7 @@ export const objectSchema = {
           name: "price",
           label: "Unit Price",
           baseType: "number",
-          format: "currency",
+          format: "price",
           default: 10,
           supports: {
             single: true,
@@ -444,10 +455,12 @@ export const objectSchema = {
     channels: {
       act: {
         label: "Active Users",
+        format: "integer",
         destinations: []
       },
       chu: {
         label: "Churned Users",
+        format: "integer",
         destinations: []
       }
     },
@@ -510,14 +523,17 @@ export const objectSchema = {
     channels: {
       act: {
         label: "Active Users",
+        format: "integer",
         destinations: []
       },
       chu: {
         label: "Churned Users",
+        format: "integer",
         destinations: []
       },
       rev: {
         label: "Revenue",
+        format: "currency",
         destinations: ["pnl.revenue.recur", "cash.ops.in.sales"]
       }
     },
@@ -528,7 +544,7 @@ export const objectSchema = {
           name: "price",
           label: "Monthly Price",
           baseType: "number",
-          format: "currency",
+          format: "price",
           default: 10,
           supports: {
             single: true,
@@ -647,7 +663,7 @@ export const objectSchema = {
         {
           name: "price",
           label: "Monthly Price",
-          baseType: "currency",
+          baseType: "price",
           default: 10,
           description: "Revenue per user per month",
           supports: {
@@ -712,10 +728,12 @@ export const objectSchema = {
     channels: {
       val: {
         label: "Delayed value",
+        format: "number",
         destinations: []
       },
       cum: {
         label: "Cum Value",
+        format: "number",
         destinations: []  // Initial setup value
       }
     },
@@ -751,6 +769,7 @@ export const objectSchema = {
     channels: {
       val: {
         label: "Advanced value",
+        format: "number",
         destinations: []
       }
     },
@@ -789,10 +808,12 @@ export const objectSchema = {
     channels: {
       val: {
         label: "Ramped value",
+        format: "number",
         destinations: []
       },
       mom: {
         label: "MoM Change",
+        format: "percent",
         destinations: []
       }
     },
@@ -852,10 +873,12 @@ export const objectSchema = {
     channels: {
       heads: {
         label: "Staff Heads",
+        format: "number",
         destinations: ["memo.headcount.cogs"]  // Map to appropriate team
       },
       cost: {
         label: "Staff Cost",
+        format: "currency",
         destinations: ["pnl.cogs.direct", "cash.ops.out.cogs"]  // Map to appropriate category
       }
     },
@@ -938,10 +961,12 @@ export const objectSchema = {
     channels: {
       heads: {
         label: "Staff Heads",
+        format: "number",
         destinations: ["memo.headcount.cogs"]  // Map to appropriate team
       },
       cost: {
         label: "Staff Cost",
+        format: "currency",
         destinations: ["pnl.cogs.direct", "cash.ops.out.cogs"]  // Map to appropriate category
       }
     },
@@ -958,6 +983,7 @@ export const objectSchema = {
             single: true,
             monthly: true,
             annual: true,
+            dateRange: true,
             smoothing: true,
             integers: true
           },
@@ -1023,10 +1049,12 @@ export const objectSchema = {
     channels: {
       heads: {
         label: "Staff Heads",
+        format: "number",
         destinations: ["memo.headcount.ga"]  // Map to appropriate team
       },
       cost: {
         label: "Staff Cost",
+        format: "currency",
         destinations: ["pnl.opex.ga", "cash.ops.out.opex"]  // Map to appropriate category
       }
     },
@@ -1043,6 +1071,7 @@ export const objectSchema = {
             single: true,
             monthly: true,
             annual: true,
+            dateRange: true,
             smoothing: true,
             integers: true,
             seasonal: true
@@ -1108,10 +1137,12 @@ export const objectSchema = {
     channels: {
       cost: {
         label: "Staff Cost",
+        format: "currency",
         destinations: ["pnl.opex.ga", "cash.ops.out.opex"]
       },
       heads: {
         label: "Staff Heads",
+        format: "number",
         destinations: ["memo.headcount.ga"]
       }
     },
@@ -1128,6 +1159,7 @@ export const objectSchema = {
             single: true,
             monthly: true,
             annual: true,
+            dateRange: true,
             smoothing: true,
             integers: true
           },
@@ -1171,10 +1203,12 @@ export const objectSchema = {
     channels: {
       val: {
         label: "Amount",
+        format: "currency",
         destinations: ["cash.finance.in.equity"]
       },
       cum: {
         label: "Cumulative Amount",
+        format: "currency",
         destinations: ["balance.equity.share"]
       }
     },
@@ -1210,22 +1244,27 @@ export const objectSchema = {
     channels: {
       int: {
         label: "Interest Expense",
+        format: "currency",
         destinations: ["pnl.interest"]
       },
       raised: {
         label: "Debt Raised",
+        format: "currency",
         destinations: ["cash.finance.in.debt"]
       },
       repaid: {
         label: "Debt Repaid",
+        format: "currency",
         destinations: ["cash.finance.out.debtRepay"]
       },
       bal: {
         label: "Debt Balance",
+        format: "currency",
         destinations: []
       },
       debtMove: {
         label: "Net Debt Movement",
+        format: "currency",
         destinations: ["balance.liabilities.longTerm.debt"]
       }
     },
@@ -1466,35 +1505,43 @@ export const objectSchema = {
     channels: {
       val: {
         label: "Capex Spend",
+        format: "currency",
         destinations: ["cash.invest.out.capex", "balance.assets.fixed.gross"]
       },
       depr: {
         label: "Depreciation",
+        format: "currency",
         destinations: ["pnl.da", "balance.assets.fixed.accumDepreciation"]
       },
       nbuy: {
         label: "Units Purchased",
+        format: "integer",
         destinations: []
       },
       nown: {
         label: "Units Owned",
+        format: "integer",
         destinations: []
       },
       nsell: {
         label: "Units Retired",
+        format: "integer",
         destinations: []
       },
       res: {
         label: "Residual Value",
+        format: "currency",
         destinations: ["cash.invest.in.assetSale"]
       },
       writeOff: {
         label: "Asset Disposal (Cost)",
+        format: "currency",
         destinations: ["balance.assets.fixed.gross"],
         hidden: true
       },
       accumWriteOff: {
         label: "Asset Disposal (Accum Depr)",
+        format: "currency",
         destinations: ["balance.assets.fixed.accumDepreciation"],
         hidden: true
       }
@@ -1573,6 +1620,7 @@ export const objectSchema = {
     channels: {
       val: {
         label: "Value",
+        format: "number",
         destinations: []
       }
     },
@@ -1613,6 +1661,7 @@ export const objectSchema = {
     channels: {
       val: {
         label: "Value",
+        format: "number",
         destinations: []
       }
     },
@@ -1728,7 +1777,7 @@ export const objectSchema = {
         {
           name: "cost",
           label: "Unit Cost",
-          baseType: "currency",
+          baseType: "price",
           default: 5,
           description: "Cost per unit",
           supports: {
@@ -1795,6 +1844,7 @@ export const objectSchema = {
     channels: {
       val: {
         label: "Total",
+        format: "number",
         destinations: []  // Aggregator
       }
     },

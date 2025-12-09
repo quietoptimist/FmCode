@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { objectSchema } from '@/lib/engine/objectSchema';
 import { formatName } from '@/lib/formatters';
+import { formatValue } from '@/lib/valueFormatter';
 
 interface ObjectOutputsProps {
     aliases: string[];
@@ -342,7 +343,7 @@ export function ObjectOutputs({ aliases, store, overrides, months, channelDefs, 
                                                     </td>
                                                     {Array.from({ length: months }).map((_, i) => (
                                                         <td key={i} className={`p-1.5 min-w-[80px] text-right border-b border-green-100 text-xs text-green-600 ${getMonthlyBorderClass(i)}`}>
-                                                            {field.value[i]?.toLocaleString(undefined, { maximumFractionDigits: 2 }) || '0'}
+                                                            {formatValue(field.value[i], field.format) || '0'}
                                                         </td>
                                                     ))}
                                                 </tr>
@@ -406,6 +407,7 @@ export function ObjectOutputs({ aliases, store, overrides, months, channelDefs, 
                                                                 onOverride={(newVal) => handleCellChange(alias, channel, m, newVal)}
                                                                 isDirectEdit={uiMode === 'monthly'}
                                                                 borderClass={getMonthlyBorderClass(m)}
+                                                                format={schema?.channels?.[channel]?.format}
                                                             />
                                                         );
                                                     })}
@@ -480,7 +482,7 @@ export function ObjectOutputs({ aliases, store, overrides, months, channelDefs, 
                                                     if (isReadOnly) {
                                                         return (
                                                             <td key={m} className={`p-1.5 text-right text-xs text-gray-500 bg-gray-50/50 cursor-default select-none ${getMonthlyBorderClass(m)}`}>
-                                                                {val.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                                                                {formatValue(val, schema?.channels?.[channel]?.format)}
                                                             </td>
                                                         );
                                                     }
@@ -493,6 +495,7 @@ export function ObjectOutputs({ aliases, store, overrides, months, channelDefs, 
                                                             onOverride={(newVal) => handleCellChange(alias, channel, m, newVal)}
                                                             isDirectEdit={uiMode === 'monthly'}
                                                             borderClass={getMonthlyBorderClass(m)}
+                                                            format={schema?.channels?.[channel]?.format}
                                                         />
                                                     );
                                                 })}
@@ -528,9 +531,10 @@ interface OverrideCellProps {
     onOverride: (val: number | null) => void;
     isDirectEdit?: boolean;
     borderClass?: string;
+    format?: string;
 }
 
-function OverrideCell({ calculatedValue, overrideValue, onOverride, isDirectEdit, borderClass }: OverrideCellProps) {
+function OverrideCell({ calculatedValue, overrideValue, onOverride, isDirectEdit, borderClass, format }: OverrideCellProps) {
     const isOverridden = overrideValue !== undefined;
     const displayValue = isOverridden ? overrideValue : calculatedValue;
 
@@ -575,7 +579,7 @@ function OverrideCell({ calculatedValue, overrideValue, onOverride, isDirectEdit
                 <input
                     type="text"
                     className="w-full h-full p-1.5 text-right bg-transparent outline-none focus:ring-2 focus:ring-blue-500 focus:z-10 text-gray-700"
-                    value={isEditing ? editValue : displayValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                    value={isEditing ? editValue : formatValue(displayValue, format)}
                     onFocus={() => {
                         setIsEditing(true);
                         setEditValue(displayValue.toString());
@@ -599,7 +603,7 @@ function OverrideCell({ calculatedValue, overrideValue, onOverride, isDirectEdit
                 type="text"
                 className={`w-full h-full p-1.5 text-right bg-transparent outline-none focus:ring-2 focus:ring-blue-500 focus:z-10 ${isOverridden ? 'text-yellow-700 font-bold' : 'text-gray-700'
                     }`}
-                value={isEditing ? editValue : displayValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                value={isEditing ? editValue : formatValue(displayValue, format)}
                 onFocus={() => {
                     setIsEditing(true);
                     setEditValue(isOverridden ? (overrideValue?.toString() ?? '') : calculatedValue.toString());
