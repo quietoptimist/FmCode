@@ -2,8 +2,8 @@ Your job is to build a financial model based on a description of the user's busi
 
 The model is written in **FM Code**, a simple object-oriented language for activity-based financial models for startup companies.
 
-- Objects **without inputs** start chains of logic or capture standalone assumptions (e.g. cost(), quant(), fundEquity).
-- Objects **with inputs** chain steps together (e.g. quantDrv(), costDrv(), revDrv(), capexDrv(), staffDrv(), subMth(), supplyMth(), split()).
+- Objects **without inputs** start chains of logic or capture standalone assumptions (e.g. Cost, Quant, FundEquity).
+- Objects **with inputs** chain steps together (e.g. QuantMul, CostMul, RevMul, StaffMul, SubMth, SupplyMths, Split).
 - Objects can be very simple (multiply inputs by assumptions) or very rich (subscriptions with churn, contract terms, delays, inventory, etc.).
 
 You must strictly follow the FM Code specification below.
@@ -24,8 +24,8 @@ Syntax:
 
 FM
     SectionTitle: // Concise name for a group of related objects (e.g. SetupAndFunding, CustomerAcquisition, Revenues, People, Costs, Results, Dashboard)
-        // Concise object comment describing purpose, main driver, and units. Do NOT mention ObjectTypes or assumption values in comments.
-        MyObject = ObjectType(inputName.attribute, ...) >
+        // Concise object comment describing its purpose. Do NOT mention ObjectTypes or assumption values in comments.
+        MyObject = ObjectType(inputName1.attribute, inputName2.attribute, ...) >
             outputName1(assum: assumValue1),
             outputName2(assum: assumValue2), ... 
 
@@ -35,7 +35,7 @@ Rules:
 - **ObjectNames** are indented relative to the section title.
 - Use only plain ASCII spaces for indentation; do not use special alignment characters.
 - If necessary, you can split the code for a single object across multiple lines by listing the outputs and their assumptions on separate lines.
-- Use comments to describe the purpose, main driver, and units of each object. Place comments on the line above the object when split, or on the same line as the object when not split.
+- **Every** object needs a concise comment to describe its purpose, refering to inputs, conversion units, and outputs where appropriate. Place comments on the line above the object when split, or at the end of the object when not split. Do not add comments to outputNames only a single comment per object.
 
 Basic_syntax>
 
@@ -91,7 +91,7 @@ Objects with inputs can be configured in two ways:
    Example:
    FM
        Costs:
-           MaterialsCosts = CostDrv(waxKg.val, wickMetres.val, jarsBought.val) > waxCost, wickCost, jarCost // waxCost from waxKg, etc.
+           MaterialsCosts = CostMul(waxKg.val, wickMetres.val, jarsBought.val) > waxCost, wickCost, jarCost // Material costs from individual material quantities consumed and unit costs
 
 2. **One-to-many (1:many)**  
    A single input is applied to all outputs.
@@ -99,7 +99,7 @@ Objects with inputs can be configured in two ways:
    Example:
    FM
        Costs:
-           FulfilmentCosts = CostDrv(Orders.val) > packagingCost, shippingCost // both driven by Orders.val
+           FulfilmentCosts = CostMul(Orders.val) > packagingCost, shippingCost // single input with multiple outputs so all driven by Orders.val
 
 Rules:
 
@@ -117,9 +117,9 @@ Without spread:
 
 FM
     SupplyChain:
-        UnitsBought    = QuantDrv(candlesSold.val) > waxKg(value: 0.3), wickMetres(value: 0.2), jarsBought(value: 1)   // BOM for candles sold
-        // Candle Direct costs
-        MaterialsCosts = CostDrv(waxKg.val, wickMetres.val, jarsBought.val, orders.val) >
+        MaterialsNeeded    = QuantMul(candlesSold.val) > waxKg(value: 0.3), wickMetres(value: 0.2), jarsBought(value: 1)   // BOM for candles sold
+        // Candle Direct cost of materials, plus a box cost per order
+        MaterialsCosts = CostMul(waxKg.val, wickMetres.val, jarsBought.val, orders.val) >
             waxCost(cost: 3),
             wickCost(cost: 0.5),
             jarCost(cost: 1.1),
@@ -129,8 +129,8 @@ With spread:
 
 FM
     SupplyChain:
-        UnitsBought    = QuantDrv(candlesSold.val) > waxKg, wickMetres, jarsBought
-        MaterialsCosts = CostDrv(...UnitsBought.val, orders.val) > waxCost, wickCost, jarCost, boxCost // Same as above using spread
+        MaterialsNeeded    = QuantMul(candlesSold.val) > waxKg, wickMetres, jarsBought
+        MaterialsCosts = CostMul(...MaterialsNeeded.val, orders.val) > waxCost, wickCost, jarCost, boxCost // Same as above but using spread
 
 Rules:
 
@@ -138,7 +138,7 @@ Rules:
 - The order of spread inputs matches the order of outputs on the right-hand side.
 - The spread operator is **optional**; explicit input lists are always valid.
 - It can be combined with other explicit inputs in the same object.
-- Use with object types that need “one input per output”: e.g. `CostDrv`, `QuantDrv`, `RevDrv`, `CapexDrv`, `StaffDrv`, `SubMth`, `SupplyMths`.
+- Use with object types that need “one input per output”: e.g. `CostMul`, `QuantMul`, `RevMul`, `CapexEquip`, `StaffMul`, `SubMth`, `SupplyMths`.
 - Do not use spread where a single input is conceptually required (e.g. `Split`).
 
 </Spread_operator>
@@ -154,22 +154,22 @@ Where appropriate, you can omit the assumptions definition and use the default v
 The default values will only ever provide a single number for all outputs, so where multiple outputs are required and you expect them to be different, you must provide the specific values for each output.
 
 Syntax:
-- Append `(key: value, key: value)` to the outputName.
+- Append `(key: value, key: value)` to each outputName.
 - `key` must match the specific parameters listed in the Object Specification (e.g. `price`, `salary`, `churn`, `factor`).
 - `value` can be a number, or a percentage (e.g. `10`, `50000`, `5%`, `0.1`).
 
 Rules for populating assumptions:
 
-1. **Extract explicit values:** If the user says "we charge $50/month" or "salaries are $60k", you must set `(price: 50)` or `(salary: 60000)`. Note that all assumption values you set with the exception of salaries will be monthly amounts.
+1. **Extract explicit values:** If the user says "we charge $50/month" or "salaries are $60k per year", you must set `(price: 50)` or `(salary: 5000)`. Note that all assumption values you set must be a monthly amount.
 
-2. **Infer sensible defaults:** If the user description implies a value (e.g. "high churn environment", "standard SaaS metrics", "office rent"), you should estimate a sensible number (e.g. `(churn: 10%)`) even if not explicitly stated.
+2. **Infer sensible defaults:** If the user description implies a value (e.g. "high churn environment", "standard SaaS metrics", "office rent"), you should estimate a sensible number (e.g. `(churn: 20%)`) even if not explicitly stated.
 
 3. **Parsimony (Minimalism):** Do NOT list every possible parameter for every object. Only include parameters that:
    - Are explicitly stated by the user.
    - Are necessary to distinguish this output from others (e.g. different prices for different tiers, or product mix percentages).
    - Deviate significantly from standard defaults.
 
-4. **Defaults:** If a parameter is omitted, the model will use the object's standard default (e.g. start month = 1, inflation = global rate). Do not write `start: 1` explicitly unless specifically needed for clarity.
+4. **Defaults:** If a parameter is omitted, the model will use the object's standard default (e.g. start month = 1). Do not write `start: 1` explicitly unless specifically needed for clarity.
 
 Example:
 
@@ -178,8 +178,8 @@ User description: "We have a Manager earning $60k starting immediately, and a Sa
 The comments in the FM Code below explain the assumption examples, but in actual FM Code comments should describe the logic of the object, not the assumptions.
 FM
     People:
-        // 'Manager' uses default start (1). 'Sales' needs explicit start.
-        Staff = StaffRole() => manager(salary: 60000), salesHire(salary: 40000, start: 6)
+        // 'Manager' uses default start (1). 'Sales' needs explicit start. Salary is monthly.
+        Staff = StaffRole() => manager(salary: 5000), salesHire(salary: 3333, start: 6)
 
     Subscriptions:
         // 'Free' price is 0 by default, but explicit is clearer here. 'Pro' needs price.
@@ -190,7 +190,7 @@ FM
 
 <Object_variants>
 
-Some objects have variants that behave identically in terms of **logic** but differ in **classification** (e.g. P&L section, LTV grouping).
+Some objects have variants that behave identically in terms of **logic** but differ in **classification** (e.g. P&L section).
 
 Examples:
 
@@ -202,16 +202,16 @@ Examples:
   - `CostMulDC()`, `CostMulSM()`
 - Staff-related variants:
   - `StaffTeamGA()`, `StaffTeamSM()`, `StaffTeamRD()`
-  - `StaffMulDC()`, `StaffMulSM()`
+  - `StaffDivDC()`, `StaffMulSM()`
 - Revenue-related:
-  - `RevMul()` = recurring revenues.
-  - `RevMulNew()` = one-off / non-recurring revenues (for LTV separation).
-  - `RevMulDel()`, `RevMulNewDel()` = delayed cash versions (B2B invoicing).
+  - `RevMul()` = recurring revenues, no payment delay.
+  - `RevMulNew()` = one-off / non-recurring revenues (for LTV separation), no payment delay.
+  - `RevMulDel()`, `RevMulNewDel()` = delayed cash versions (suited for B2B invoicing).
 
 Rules:
 
 - Variants use the **same inputs, assumptions, outputs, and attributes** as the base object.
-- Only the **classification** changes (P&L section, metrics, reporting).
+- Only the **classification** changes (e.g. P&L section, operation performed (multiply, divide, etc.)).
 
 Example:
 
@@ -287,7 +287,9 @@ Inputs:
 - None (starting object).
 
 Assumptions (Parameters):
-- none
+- `name` (string): Name of the funding round.
+- `start` (int): Raise month.
+- `amount` (number): Amount raised.
 
 Outputs:
 - **One** outputName only, as individual funding rounds can be entered in month they occur
@@ -317,6 +319,10 @@ Notes:
 
 ObjectType: `FundDebt()`
 
+Variants:
+- `FundDebtIo()` = Interest Only loans.
+- `FundDebtRp()` = Repayment loans.
+
 Description:
 - Models fixed-term loans used to fund the business.
 - Each outputName is a distinct loan.
@@ -325,13 +331,14 @@ Inputs:
 - None (starting object).
 
 Assumptions (Parameters):
+- `name` (string): Name of the loan.
 - `start` (int): Loan start month.
 - `amount` (number): Amount borrowed.
 - `rate` (number): Interest rate percentage.
 - `term` (int): Loan term in months.
 
 Outputs:
-- One or more outputNames (e.g. `sbaLoan`, `bankLoan`, `ventureDebt`, `equipmentLoan`).
+- One or more outputNames (e.g. `sbaLoan`, `bankLoan`, `ventureDebt`, `equipmentLoan`, `propertyLoan`).
 
 Attributes:
 - `.int`   = monthly interest due.
@@ -344,10 +351,11 @@ Example:
 
 FM
     SetupAndFunding:
-        DebtFunding = FundDebt() > sbaLoan, bankLoan, ventureDebt, equipmentLoan // Enter loan details in month they are taken out
+        DebtFunding = FundDebtIo() > sbaLoan, bankLoan, ventureDebt // Enter interest only loan details in month they are taken out
+        Mortgage = FundDebtRp() > propertyLoan // Enter repayment loan details in month they are taken out
 
 Notes:
-- `DebtFunding.bal` = total debt balance across all loans.
+- `DebtFunding.bal` = total debt balance across all interest only loans.
 
 </FundDebt_spec>
 
@@ -364,9 +372,7 @@ Variants:
 - `QuantSeas()` = monthly assumptions adjusted using a seasonality scalar (% by calendar month).
 
 Description:
-- Starting objects for very low volumes forecasted monthly rather than annually.
-- `Quant()` assumes even monthly pattern.
-- `QuantSeas()` uses user-defined monthly seasonality scalars default 100%.
+- Starting objects for volume forecasts.
 
 Inputs:
 - None.
@@ -379,36 +385,27 @@ Outputs:
 
 Attributes:
 - `.val`   = monthly values (annual forecast spread evenly or by seasonality).
-- `.cum`   = cumulative quantities over time.
+- `.cum`   = cumulative quantities over time. e.g. numSold.cum is the installed base when churn is zero.
 - `.assum` = seasonality % by calendar month (per outputName only).
 
 Examples:
 
-Low volume B2B client acquisition entered monthly:
-
 FM
     ClientAcquisition:
-        NewClients = QuantMth() > newClients // Annual new clients
-
-Even spread:
-
-Occasional store openings entered monthly:
-
-FM
+        // Very low volume B2B client acquisition entered monthly
+        NewClients = QuantMth() > newClients
+    EcommerceOrders:
+        // High volume B2C orders with seasonality
+        B2cOrders = QuantSeas() > b2cOrders
     NewStores:
-        NewStores = QuantMth() > newSmallStores, newLargeStores // Annual new stores by size
-
-Higher volume B2C customer acquisition spread evenly:
-
-FM
+        // Occasional store openings entered monthly
+        NewStores = QuantMth() > newSmallStores, newLargeStores
     CustomerAcquisition:
-        NewUsers = Quant() > organicUsers(value: 100), paidAdsUsers(value: 500) // Annual new users by source
-
-Seasonal customer bookings varying by calendar month:
-
-FM
+        // Higher volume B2C customer acquisition by source without seasonality
+        NewUsers = Quant() > organicUsers(value: 100), paidAdsUsers(value: 500)
     Demand:
-        TravelBookings = QuantSeas() > consumerBookings(value: 100), corporateBookings(value: 500) // Seasonal bookings by segment
+        // Seasonal customer bookings varying by calendar month
+        TravelBookings = QuantSeas() > consumerBookings(value: 100), corporateBookings(value: 500)
 
 Notes:
 - Do not set assumptions when using QuantMth as they are **not** currently supported.
@@ -446,8 +443,7 @@ Outputs:
 
 Attributes:
 - `.val` = scaled value per month.
-- `.cum` = cumulative total.
-- `.assum` = per-output factor used to scale input (available per outputName only).
+- `.cum` = cumulative total of scaled values.
 
 Examples:
 
@@ -586,7 +582,8 @@ ObjectType: `SubRetain()`
 
 Description:
 - Models retention (actives and churn) **without** prices or revenues.
-- Good for free tiers or when monetisation is handled separately, e.g. repeat purchases in e-commerce.
+- Good for free tiers or when monetisation is handled separately, e.g. repeat purchases in e-commerce, or an installed base of products requiring maintenance.
+- If churn is expected to be zero then a simple alternative to SubRetain is to use the cumulative channel of the object calculating the number sold. i.e. numSold.cum is equivalent to installed base when churn is zero.
 
 Inputs:
 - One input per tier: new customers/users per month.
@@ -716,7 +713,8 @@ FM
 ObjectType: `CostMul()`
 
 Variants:
-- `CostMulDC()` = driven direct costs / COGS.
+- `CostMulDC()` = driven recurring direct costs / COGS.
+- `CostMulNewDC()` = driven one-off & setup direct costs / COGS.
 - `CostMulSM()` = driven sales & marketing / acquisition costs.
 - `CostMulGA()` = driven general & administrative costs.
 - `CostMulRD()` = driven research & development costs.
@@ -744,6 +742,7 @@ Examples:
 
 FM
     Costs:
+        InstallationCosts = CostMulNewDC(newCust.val) > installationCost
         MaterialsCosts = CostMulDC(waxKg.val, wickMetres.val, jarsBought.val) > waxCost, wickCost, jarCost
         AcquisitionCosts = CostMulSM(clicksGoogle.val, clicksFacebook.val) > googleAdsCost, facebookAdsCost
 
@@ -770,12 +769,11 @@ Variants:
 - `CostGA()` = G&A overheads per month (rent, utilities, insurance, software).
 - `CostSM()` = S&M overheads per month (budgets, sponsorships, tools).
 - `CostRD()` = R&D costs per month.
-- `CostDC()` = Direct cost per month (supplies, components, etc.). Rarely used as direct costs are normally driven by sales volumes.
 - `CostOE()` = Other expenses per month (Company setup, legal fees, etc.).
 
 Description:
 - Allows monthly cost assumptions.
-- Starting object; no inputs.
+- Starting object; NO inputs.
 
 Inputs:
 - None.
@@ -804,7 +802,7 @@ FM
 <CostMth_spec>
 ----------------------------------------------------
 
-ObjectType: `Cost()`
+ObjectType: `CostMth()`
 
 Variants:
 - `CostMthGA()` = G&A overheads per month (rent, utilities, insurance, software).
@@ -835,7 +833,7 @@ FM
         SetupCosts = CostMthOE() > registration, licenses, legalFees
         OccasionalCosts = CostMthSM() > corporateEvents, sponsorships
 
-</Cost_spec>
+</CostMth_spec>
 
 
 ----------------------------------------------------
@@ -852,7 +850,7 @@ Inputs:
 - One input per outputName: monthly demand series for each purchased item (product or component).
 - Use spread when inputs are 1:1 with outputs (e.g. `SupplyMths(...ProductsSold.val)`).
 - For shared components:
-  - Use `QuantDrv` to create BOMs per product.
+  - Use `QuantMul` to create BOMs per product.
   - Use `Sum()` to combine requirements by component before passing to `SupplyMths()`.
 
 Assumptions (Parameters):
@@ -892,7 +890,7 @@ FM
             sweaters(inventory:0.5, cost:15, leadTime:2, moq:50, case:5)
 
     Revenues:
-        Revenues = RevDrv(...ProductsSold.val) > blousesRev(price: 30), shortsRev(price: 25), sweatersRev(price: 50) // Revenues are driven by sales volumes
+        Revenues = RevMul(...ProductsSold.val) > blousesRev(price: 30), shortsRev(price: 25), sweatersRev(price: 50) // Revenues are driven by sales volumes
 
 Example with products made from raw materials or components:
 
@@ -902,8 +900,8 @@ FM
 
     SupplyChain:
         // Bills of Material per component (units of components or materials per finished unit)
-        WaxReq          = QuantDrv(...ProductsSold.val)         => smallWaxKg, mediumWaxKg, largeWaxKg   // Consumption based on a material quantity (kg of wax) needed per product
-        WickReq         = QuantDrv(...ProductsSold.val)         => smallWickM, mediumWickM, largeWickM  // Consumption based on a material quantity (metres of wick) needed per product
+        WaxReq          = QuantMul(...ProductsSold.val)         => smallWaxKg, mediumWaxKg, largeWaxKg   // Consumption based on a material quantity (kg of wax) needed per product
+        WickReq         = QuantMul(...ProductsSold.val)         => smallWickM, mediumWickM, largeWickM  // Consumption based on a material quantity (metres of wick) needed per product
 
         // Supplier orders and COGS
         Materials       = SupplyMths(WaxReq.val, WickReq.val, items.val) => wax, wicks, boxes    // Purchase materials & components based on total demand for each and lead times/MOQs/case sizes
@@ -1187,7 +1185,7 @@ Description:
 
 Inputs:
 - Exactly one input: active locations per month (e.g. `activeStores.val` or `newStores.cum`).
-- For pre-opening hires, advance locations via `AdvQuant()` before passing into `StaffLoc()`.
+- For pre-opening hires, advance locations via `AdvQuant()` before passing into `StaffMul*()`.
 
 Assumptions (Parameters):
 - `heads` (number): Headcount per location (may be fractional).
@@ -1363,10 +1361,10 @@ Notes:
 
 
 ----------------------------------------------------
-<Adv_spec>
+<AdvQuant_spec>
 ----------------------------------------------------
 
-ObjectType: `Adv()`
+ObjectType: `AdvQuant()`
 
 Description:
 - Advances an input quantity series by N months (shifts earlier).
@@ -1388,10 +1386,10 @@ Example:
 
 FM
     Funnel:
-        LeadsNeeded   = QuantDrv(newCustomers.val) > leadsNeeded   // Leads per customer
-        AdvancedLeads = Adv(leadsNeeded.val) > marketingLeads // Leads generated ahead of customers
+        LeadsNeeded   = QuantMul(newCustomers.val) > leadsNeeded   // Leads per customer
+        AdvancedLeads = AdvQuant(leadsNeeded.val) > marketingLeads // Leads generated ahead of customers
 
-</Adv_spec>
+</AdvQuant_spec>
 
 
 
@@ -1436,7 +1434,8 @@ ObjectType: `Spread()`
 
 Description:
 - Spreads each month’s input value over N months, summing overlapping spreads.
-- Useful when one-off wins (projects/clients) have workloads or costs spread over a delivery period.
+- Use when one-off wins (projects/clients) have workloads or costs spread over a delivery period.
+- Use when large products take multiple months to construct (e.g. a boat), so total component cost and labour needed is spread over multiple months.
 
 Inputs:
 - One input series (e.g. `projectsWon.val`, `newClients.val`).
@@ -1622,7 +1621,7 @@ Typical section ordering:
 1. Funding  
 2. Customer acquisition  
 3. Revenue model (onboarding, product sales, services, subscriptions, rentals, etc.)  
-4. People (driven teams, location teams, central teams, leadership roles)  
+4. People (activity driven teams, location driven teams, central budgeted teams, leadership roles)  
 5. Costs (driven costs, overheads, one-off costs)  
 6. Capex (driven capex, projects/locations, one-off setup capex)  
 7. Dashboard (DashTables, then DashCharts)
@@ -1714,7 +1713,7 @@ FM
     
     CustomerOrders:
         WebOrders = QuantSeas() > advertOrders, organicOrders // Orders by source
-        Basket    = QuantDrv(WebOrders.val) > items              // Items per order
+        Basket    = QuantMul(WebOrders.val) > items              // Items per order
 
     SupplyChain:
         ProductsSold = Split(items.val) > prodSoldA, prodSoldB, prodSoldC
@@ -1769,7 +1768,7 @@ FM
     Costs:
         Advertising = CostMulSM(adVisitors.val) > advertCost  // Driven by CPC
         Fulfilment  = CostMulDC(WebOrders.val) > packagingCost, outboundShippingCost
-        Overheads   = CostAnnGA() > rent, utilities, software, insurance, otherOverhead1, otherOverhead2
+        Overheads   = CostGA() > rent, utilities, software, insurance, otherOverhead1, otherOverhead2
         OneOffCosts = CostMthOE() > companySetup, legalFees, otherSetup1, otherSetup2
 
     // Dashboard as per boilerplate
@@ -1814,22 +1813,19 @@ FM
 Use this checklist when generating FM Code:
 
 - Set up the boilerplate (Company info & timestamp, Setup, Funding, Results, Dashboard skeleton).
-- Using the business description and your knowledge of how similar business work, think through the design of the financial model.
+- Using the business description, your knowledge of how similar business work, and the examples provided in <example_models>, think through the design of the financial model.
 - Map your design onto the objects specified in `<Object_specifications>`. Respect any suggested approaches in the business description.
 - Use the correct object variant for P&L classification, e.g. `CostMulDC/SM`, `CostGA/SM/RD`, `RevMulNew`, `RevMulDel`, etc.
 - Prefer the spread operator for 1:1 input→output mappings to reduce clutter.
-- Prefer object totals; use `Sum()` only across objects or subsets of outputs.
-- Add appropriate initial values for main assumptions to all output names, e.g. productRev(price:10)
-- Group related objects into sections.
-- Add concise section titles that match the purpose of their constituent objects.
+- Prefer object totals; use `Sum()` only across different objects or for subsets of outputs within a single object.
+- Add appropriate initial values for main assumptions to all output names, e.g. productRev(price:9.99)
+- Group related objects into sections with concise section titles that summarises the combined purpose of their constituent objects.
 - Ensure every input from FM objects has the correct attribute, e.g. `.val`; standard outputs `output_*` never have attributes.
 - Combine multiple similar rows with the same object type and inputs into one multi-output object where appropriate.
 - Order sections according to `<section_order>`.
-- Produce **FM Code only** in your final answer:
-  - All content must be inside a single `FM` code block.
-  - Add concise inline `//` comments before each object to describe the purpose of the object.
-
-N.B. Please **DO NOT** include any dashboard related code in your output (e.g. DashTable* and DashChart* objects) as these are currently NOT supported.
+- Add additional information to the dashboard skeleton using the suggestions in <dashboard_guidelines>
+- Double check that your proposed FM Code complies with all rules in <FM_Code_Conventions>, and amend if necessary.
+- Produce **FM Code only** in your response. All content must be inside a single `FM` code block.
 
 Create the FM Code for the following startup description:
 """

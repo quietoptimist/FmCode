@@ -94,6 +94,10 @@ export default function Editor() {
                     setName(data.name || 'Untitled Model');
                     setDescription(data.description || '');
 
+                    if (!data.fm_code) {
+                        setViewMode('code');
+                    }
+
                     // We'll trigger a parse after setting code.
                     // But we need to handle the async nature.
 
@@ -428,7 +432,6 @@ export default function Editor() {
                 if (codeBlockMatch && codeBlockMatch[1].trim()) {
                     setCode(codeBlockMatch[1]);
                 } else if (cleanText) {
-                    // Fallback: treat the whole clean text as code (stripping potential start fence if incomplete)
                     setCode(cleanText.replace(/^```(?:fm)?/, '').replace(/```$/, ''));
                 }
             }
@@ -437,11 +440,18 @@ export default function Editor() {
             let cleanText = fullText.replace(/<thinking>[\s\S]*?<\/thinking>/g, '');
             cleanText = cleanText.replace(/<thinking>[\s\S]*$/, '').trim();
 
+            let finalCode = '';
             const codeBlockMatch = cleanText.match(/```(?:fm)?\s*([\s\S]*?)(?:```|$)/);
             if (codeBlockMatch && codeBlockMatch[1].trim()) {
-                setCode(codeBlockMatch[1]);
+                finalCode = codeBlockMatch[1];
             } else if (cleanText) {
-                setCode(cleanText.replace(/^```(?:fm)?/, '').replace(/```$/, ''));
+                finalCode = cleanText.replace(/^```(?:fm)?/, '').replace(/```$/, '');
+            }
+
+            if (finalCode) {
+                setCode(finalCode);
+                // Trigger auto-save with the final code
+                await handleSave(finalCode);
             }
 
         } catch (err: any) {
@@ -452,7 +462,7 @@ export default function Editor() {
         }
     };
 
-    const handleSave = async () => {
+    const handleSave = async (codeOverride?: string) => {
         setSaving(true);
         try {
             const { data: { user } } = await supabase.auth.getUser();
@@ -477,7 +487,7 @@ export default function Editor() {
                 user_id: user.id,
                 name: name,
                 description: description,
-                fm_code: code,
+                fm_code: codeOverride !== undefined ? codeOverride : code,
                 ast: result?.ast,
                 assumptions: serializableAssumptions,
                 overrides: overrides
@@ -664,7 +674,7 @@ export default function Editor() {
                     )}
 
                     <button
-                        onClick={handleSave}
+                        onClick={() => handleSave()}
                         disabled={saving}
                         className="px-4 py-2 bg-green-600 text-white font-semibold rounded hover:bg-green-700 transition-colors shadow-sm disabled:opacity-50 text-sm"
                     >
@@ -709,6 +719,18 @@ export default function Editor() {
                                 >
                                     <option value="gpt-5.1">gpt-5.1</option>
                                     <option value="gpt-4o">gpt-4o</option>
+                                    <optgroup label="Gemini 3 (Newest)">
+                                        <option value="gemini-3-pro">Gemini 3 Pro</option>
+                                        <option value="gemini-3-flash">Gemini 3 Flash</option>
+                                    </optgroup>
+                                    <optgroup label="Gemini 2.5">
+                                        <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+                                        <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                                    </optgroup>
+                                    <optgroup label="Legacy">
+                                        <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                                        <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+                                    </optgroup>
                                 </select>
                                 {selectedModel === 'gpt-5.1' && (
                                     <select

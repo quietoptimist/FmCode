@@ -53,7 +53,27 @@ export default function Dashboard() {
                     <div className="flex justify-between items-center mb-4">
                         <h2 className="text-xl font-semibold">Saved Models</h2>
                         <button
-                            onClick={() => router.push('/editor/new')}
+                            onClick={async () => {
+                                const name = window.prompt("Enter a name for your new model:", "Untitled Model");
+                                if (name === null) return; // User cancelled
+
+                                try {
+                                    const { data, error } = await supabase
+                                        .from('models')
+                                        .insert([{
+                                            user_id: user.id,
+                                            name: name || "Untitled Model",
+                                            fm_code: ""
+                                        }])
+                                        .select()
+                                        .single();
+
+                                    if (error) throw error;
+                                    router.push(`/editor/${data.id}`);
+                                } catch (err: any) {
+                                    alert("Error creating model: " + err.message);
+                                }
+                            }}
                             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
                         >
                             Create New Model

@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 import OpenAI from 'openai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 export async function POST(req: Request) {
     try {
@@ -10,11 +11,6 @@ export async function POST(req: Request) {
 
         if (!description) {
             return NextResponse.json({ error: 'Description is required' }, { status: 400 });
-        }
-
-        const apiKey = process.env.OPENAI_API_KEY;
-        if (!apiKey) {
-            return NextResponse.json({ error: 'OpenAI API key not configured' }, { status: 500 });
         }
 
         const promptPath = path.resolve(process.cwd(), '../Prompts/PromptFmCodeFromDesc_v3.txt');
@@ -25,6 +21,61 @@ export async function POST(req: Request) {
         } catch (err) {
             console.error('Error reading prompt file:', err);
             return NextResponse.json({ error: 'Failed to read system prompt' }, { status: 500 });
+        }
+
+        // Detect if it's a Gemini model
+        const isGemini = model?.toLowerCase().includes('gemini');
+
+        if (isGemini) {
+            const googleApiKey = process.env.GOOGLE_API_KEY;
+            if (!googleApiKey) {
+                return NextResponse.json({ error: 'Google API key not configured' }, { status: 500 });
+            }
+
+            const genAI = new GoogleGenerativeAI(googleApiKey);
+
+            // Map common names or use the model string directly for Gemini
+            let modelId = model;
+            if (model === 'gemini-3-pro') modelId = 'gemini-3-pro-preview';
+            if (model === 'gemini-3-flash') modelId = 'gemini-3-flash-preview';
+
+            const geminiModel = genAI.getGenerativeModel({ model: modelId });
+
+            const stream = await geminiModel.generateContentStream({
+                contents: [{ role: 'user', parts: [{ text: `${systemPrompt}\n\nUser description: ${description}` }] }],
+            });
+
+            const readableStream = new ReadableStream({
+                async start(controller) {
+                    try {
+                        for await (const chunk of stream.stream) {
+                            const chunkText = chunk.text();
+                            if (chunkText) {
+                                controller.enqueue(new TextEncoder().encode(chunkText));
+                            }
+                        }
+                    } catch (e) {
+                        console.error('Gemini stream error:', e);
+                        controller.error(e);
+                    } finally {
+                        controller.close();
+                    }
+                },
+            });
+
+            return new NextResponse(readableStream, {
+                headers: {
+                    'Content-Type': 'text/plain; charset=utf-8',
+                    'Cache-Control': 'no-cache, no-transform',
+                    'X-Accel-Buffering': 'no',
+                },
+            });
+        }
+
+        // OpenAI logic
+        const apiKey = process.env.OPENAI_API_KEY;
+        if (!apiKey) {
+            return NextResponse.json({ error: 'OpenAI API key not configured' }, { status: 500 });
         }
 
         const openai = new OpenAI({ apiKey });
@@ -68,7 +119,6 @@ export async function POST(req: Request) {
                     }
 
                     for await (const chunk of stream) {
-                        // console.log('Chunk type:', chunk.type);
                         let content = '';
                         let reasoning = '';
 
