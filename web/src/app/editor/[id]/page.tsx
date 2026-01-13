@@ -26,6 +26,7 @@ export default function Editor() {
     const [assumptions, setAssumptions] = useState<any>(null);
     const [overrides, setOverrides] = useState<any>({});
     const [error, setError] = useState<string | null>(null);
+    const [warnings, setWarnings] = useState<any[]>([]);
     const [saving, setSaving] = useState(false);
     const outputScrollRefs = useRef<(HTMLDivElement | null)[]>([]);
     const isScrolling = useRef(false);
@@ -40,7 +41,6 @@ export default function Editor() {
     const [startMonth, setStartMonth] = useState(1);
     const [viewMode, setViewMode] = useState<'model' | 'code' | 'financials'>(id === 'new' ? 'code' : 'model');
     const [reformattedCode, setReformattedCode] = useState('');
-    const [keepAssumptions, setKeepAssumptions] = useState(false);
     const router = useRouter();
 
     const lineNumbersRef = useRef<HTMLDivElement>(null);
@@ -304,6 +304,13 @@ export default function Editor() {
 
             console.log("Engine output:", engineOutput);
             setEngineResult(engineOutput);
+            // Append engine warnings to any existing parser warnings
+            if (engineOutput.warnings) {
+                setWarnings(prev => {
+                    const existing = prev.filter(w => w.type !== 'engine_warning');
+                    return [...existing, ...engineOutput.warnings];
+                });
+            }
         } catch (e: any) {
             console.error("Engine error:", e);
             setError("Engine Error: " + e.message);
@@ -356,6 +363,7 @@ export default function Editor() {
             if (!res.ok) throw new Error(data.error || 'Failed to parse');
 
             const rehydrated = rehydrateParseResult(data);
+            setWarnings(data.warnings || []);
 
             // Validate that we can build assumptions from this result
             try {
@@ -569,7 +577,7 @@ export default function Editor() {
     }
 
     const handleFormat = () => {
-        const formatted = reformatFmCode(code, keepAssumptions);
+        const formatted = reformatFmCode(code);
         setReformattedCode(formatted);
     };
 
@@ -582,7 +590,7 @@ export default function Editor() {
 
     return (
         <main className="flex min-h-screen flex-col bg-gray-50 text-black">
-            <div className="w-full sticky top-0 z-50 bg-gray-50/95 backdrop-blur border-b border-gray-200 px-4 py-3 flex justify-start gap-8 items-center mb-4 shadow-sm">
+            <div className="w-full sticky top-0 z-50 bg-gray-50/95 backdrop-blur border-b border-gray-200 px-4 py-3 flex justify-start gap-8 items-center shadow-sm">
                 <div className="flex items-center gap-4">
                     <button
                         onClick={() => router.push('/dashboard')}
@@ -636,8 +644,6 @@ export default function Editor() {
                         </div>
                     </div>
 
-                    {error && <div className="text-red-600 text-sm">{error}</div>}
-
                     {viewMode === 'model' && (
                         <>
                             <button
@@ -682,6 +688,33 @@ export default function Editor() {
                     </button>
                 </div>
             </div>
+
+            {/* Error and Warning Messages Area */}
+            {(error || (warnings && warnings.length > 0)) && (
+                <div className="w-full px-4 mt-4 flex flex-col gap-2 max-h-48 overflow-y-auto">
+                    {error && (
+                        <div className="p-3 bg-red-50 border border-red-200 rounded-md shadow-sm flex items-start gap-3">
+                            <span className="text-red-600 font-bold">✕</span>
+                            <div className="flex-1">
+                                <h4 className="text-xs font-bold text-red-800 uppercase tracking-wider mb-1">Critical Error</h4>
+                                <p className="text-sm text-red-700 leading-relaxed">{error}</p>
+                            </div>
+                        </div>
+                    )}
+                    {warnings.map((w, i) => (
+                        <div key={i} className="p-3 bg-amber-50 border border-amber-200 rounded-md shadow-sm flex items-start gap-3">
+                            <span className="text-amber-600 font-bold">!</span>
+                            <div className="flex-1">
+                                <h4 className="text-xs font-bold text-amber-800 uppercase tracking-wider mb-1">Warning</h4>
+                                <p className="text-sm text-amber-700 leading-relaxed">{w.message}</p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            <div className="pt-4"></div>
+
 
             {viewMode === 'code' && (
                 <div className="w-full px-4 mb-4">
@@ -814,14 +847,6 @@ export default function Editor() {
                                 Copy Reformatted code
                             </button>
                             <div className="flex items-center gap-2">
-                                <input
-                                    type="checkbox"
-                                    id="keepAssumptions"
-                                    checked={keepAssumptions}
-                                    onChange={(e) => setKeepAssumptions(e.target.checked)}
-                                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-                                />
-                                <label htmlFor="keepAssumptions" className="text-sm font-medium text-gray-700">Keep Assum values</label>
                             </div>
                         </div>
 
@@ -837,104 +862,109 @@ export default function Editor() {
                         )}
                     </div>
                 </div>
-            )}
+            )
+            }
 
-            {viewMode === 'model' && (
-                <>
+            {
+                viewMode === 'model' && (
+                    <>
 
-                    <div className="w-full flex flex-col gap-4 pb-20 pl-8 pr-4 overflow-x-hidden">
-                        <div className="flex gap-4">
-                            {/* Main Content */}
-                            <div className="flex-1 flex flex-col gap-4 min-w-0">
-                                {result?.ast?.objects && assumptions ? (
-                                    result.ast.objects.map((obj: any, index: number) => {
-                                        const objName = obj.name;
-                                        const aliases = result.index.outputsByObject.get(objName) || [];
-                                        const typeName = obj.fnName;
-                                        const channelDefs = typeName ? (objectSchema as any)[typeName]?.channels : {};
+                        <div className="w-full flex flex-col gap-4 pb-20 pl-8 pr-4 overflow-x-hidden">
+                            <div className="flex gap-4">
+                                {/* Main Content */}
+                                <div className="flex-1 flex flex-col gap-4 min-w-0">
+                                    {result?.ast?.objects && assumptions ? (
+                                        result.ast.objects.map((obj: any, index: number) => {
+                                            const objName = obj.name;
+                                            const aliases = result.index.outputsByObject.get(objName) || [];
+                                            const typeName = obj.fnName;
+                                            const channelDefs = typeName ? (objectSchema as any)[typeName]?.channels : {};
 
-                                        const prevObj = index > 0 ? result.ast.objects[index - 1] : null;
-                                        const showSection = obj.section && (!prevObj || obj.section !== prevObj.section);
+                                            const prevObj = index > 0 ? result.ast.objects[index - 1] : null;
+                                            const showSection = obj.section && (!prevObj || obj.section !== prevObj.section);
 
-                                        return (
-                                            <div key={objName} className="flex flex-col min-w-0">
-                                                {(!assumptions[objName]) ? null : (
-                                                    <>
-                                                        {showSection && (
-                                                            <div className="w-full border-b-4 border-blue-600 mb-6 mt-8 pb-2">
-                                                                <h2 className="text-4xl font-bold text-blue-600">{formatName(obj.section)}</h2>
+                                            return (
+                                                <div key={objName} className="flex flex-col min-w-0">
+                                                    {(!assumptions[objName]) ? null : (
+                                                        <>
+                                                            {showSection && (
+                                                                <div className="w-full border-b-4 border-blue-600 mb-6 mt-8 pb-2">
+                                                                    <h2 className="text-4xl font-bold text-blue-600">{formatName(obj.section)}</h2>
+                                                                </div>
+                                                            )}
+                                                            <div className={`flex flex-row gap-3 border-b border-gray-200 pb-4 min-w-0 ${obj.section ? 'pl-8' : ''}`}>
+                                                                <div
+                                                                    className="flex-none pl-2 overflow-x-auto"
+                                                                    style={{ width: `${assumptionsWidth}px`, maxWidth: '45vw' }}
+                                                                >
+                                                                    <ObjectAssumptions
+                                                                        objName={objName}
+                                                                        objAss={assumptions[objName]}
+                                                                        years={modelYears}
+                                                                        uiMode={assumptions[objName].uiMode as 'single' | 'annual' | 'growth'}
+                                                                        onChange={handleAssumptionChange}
+                                                                    />
+                                                                </div>
+                                                                <div
+                                                                    ref={(el) => { outputScrollRefs.current[index] = el; }}
+                                                                    className="flex-1 min-w-0 overflow-x-auto"
+                                                                    onScroll={(e) => {
+                                                                        if (isScrolling.current) return;
+                                                                        isScrolling.current = true;
+                                                                        const scrollLeft = e.currentTarget.scrollLeft;
+                                                                        outputScrollRefs.current.forEach((ref, i) => {
+                                                                            if (ref && i !== index) {
+                                                                                ref.scrollLeft = scrollLeft;
+                                                                            }
+                                                                        });
+                                                                        requestAnimationFrame(() => {
+                                                                            isScrolling.current = false;
+                                                                        });
+                                                                    }}
+                                                                >
+                                                                    <ObjectOutputs
+                                                                        aliases={aliases}
+                                                                        store={engineResult?.store}
+                                                                        overrides={overrides}
+                                                                        months={modelYears * 12}
+                                                                        channelDefs={channelDefs}
+                                                                        onOverride={handleOverride}
+                                                                        objAss={assumptions?.[objName]}
+                                                                        seasonalEnabled={assumptions?.[objName]?.seasonalEnabled}
+                                                                        objName={objName}
+                                                                        onAssumptionChange={handleAssumptionChange}
+                                                                        showMonthlyAssumptions={typeName ? (objectSchema as any)[typeName]?.showMonthlyAssumptions : false}
+                                                                        uiMode={assumptions?.[objName]?.uiMode || (objectSchema as any)[typeName]?.options?.ui?.defaultMode || 'single'}
+                                                                        usedChannels={usedChannels}
+                                                                        startYear={startYear}
+                                                                        startMonth={startMonth}
+                                                                    />
+                                                                </div>
                                                             </div>
-                                                        )}
-                                                        <div className={`flex flex-row gap-3 border-b border-gray-200 pb-4 min-w-0 ${obj.section ? 'pl-8' : ''}`}>
-                                                            <div
-                                                                className="flex-none pl-2 overflow-x-auto"
-                                                                style={{ width: `${assumptionsWidth}px`, maxWidth: '45vw' }}
-                                                            >
-                                                                <ObjectAssumptions
-                                                                    objName={objName}
-                                                                    objAss={assumptions[objName]}
-                                                                    years={modelYears}
-                                                                    uiMode={assumptions[objName].uiMode as 'single' | 'annual' | 'growth'}
-                                                                    onChange={handleAssumptionChange}
-                                                                />
-                                                            </div>
-                                                            <div
-                                                                ref={(el) => { outputScrollRefs.current[index] = el; }}
-                                                                className="flex-1 min-w-0 overflow-x-auto"
-                                                                onScroll={(e) => {
-                                                                    if (isScrolling.current) return;
-                                                                    isScrolling.current = true;
-                                                                    const scrollLeft = e.currentTarget.scrollLeft;
-                                                                    outputScrollRefs.current.forEach((ref, i) => {
-                                                                        if (ref && i !== index) {
-                                                                            ref.scrollLeft = scrollLeft;
-                                                                        }
-                                                                    });
-                                                                    requestAnimationFrame(() => {
-                                                                        isScrolling.current = false;
-                                                                    });
-                                                                }}
-                                                            >
-                                                                <ObjectOutputs
-                                                                    aliases={aliases}
-                                                                    store={engineResult?.store}
-                                                                    overrides={overrides}
-                                                                    months={modelYears * 12}
-                                                                    channelDefs={channelDefs}
-                                                                    onOverride={handleOverride}
-                                                                    objAss={assumptions?.[objName]}
-                                                                    seasonalEnabled={assumptions?.[objName]?.seasonalEnabled}
-                                                                    objName={objName}
-                                                                    onAssumptionChange={handleAssumptionChange}
-                                                                    showMonthlyAssumptions={typeName ? (objectSchema as any)[typeName]?.showMonthlyAssumptions : false}
-                                                                    uiMode={assumptions?.[objName]?.uiMode || (objectSchema as any)[typeName]?.options?.ui?.defaultMode || 'single'}
-                                                                    usedChannels={usedChannels}
-                                                                    startYear={startYear}
-                                                                    startMonth={startMonth}
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                    </>
-                                                )}
-                                            </div>
-                                        );
-                                    })
-                                ) : (
-                                    <div className="text-center text-gray-500 py-10">
-                                        {result ? "Loading assumptions..." : "Parse the model to see assumptions and outputs."}
-                                    </div>
-                                )}
+                                                        </>
+                                                    )}
+                                                </div>
+                                            );
+                                        })
+                                    ) : (
+                                        <div className="text-center text-gray-500 py-10">
+                                            {result ? "Loading assumptions..." : "Parse the model to see assumptions and outputs."}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </>
-            )}
+                    </>
+                )
+            }
 
-            {viewMode === 'financials' && (
-                <div className="w-full h-[calc(100vh-100px)] overflow-hidden">
-                    <FinancialsPanel financialData={financialData} />
-                </div>
-            )}
-        </main>
+            {
+                viewMode === 'financials' && (
+                    <div className="w-full h-[calc(100vh-100px)] overflow-hidden">
+                        <FinancialsPanel financialData={financialData} />
+                    </div>
+                )
+            }
+        </main >
     );
 }

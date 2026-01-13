@@ -9,7 +9,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'fmCode is required' }, { status: 400 });
         }
 
-        const { ast, index } = parseAndLinkFM(fmCode);
+        const { ast, index, warnings } = parseAndLinkFM(fmCode);
 
         // Convert Maps to plain objects for JSON serialization
         const serializedIndex = {
@@ -19,7 +19,7 @@ export async function POST(request: Request) {
             outputsByObject: Object.fromEntries(index.outputsByObject)
         };
 
-        return NextResponse.json({ ast, index: serializedIndex });
+        return NextResponse.json({ ast, index: serializedIndex, warnings });
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }

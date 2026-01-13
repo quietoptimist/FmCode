@@ -7,7 +7,7 @@ export function formatName(name: string): string {
     return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
-export function reformatFmCode(input: string, keepAssumptions: boolean = true): string {
+export function reformatFmCode(input: string): string {
     const lines = input.split('\n');
     const output: string[] = [];
     let pendingComments: string[] = [];
@@ -19,44 +19,6 @@ export function reformatFmCode(input: string, keepAssumptions: boolean = true): 
     const flushObject = () => {
         if (currentObjectCode) {
             let line = currentObjectCode.trimEnd(); // Keep leading indentation
-
-            // Strip assumptions if requested
-            if (!keepAssumptions) {
-                // Replace (key: value, ...) with empty string
-                // We need to be careful not to match function calls like ObjectType(...) 
-                // But wait, ObjectType(...) IS the definition.
-                // The user said: "strip out any brackets (and values inside) used to define output assumptions"
-                // e.g. outputName(assumName: assumValue) becomes outputName
-                // The Object definition is MyObject = ObjectType(...) > outputName(...)
-                // So we only want to strip brackets on the RHS of the >
-                // Or maybe just strip all brackets that look like assumptions?
-                // Assumptions usually have key:value pairs.
-                // ObjectType(...) usually has arguments which might be ref.val.
-
-                // Let's look at the structure:
-                // MyObject = ObjectType(args) > output1(assum: val), output2
-
-                // If we blindly strip (...), we might strip ObjectType(args).
-                // We should only strip after the > character if present?
-                // Or maybe we can rely on the fact that assumption brackets contain : ?
-                // ObjectType args usually don't contain : unless it's a named arg?
-                // FM code spec says inputs are just outputName.attr.
-
-                // Safer approach: Split by >. The LHS is definition, RHS is outputs.
-                // Only strip brackets in RHS.
-
-                const parts = line.split('>');
-                if (parts.length > 1) {
-                    // Has outputs
-                    const lhs = parts[0];
-                    let rhs = parts.slice(1).join('>'); // In case > appears elsewhere (unlikely but safe)
-
-                    // Strip (...) from rhs
-                    rhs = rhs.replace(/\([^)]*\)/g, '');
-
-                    line = lhs + '>' + rhs;
-                }
-            }
 
             // Append comments
             const allComments = [...pendingComments, ...currentObjectComments];

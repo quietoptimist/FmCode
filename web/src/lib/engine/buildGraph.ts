@@ -21,7 +21,7 @@ export function buildOutputGraph(ast, index) {
   for (const node of ast.objects) {
     const consumerAliases =
       (node.outputs && node.outputs.length ? node.outputs : (objectAliases.get(node.name) || []))
-      .filter(Boolean);
+        .filter(Boolean);
 
     if (consumerAliases.length === 0) continue;
 
@@ -39,13 +39,14 @@ export function buildOutputGraph(ast, index) {
         const outs = objectAliases.get(arg.name) || [];
         for (const a of outs) producers.push(a);
       } else {
-        throw new Error(`Output-graph: unknown symbol "${arg.name}"`);
+        // Unknown symbol - skip and it will be handled by the engine
+        // throw new Error(`Output-graph: unknown symbol "${arg.name}"`);
       }
       inputsProducers[argIndex] = producers;
     });
 
     const outputCount = consumerAliases.length;
-    const inputCount  = inputsProducers.length;
+    const inputCount = inputsProducers.length;
 
     // only enforce when multiple outputs
     if (outputCount > 1 && inputCount > outputCount) {
@@ -138,7 +139,7 @@ export function buildOutputGraph(ast, index) {
 }
 
 function findAliasCycle(adj) {
-  const WHITE=0, GREY=1, BLACK=2;
+  const WHITE = 0, GREY = 1, BLACK = 2;
   const color = new Map([...adj.keys()].map(k => [k, WHITE]));
   const stack = [];
   function dfs(u) {

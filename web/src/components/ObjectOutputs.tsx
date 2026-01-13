@@ -255,8 +255,8 @@ export function ObjectOutputs({ aliases, store, overrides, months, channelDefs, 
                                 const valueField = outAss[valueFieldName];
 
                                 return (
-                                    <tr key={`seasonal-${alias}`} className="hover:bg-purple-50/30 group transition-colors">
-                                        <td className="p-2 font-medium text-gray-600 sticky left-0 bg-white group-hover:bg-purple-50/30 z-10 border-r shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)] whitespace-nowrap text-sm">
+                                    <tr key={`seasonal-${alias}`} className="hover:bg-purple-50 transition-colors">
+                                        <td className="p-2 font-medium text-gray-600 sticky left-0 bg-white group-hover:bg-[#f5f3ff] z-10 border-r shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)] whitespace-nowrap text-sm">
                                             {formatName(alias)}
                                         </td>
                                         {months_names.map((_, i) => (
@@ -339,8 +339,8 @@ export function ObjectOutputs({ aliases, store, overrides, months, channelDefs, 
 
                                             {/* Rows for each alias with this field */}
                                             {aliasFields.map(([alias, field]) => (
-                                                <tr key={`${fieldName}-${alias}`} className="bg-green-50/30">
-                                                    <td className="p-1.5 font-medium text-green-700 sticky left-0 bg-green-50/30 z-10 border-b border-green-100 border-r shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)] whitespace-nowrap text-sm">
+                                                <tr key={`${fieldName}-${alias}`} className="bg-green-50/50">
+                                                    <td className="p-1.5 font-medium text-green-700 sticky left-0 bg-[#f0fdf4] z-10 border-b border-green-100 border-r shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)] whitespace-nowrap text-sm">
                                                         {formatName(alias)}
                                                     </td>
                                                     {Array.from({ length: months }).map((_, i) => (

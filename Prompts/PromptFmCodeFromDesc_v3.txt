@@ -1234,7 +1234,7 @@ Inputs:
 - Exactly one input (e.g. `customerItems.val`, `newCustomers.val`).
 
 Assumptions (Parameters):
-- `mix` (dict): Mix % per outputName (may vary over time).
+- `mix` (percentage): Mix % per outputName (may vary over time).
 
 Outputs:
 - One or more outputNames.
@@ -1407,7 +1407,7 @@ Inputs:
 - One input per outputName, representing **long-term steady-state values** added when new units start (e.g. LT footfall, capacity).
 
 Assumptions:
-- Ramp profile (percentages by months since start, e.g. 10%, 20%, 50%, 75%, 100%).
+- None.
 
 Outputs:
 - One or more outputNames (e.g. `bostonStoresCustomers`, `londonStoresCustomers`).

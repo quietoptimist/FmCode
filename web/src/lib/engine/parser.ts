@@ -425,6 +425,7 @@ function buildIndex(ast) {
  * ============================== */
 function linkFM(ast, index) {
   const { objectsByName, aliases, outputsByObject } = index;
+  const warnings = [];
 
   function hasSymbol(base) {
     return objectsByName.has(base) || aliases.has(base);
@@ -436,16 +437,27 @@ function linkFM(ast, index) {
       if (arg.kind === 'spread') {
         const objName = arg.object;
         if (!objectsByName.has(objName)) {
-          throw new Error(
-            `Spread references unknown object "${objName}" at line ${node.line} in ${node.name}. ` +
-            `Ensure the object exists (forward refs ARE supported).`
-          );
+          warnings.push({
+            type: 'unknown_reference',
+            message: `Spread references unknown object "${objName}" at line ${node.line} in ${node.name}.`,
+            line: node.line,
+            object: node.name
+          });
+          // Still push a placeholder or original spread? 
+          // Let's keep the original for now so it can be handled as a broken node later.
+          linkedArgs.push(arg);
+          continue;
         }
         const outs = outputsByObject.get(objName) || [];
         if (outs.length === 0) {
-          throw new Error(
-            `Spread on "${objName}.${arg.field}" at line ${node.line} but "${objName}" declares no outputs to spread.`
-          );
+          warnings.push({
+            type: 'empty_spread',
+            message: `Spread on "${objName}.${arg.field}" at line ${node.line} but "${objName}" declares no outputs to spread.`,
+            line: node.line,
+            object: node.name
+          });
+          linkedArgs.push(arg);
+          continue;
         }
         // Expand to alias.field for each declared output alias
         for (const alias of outs) {
@@ -453,10 +465,12 @@ function linkFM(ast, index) {
         }
       } else if (arg.kind === 'ref') {
         if (!hasSymbol(arg.name)) {
-          throw new Error(
-            `Unknown reference "${arg.name}.${arg.field}" at line ${node.line} in ${node.name}. ` +
-            `It must be an ObjectName or an output alias.`
-          );
+          warnings.push({
+            type: 'unknown_reference',
+            message: `Unknown reference "${arg.name}.${arg.field}" at line ${node.line} in ${node.name}.`,
+            line: node.line,
+            object: node.name
+          });
         }
         linkedArgs.push(arg);
       } else {
@@ -471,7 +485,7 @@ function linkFM(ast, index) {
     objects: linkedObjects.filter(n => n.section === sec.name)
   }));
 
-  return { sections, objects: linkedObjects, metadata: ast.metadata };
+  return { sections, objects: linkedObjects, metadata: ast.metadata, warnings };
 }
 
 /** =============================
@@ -481,5 +495,5 @@ export function parseAndLinkFM(source) {
   const ast = parseFM(source);
   const index = buildIndex(ast);
   const linked = linkFM(ast, index);
-  return { ast: linked, index };
+  return { ast: linked, index, warnings: linked.warnings };
 }
