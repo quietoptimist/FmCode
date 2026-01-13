@@ -86,6 +86,8 @@ export async function POST(req: Request) {
             modelId = 'gpt-4o';
         } else if (model === 'gpt-5.1' || model === 'GPT-5.1') {
             modelId = 'gpt-5.1';
+        } else if (model === 'gpt-5.2' || model === 'GPT-5.2') {
+            modelId = 'gpt-5.2';
         }
 
         const completionOptions: any = {
@@ -98,7 +100,7 @@ export async function POST(req: Request) {
         };
 
         // Only pass reasoning_effort if the model supports it
-        if (reasoningEffort && modelId === 'gpt-5.1') {
+        if (reasoningEffort && (modelId === 'gpt-5.1' || modelId === 'gpt-5.2')) {
             completionOptions.reasoning = { effort: reasoningEffort };
         }
 
@@ -112,8 +114,8 @@ export async function POST(req: Request) {
                     let isThinking = false;
                     console.log('Starting stream processing...');
 
-                    // Immediate feedback for gpt-5.1 to prevent buffering/latency perception
-                    if (modelId === 'gpt-5.1') {
+                    // Immediate feedback for gpt-5.1/5.2 to prevent buffering/latency perception
+                    if (modelId === 'gpt-5.1' || modelId === 'gpt-5.2') {
                         controller.enqueue(new TextEncoder().encode('<thinking>'));
                         isThinking = true;
                     }

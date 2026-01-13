@@ -14,6 +14,8 @@ import { ObjectOutputs } from '@/components/ObjectOutputs';
 import { FinancialsPanel } from '@/components/FinancialsPanel';
 import { buildFinancialsFromEngine } from '@/lib/engine/buildFinancialsHelper';
 import Link from 'next/link';
+import { DiscoveryChat } from '@/components/DiscoveryChat';
+import { Sparkles, X } from 'lucide-react';
 
 const SAMPLE_CODE = ``;
 
@@ -35,6 +37,7 @@ export default function Editor() {
     const [selectedModel, setSelectedModel] = useState('gpt-5.1');
     const [reasoningEffort, setReasoningEffort] = useState('medium');
     const [generating, setGenerating] = useState(false);
+    const [isDiscoveryOpen, setIsDiscoveryOpen] = useState(false);
     const [thoughts, setThoughts] = useState('');
     const [modelYears, setModelYears] = useState(3);
     const [startYear, setStartYear] = useState(new Date().getFullYear());
@@ -102,64 +105,53 @@ export default function Editor() {
                     // But we need to handle the async nature.
 
                     // Let's fetch parse result here.
-                    try {
-                        const res = await fetch('/api/parse', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ fmCode: data.fm_code }),
-                        });
-                        const parseData = await res.json();
-                        if (!res.ok) throw new Error(parseData.error || 'Failed to parse');
-
-                        // Rehydrate Maps
-                        const rehydrated = rehydrateParseResult(parseData);
-
-                        setResult(rehydrated);
-
-                        // Clean overrides: remove 'cum' channel overrides as they should be calculated only
-                        const cleanOverrides = { ...(data.overrides || {}) };
-                        for (const alias in cleanOverrides) {
-                            if (cleanOverrides[alias]?.cum) {
-                                const { cum, ...rest } = cleanOverrides[alias];
-                                cleanOverrides[alias] = rest;
-                            }
-                        }
-                        setOverrides(cleanOverrides);
-
-                        // Load assumptions if they exist
-                        if (data.assumptions) {
-                            const restored = JSON.parse(JSON.stringify(data.assumptions), (key, value) => {
-                                return value;
+                    if (data.fm_code && data.fm_code.trim()) {
+                        try {
+                            const res = await fetch('/api/parse', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ fmCode: data.fm_code }),
                             });
+                            const parseData = await res.json();
+                            if (!res.ok) throw new Error(parseData.error || 'Failed to parse');
 
-                            // Restore settings
-                            if (restored._settings && restored._settings.modelYears) {
-                                setModelYears(restored._settings.modelYears);
-                            }
-                            if (restored._settings && restored._settings.startYear) {
-                                setStartYear(restored._settings.startYear);
-                            }
-                            if (restored._settings && restored._settings.startMonth) {
-                                setStartMonth(restored._settings.startMonth);
-                            }
-
-                            const restoreArrays = (obj: any) => {
-                                if (!obj) return;
-                                if (obj.value && Array.isArray(obj.value)) {
-                                    obj.value = Float64Array.from(obj.value);
-                                }
-                                if (typeof obj === 'object') {
-                                    for (const k in obj) {
-                                        restoreArrays(obj[k]);
-                                    }
-                                }
-                            };
-                            restoreArrays(restored);
-                            setAssumptions(restored);
+                            // Rehydrate Maps
+                            const rehydrated = rehydrateParseResult(parseData);
+                            setResult(rehydrated);
+                        } catch (e: any) {
+                            console.error("Auto-parse on load failed", e);
+                            setError("Failed to re-parse loaded model: " + e.message);
                         }
-                    } catch (e: any) {
-                        console.error("Auto-parse on load failed", e);
-                        setError("Failed to re-parse loaded model: " + e.message);
+                    }
+
+                    // Clean overrides: remove 'cum' channel overrides
+                    const cleanOverrides = { ...(data.overrides || {}) };
+                    for (const alias in cleanOverrides) {
+                        if (cleanOverrides[alias]?.cum) {
+                            const { cum, ...rest } = cleanOverrides[alias];
+                            cleanOverrides[alias] = rest;
+                        }
+                    }
+                    setOverrides(cleanOverrides);
+
+                    // Load assumptions if they exist
+                    if (data.assumptions) {
+                        const restored = JSON.parse(JSON.stringify(data.assumptions));
+
+                        // Restore settings
+                        if (restored._settings && restored._settings.modelYears) setModelYears(restored._settings.modelYears);
+                        if (restored._settings && restored._settings.startYear) setStartYear(restored._settings.startYear);
+                        if (restored._settings && restored._settings.startMonth) setStartMonth(restored._settings.startMonth);
+
+                        const restoreArrays = (obj: any) => {
+                            if (!obj) return;
+                            if (obj.value && Array.isArray(obj.value)) obj.value = Float64Array.from(obj.value);
+                            if (typeof obj === 'object') {
+                                for (const k in obj) restoreArrays(obj[k]);
+                            }
+                        };
+                        restoreArrays(restored);
+                        setAssumptions(restored);
                     }
                 }
             }
@@ -352,6 +344,10 @@ export default function Editor() {
     }, [engineResult, result, modelYears]);
 
     const handleParse = async () => {
+        if (!code || !code.trim() || code.trim() === 'FM') {
+            setError("Please write some FM Code first.");
+            return;
+        }
         setError(null);
         try {
             const res = await fetch('/api/parse', {
@@ -718,11 +714,39 @@ export default function Editor() {
 
             {viewMode === 'code' && (
                 <div className="w-full px-4 mb-4">
-                    <div className="bg-white rounded border border-gray-200 p-4 flex flex-col gap-4 h-[calc(100vh-100px)]">
+                    <div className="bg-white rounded border border-gray-200 p-4 flex flex-col gap-4 h-[calc(100vh-100px)] overflow-y-auto">
+                        {isDiscoveryOpen && (
+                            <DiscoveryChat
+                                onClose={() => setIsDiscoveryOpen(false)}
+                                onSummaryUpdate={(summary) => setDescription(summary)}
+                                currentSummary={description}
+                            />
+                        )}
                         <div className="flex flex-col gap-1">
-                            <label className="text-sm font-semibold text-gray-600">Business Description</label>
+                            <div className="flex items-center justify-between mb-1">
+                                <div className="flex items-center gap-3">
+                                    <label className="text-sm font-semibold text-gray-600">Business Description</label>
+                                    {!isDiscoveryOpen && (
+                                        <button
+                                            onClick={() => setIsDiscoveryOpen(true)}
+                                            className="px-2 py-1 bg-blue-50 text-blue-700 font-medium rounded hover:bg-blue-100 transition-colors text-[10px] border border-blue-200 flex items-center gap-1.5"
+                                        >
+                                            <Sparkles className="w-2.5 h-2.5" />
+                                            AI Interview
+                                        </button>
+                                    )}
+                                </div>
+                                {isDiscoveryOpen && (
+                                    <button
+                                        onClick={() => setIsDiscoveryOpen(false)}
+                                        className="text-xs text-blue-600 hover:underline flex items-center gap-1"
+                                    >
+                                        <X className="w-3 h-3" /> Close AI Assistant
+                                    </button>
+                                )}
+                            </div>
                             <textarea
-                                className="w-full h-[432px] p-2 text-sm border rounded shadow-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+                                className={`w-full ${isDiscoveryOpen ? 'h-[400px]' : (code.trim() ? 'h-[200px]' : 'h-[500px]')} p-2 text-sm border rounded shadow-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none transition-all`}
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
                                 placeholder="Describe the business logic..."
@@ -745,11 +769,13 @@ export default function Editor() {
                                         <>✨ Generate Code</>
                                     )}
                                 </button>
+
                                 <select
                                     value={selectedModel}
                                     onChange={(e) => setSelectedModel(e.target.value)}
                                     className="px-2 py-1.5 bg-white border border-gray-300 rounded text-xs text-gray-700 outline-none focus:ring-1 focus:ring-purple-500"
                                 >
+                                    <option value="gpt-5.2">gpt-5.2</option>
                                     <option value="gpt-5.1">gpt-5.1</option>
                                     <option value="gpt-4o">gpt-4o</option>
                                     <optgroup label="Gemini 3 (Newest)">
@@ -765,7 +791,7 @@ export default function Editor() {
                                         <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
                                     </optgroup>
                                 </select>
-                                {selectedModel === 'gpt-5.1' && (
+                                {(selectedModel === 'gpt-5.1' || selectedModel === 'gpt-5.2') && (
                                     <select
                                         value={reasoningEffort}
                                         onChange={(e) => setReasoningEffort(e.target.value)}
@@ -777,7 +803,7 @@ export default function Editor() {
                                         <option value="high">High Reasoning</option>
                                     </select>
                                 )}
-                                {selectedModel === 'gpt-5.1' && generating && !thoughts && (
+                                {(selectedModel === 'gpt-5.1' || selectedModel === 'gpt-5.2') && generating && !thoughts && (
                                     <span className="text-xs text-gray-500 italic animate-pulse">
                                         Thinking...
                                     </span>
@@ -799,56 +825,62 @@ export default function Editor() {
                             </div>
                         )}
 
-                        <div className="flex flex-col gap-1 flex-1 min-h-0">
-                            <label className="text-sm font-semibold text-gray-600">FM Code</label>
-                            <div className="flex w-full h-full border rounded shadow-sm overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 bg-white">
-                                <div
-                                    ref={lineNumbersRef}
-                                    className="bg-gray-50 text-gray-400 text-right pr-3 pt-4 font-mono text-sm select-none border-r border-gray-200 overflow-hidden min-w-[3rem]"
-                                    style={{ lineHeight: '1.5rem' }}
-                                >
-                                    {lines.map(n => (
-                                        <div key={n} className="px-1">{n}</div>
-                                    ))}
+                        {/* FM Code Panel - Hide if empty */}
+                        {code.trim() && (
+                            <div className="flex flex-col gap-1 flex-1 min-h-0">
+                                <label className="text-sm font-semibold text-gray-600">FM Code</label>
+                                <div className="flex w-full h-full border rounded shadow-sm overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 bg-white">
+                                    <div
+                                        ref={lineNumbersRef}
+                                        className="bg-gray-50 text-gray-400 text-right pr-3 pt-4 font-mono text-sm select-none border-r border-gray-200 overflow-hidden min-w-[3rem]"
+                                        style={{ lineHeight: '1.5rem' }}
+                                    >
+                                        {lines.map(n => (
+                                            <div key={n} className="px-1">{n}</div>
+                                        ))}
+                                    </div>
+                                    <textarea
+                                        ref={textareaRef}
+                                        className="flex-1 h-full p-4 font-mono text-sm outline-none resize-none border-none focus:ring-0 whitespace-pre overflow-x-auto leading-6"
+                                        style={{ lineHeight: '1.5rem' }}
+                                        value={code}
+                                        onChange={(e) => setCode(e.target.value)}
+                                        onScroll={handleScroll}
+                                        spellCheck={false}
+                                    />
                                 </div>
-                                <textarea
-                                    ref={textareaRef}
-                                    className="flex-1 h-full p-4 font-mono text-sm outline-none resize-none border-none focus:ring-0 whitespace-pre overflow-x-auto leading-6"
-                                    style={{ lineHeight: '1.5rem' }}
-                                    value={code}
-                                    onChange={(e) => setCode(e.target.value)}
-                                    onScroll={handleScroll}
-                                    spellCheck={false}
-                                />
                             </div>
-                        </div>
-                        <div className="flex gap-4 items-center">
-                            <button
-                                onClick={() => {
-                                    handleParse();
-                                    setViewMode('model');
-                                }}
-                                className="self-start px-4 py-2 bg-blue-600 text-white font-semibold rounded hover:bg-blue-700 transition-colors shadow-sm text-sm"
-                            >
-                                Build model
-                            </button>
-                            <div className="w-4"></div>
-                            <button
-                                onClick={handleFormat}
-                                className="self-start px-4 py-2 bg-gray-600 text-white font-semibold rounded hover:bg-gray-700 transition-colors shadow-sm text-sm"
-                            >
-                                Format for Excel Tool
-                            </button>
-                            <div className="w-1"></div>
-                            <button
-                                onClick={handleCopy}
-                                className="self-start px-4 py-2 bg-gray-600 text-white font-semibold rounded hover:bg-gray-700 transition-colors shadow-sm text-sm"
-                            >
-                                Copy Reformatted code
-                            </button>
-                            <div className="flex items-center gap-2">
+                        )}
+                        {/* Code Actions - Hide if empty */}
+                        {code.trim() && (
+                            <div className="flex gap-4 items-center">
+                                <button
+                                    onClick={() => {
+                                        handleParse();
+                                        setViewMode('model');
+                                    }}
+                                    className="self-start px-4 py-2 bg-blue-600 text-white font-semibold rounded hover:bg-blue-700 transition-colors shadow-sm text-sm"
+                                >
+                                    Build model
+                                </button>
+                                <div className="w-4"></div>
+                                <button
+                                    onClick={handleFormat}
+                                    className="self-start px-4 py-2 bg-gray-600 text-white font-semibold rounded hover:bg-gray-700 transition-colors shadow-sm text-sm"
+                                >
+                                    Format for Excel Tool
+                                </button>
+                                <div className="w-1"></div>
+                                <button
+                                    onClick={handleCopy}
+                                    className="self-start px-4 py-2 bg-gray-600 text-white font-semibold rounded hover:bg-gray-700 transition-colors shadow-sm text-sm"
+                                >
+                                    Copy Reformatted code
+                                </button>
+                                <div className="flex items-center gap-2">
+                                </div>
                             </div>
-                        </div>
+                        )}
 
                         {reformattedCode && (
                             <div className="flex flex-col gap-1 flex-1 min-h-0 mt-4">
@@ -965,6 +997,7 @@ export default function Editor() {
                     </div>
                 )
             }
-        </main >
+            {/* DiscoveryChat is now inline in the code view */}
+        </main>
     );
 }

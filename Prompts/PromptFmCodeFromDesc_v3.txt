@@ -780,6 +780,7 @@ Inputs:
 
 Assumptions (Parameters):
 - `cost` (number): Monthly cost per outputName.
+- `start` (number): Starting month for the cost.
 
 Outputs:
 - One or more outputNames (e.g. `officeRent`, `insurance`).
@@ -1569,7 +1570,8 @@ FM
     // BusinessType: <INSERT CATEGORISATION INFO>
     // Date:         <INSERT DATE>
 
-    Funding:
+    SetupAndFunding:
+        ModelSetup = setup()
         EquityFunding = FundEquity() > fundingRounds  // Enter equity funding rounds in month they occur
 
     ////
