@@ -47,7 +47,7 @@ Basic_syntax>
 - **outputName**: camelCase  
   - Examples: `newCustomers`, `bronzeSubs`, `officeRent`.
 - Channel **Attributes**: lower camelCase after a dot represent channels per outputName 
-  - Examples: `.val`, `.heads`, `.rev`, `.act`, `.chu`, `.life`, `.cum`, `.assum`, `.cogs`, `.depr`.
+  - Examples: `.val`, `.heads`, `.rev`, `.cost`, `.act`, `.chu`, `.life`, `.cum`, `.assum`, `.cogs`, `.depr`.
 - Assumption **Attributes**: lower camelCase after a colon represent assumptions per outputName 
   - Examples: `bronzeTier(price: 10, churn: 0.1)`.
 Uniqueness:
@@ -733,7 +733,7 @@ Outputs:
 - One or more outputNames (e.g. `materialsCost`, `deliveryCost`).
 
 Attributes:
-- `.val`   = monthly cost.
+- `.cost`   = monthly cost.
 - `.assum` = unit cost (per outputName).
 
 Examples:
@@ -786,7 +786,7 @@ Outputs:
 - One or more outputNames (e.g. `officeRent`, `insurance`).
 
 Attributes:
-- `.val` = monthly cost, available at object and outputName level.
+- `.cost` = monthly cost, available at object and outputName level.
 
 Example:
 
@@ -825,7 +825,7 @@ Outputs:
 - One or more outputNames (e.g. `officeRent`, `insurance`).
 
 Attributes:
-- `.val` = monthly cost, available at object and outputName level.
+- `.cost` = monthly cost, available at object and outputName level.
 
 Example:
 
@@ -1073,7 +1073,7 @@ Outputs:
 - One or more outputNames (e.g. `ceo`, `headOfMarketing`).
 
 Attributes:
-- `.val`   = monthly cost (salary + taxes + bonus).
+- `.cost`   = monthly cost (salary + taxes + bonus).
 - `.heads` = 1 while role is active, otherwise 0.
 - Available at object and outputName level.
 
@@ -1114,7 +1114,7 @@ Outputs:
 - One or more outputNames (e.g. `financeTeam`, `marketingTeam`).
 
 Attributes:
-- `.val`   = monthly team cost.
+- `.cost`   = monthly team cost.
 - `.heads` = headcount per month.
 - Available at object and outputName level.
 
@@ -1155,7 +1155,7 @@ Outputs:
 - One or more outputNames (e.g. `fulfilmentTeam`, `supportTeam`).
 
 Attributes:
-- `.val`   = monthly team cost.
+- `.cost`   = monthly team cost.
 - `.heads` = headcount per month.
 - Available at object and outputName level.
 
@@ -1197,7 +1197,7 @@ Outputs:
 
 Attributes:
 - `.heads` = active locations × roles per location (per month).
-- `.val`   = cost = `.heads` × (salary + taxes + bonus)/12 (with inflation).
+- `.cost`   = cost = `.heads` × (salary + taxes + bonus)/12 (with inflation).
 - Available at object and role level.
 
 Combining with `StaffDiv*()`:
@@ -1282,10 +1282,10 @@ Example:
 
 FM
     Results:
-        TotalRevenues = Sum(smallCandleRev.val, largeCandleRev.val, giftSetRev.val) // Combined revenues
+        TotalRevenues = Sum(smallCandleRev.rev, largeCandleRev.rev, giftSetRev.rev) // Combined revenues
 
 Notes:
-- ObjectNames already expose object-level totals (e.g. `ProductRevenues.val`), so `Sum()` is only needed across **objects** or subsets of outputs.
+- ObjectNames already expose object-level totals (e.g. `ProductRevenues.rev`), so `Sum()` is only needed across **objects** or subsets of outputs.
 - **DO NOT** use `Sum()` to aggregate all **outputNames** from the same object
 
 </Sum_spec>
@@ -1568,15 +1568,20 @@ Every model needs core boilerplate code and a standard structure.
 FM
     // BusinessName: <INSERT NAME>
     // BusinessType: <INSERT CATEGORISATION INFO>
-    // Date:         <INSERT DATE>
+    // Date:         <INSERT TODAY'S DATE>
 
-    SetupAndFunding:
+    SetupAndFunding: //Add this section and these 2 objects to every model
         ModelSetup = setup()
         EquityFunding = FundEquity() > fundingRounds  // Enter equity funding rounds in month they occur
 
     ////
     // Model logic goes here: construction, customer acquisition, retention, revenues, people, costs, assets.
     ////
+
+    Results: // Add this section and these 3 objects to every model
+        Summary = ResIncome()
+        CorporationTax = ResTax() > Tax
+        DiscountedCashFlowValuation = ResDcf()
 
     // -------- Dashboard TABLES --------
 
@@ -1658,8 +1663,7 @@ When to use:
 Skeleton:
 
 FM
-    Funding:
-        EquityFunding = FundEquity() > fundingRounds // Enter equity funding rounds in month they occur
+    // initial boilerplate goes here
 
     CustomerAcquisition:
         Acquisition = QuantSeas() > socialCustomers, organicCustomers   // New customers by source
@@ -1698,7 +1702,7 @@ FM
         StaffDevices = CapexEquip(TotalHeads.val) > laptops, phones
         EquipPlan    = CapexMth() > labelPrinter, barcodeScanner, otherEquip1, otherEquip2
 
-    // Dashboard code as per boilerplate
+    // Results & Dashboard code as per boilerplate goes here
 
 </b2c_saas_upsell_early_pattern>
 
@@ -1711,7 +1715,7 @@ When to use:
 Skeleton:
 
 FM
-    // initial boilerplate
+    // initial boilerplate goes here
     
     CustomerOrders:
         WebOrders = QuantSeas() > advertOrders, organicOrders // Orders by source
@@ -1733,7 +1737,7 @@ FM
         Overheads   = CostGA() > rent, utilities, software, insurance, otherOverhead1, otherOverhead2
         OneOffCosts = CostMthOE() > companySetup, legalFees, otherSetup1, otherSetup2
 
-    // Dashboard as per boilerplate
+    // Results & Dashboard as per boilerplate goes here
 
 </b2c_ecommerce_early_pattern>
 
@@ -1746,7 +1750,11 @@ When to use:
 Skeleton:
 
 FM
-    // initial boilerplate
+    // initial boilerplate goes here
+
+    SetupAndFunding: //Add this section and these 2 objects to every model
+        ModelSetup = setup() // Model start month
+        EquityFunding = FundEquity() > fundingRounds // Enter equity funding rounds in month they occur
     
     CustomerOrders:
         WebOrders      = QuantSeas() > advertOrders, organicOrders
@@ -1772,8 +1780,8 @@ FM
         Fulfilment  = CostMulDC(WebOrders.val) > packagingCost, outboundShippingCost
         Overheads   = CostGA() > rent, utilities, software, insurance, otherOverhead1, otherOverhead2
         OneOffCosts = CostMthOE() > companySetup, legalFees, otherSetup1, otherSetup2
-
-    // Dashboard as per boilerplate
+    
+    // Results & Dashboard as per boilerplate goes here
 
 </b2c_ecommerce_mature_pattern>
 

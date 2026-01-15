@@ -3,6 +3,19 @@
 
 export const objectSchema = {
   // ============================
+  // Setup & Funding (Boilerplate)
+  // ============================
+  FundEquity: {
+    impl: "QuantStart",
+    options: { single: true, monthly: true },
+    channels: { val: { label: "Value", format: "currency" }, cum: { label: "Total Equity", format: "currency" } },
+    assumptions: {
+      object: [],
+      output: [{ name: "value", label: "Equity Raised", baseType: "number", format: "price", default: 0, supports: { monthly: true, single: true } }]
+    }
+  },
+
+  // ============================
   // Quant — just creates numbers, no inputs
   // ============================
   Quant: {

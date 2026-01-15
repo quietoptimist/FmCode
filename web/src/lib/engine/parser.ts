@@ -10,7 +10,7 @@
 /** =============================
  * Utilities
  * ============================== */
-const sectionRe = /^\s*([A-Za-z][A-Za-z0-9_]*)\s*:\s*$/;
+const sectionRe = /^\s*([A-Za-z][A-Za-z0-9_]*)\s*:\s*(?:\/\/.*)?$/;
 // Regex for object definition. 
 // Note: We will run this on "normalized" single lines.
 // Captures: 1=ObjName, 2=FnName, 3=Args, 4=Outputs(optional), 5=Comment(optional)
@@ -104,6 +104,7 @@ function parseFM(source) {
   const sections = [];
   const objects = []; // flat list
   const metadata = {};
+  const warnings = [];
 
   let currentSection = null;
   let pendingComments = [];
@@ -344,7 +345,15 @@ function parseFM(source) {
     const m = text.match(objRe);
     if (m) {
       if (!currentSection) {
-        throw new Error(`Object found before any section (line ${lineNo}): "${text}"`);
+        // Auto-create a general section instead of throwing
+        currentSection = { name: "General", line: lineNo, objects: [] };
+        finalSections.push(currentSection);
+        warnings.push({
+          type: 'structural_warning',
+          message: `Object found before any section (line ${lineNo}). Automatically assigned to "${currentSection.name}" section.`,
+          line: lineNo,
+          object: objName
+        });
       }
       const [, objName, fnName, argStr, outStr, trailingComment] = m;
 
@@ -377,7 +386,7 @@ function parseFM(source) {
     }
   }
 
-  return { sections: finalSections, objects: finalObjects, metadata: finalMetadata };
+  return { sections: finalSections, objects: finalObjects, metadata: finalMetadata, warnings };
 }
 
 function splitCSV(s) {
@@ -495,5 +504,12 @@ export function parseAndLinkFM(source) {
   const ast = parseFM(source);
   const index = buildIndex(ast);
   const linked = linkFM(ast, index);
-  return { ast: linked, index, warnings: linked.warnings };
+
+  // Consolidate warnings from all stages
+  const allWarnings = [
+    ...(ast.warnings || []),
+    ...(linked.warnings || [])
+  ];
+
+  return { ast: linked, index, warnings: allWarnings };
 }

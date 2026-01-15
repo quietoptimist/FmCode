@@ -119,8 +119,15 @@ export function runEngine({ ast, index, outGraph, assumptions, ctx, fnRegistry, 
 
       // --------------------- 3) call function ---------------------
       const implName = schema.impl || objNode.fnName;
-      const fn = fnRegistry[implName];
-      if (!fn) throw new Error(`Engine: unknown function "${implName}"`);
+      let fn = fnRegistry[implName];
+      if (!fn) {
+        warnings.push({
+          type: 'engine_warning',
+          message: `Unknown function "${implName}" used by object "${objName}". Returning zero values.`,
+          object: objName
+        });
+        fn = (ctx) => ({ val: new Float64Array(ctx.months) });
+      }
 
       const result = fn(ctx, inputs, {
         object: objectLevel,

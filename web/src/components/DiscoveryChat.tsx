@@ -137,7 +137,7 @@ export const DiscoveryChat: React.FC<DiscoveryChatProps> = ({
     };
 
     return (
-        <div className="flex flex-col h-[500px] bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-4">
+        <div className="flex flex-col h-full min-h-[300px] bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
             {/* Header */}
             <div className="p-3 border-b flex items-center justify-between bg-blue-600 text-white">
                 <div className="flex items-center gap-3">

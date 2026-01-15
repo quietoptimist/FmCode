@@ -714,15 +714,17 @@ export default function Editor() {
 
             {viewMode === 'code' && (
                 <div className="w-full px-4 mb-4">
-                    <div className="bg-white rounded border border-gray-200 p-4 flex flex-col gap-4 h-[calc(100vh-100px)] overflow-y-auto">
+                    <div className="bg-white rounded border border-gray-200 p-4 flex flex-col gap-4 h-[calc(100vh-100px)] overflow-hidden">
                         {isDiscoveryOpen && (
-                            <DiscoveryChat
-                                onClose={() => setIsDiscoveryOpen(false)}
-                                onSummaryUpdate={(summary) => setDescription(summary)}
-                                currentSummary={description}
-                            />
+                            <div className="flex-1 min-h-0">
+                                <DiscoveryChat
+                                    onClose={() => setIsDiscoveryOpen(false)}
+                                    onSummaryUpdate={(summary) => setDescription(summary)}
+                                    currentSummary={description}
+                                />
+                            </div>
                         )}
-                        <div className="flex flex-col gap-1">
+                        <div className={`flex flex-col gap-1 ${(code.trim() || isDiscoveryOpen) ? 'flex-1 min-h-0' : ''}`}>
                             <div className="flex items-center justify-between mb-1">
                                 <div className="flex items-center gap-3">
                                     <label className="text-sm font-semibold text-gray-600">Business Description</label>
@@ -746,7 +748,7 @@ export default function Editor() {
                                 )}
                             </div>
                             <textarea
-                                className={`w-full ${isDiscoveryOpen ? 'h-[400px]' : (code.trim() ? 'h-[200px]' : 'h-[500px]')} p-2 text-sm border rounded shadow-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none transition-all`}
+                                className="w-full h-full min-h-[150px] p-2 text-sm border rounded shadow-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none transition-all flex-1"
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
                                 placeholder="Describe the business logic..."
@@ -829,7 +831,7 @@ export default function Editor() {
                         {code.trim() && (
                             <div className="flex flex-col gap-1 flex-1 min-h-0">
                                 <label className="text-sm font-semibold text-gray-600">FM Code</label>
-                                <div className="flex w-full h-full border rounded shadow-sm overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 bg-white">
+                                <div className="flex w-full h-full min-h-[150px] border rounded shadow-sm overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 bg-white">
                                     <div
                                         ref={lineNumbersRef}
                                         className="bg-gray-50 text-gray-400 text-right pr-3 pt-4 font-mono text-sm select-none border-r border-gray-200 overflow-hidden min-w-[3rem]"

@@ -17,10 +17,12 @@ Keep this summary updated with the following sections. DO NOT DROP DETAIL.
 # Stage: [Napkin Sketch / Scaling]
 
 ## Revenue & Products:
+Sentence summarising situation and plans for P&S (without duplicating info below)
 - [Product A]: $[Price]
 - [Product B]: $[Price]
 
 ## Variable Costs / Bill of Materials (BOM):
+Sentence summarising situation and plans for supply chain and BOM (without duplicating info below)
 - **Components & Unit Costs**:
   - [Component A]: $[Cost] per unit
   - [Component B]: $[Cost] per unit
@@ -29,15 +31,18 @@ Keep this summary updated with the following sections. DO NOT DROP DETAIL.
   - [Product B] needs: [Component B], [Component C], [Component D]
 
 ## Growth & Marketing:
+Sentence summarising situation and plans for growth and marketing (without duplicating info below)
 - [Primary Channels]: [e.g. Meta Ads, Sales Team]
 - [Expansion]: [Year 3-5 high level plan]
 
 ## Team & Staffing:
+Sentence summarising situation and plans for team and staffing (without duplicating info below)
 - [Roles]: [e.g. CEO, CTO]
 - [Fixed Teams]: [e.g. 3 Finance, 2 Developers]
 - [Variable Teams]: [e.g. 1 Support per 500 users]
 
 ## Overheads & Assets:
+Sentence summarising situation and plans for overheads and assets (without duplicating info below)
 - [Overheads]: [e.g. Rent, AWS, Legal]
 - [Assets]: [e.g. $50k Equipment in Month 1]
 

@@ -1171,9 +1171,6 @@ export const fnRegistry = {
     };
   },
 
-  Setup(ctx) {
-    return { val: new Float64Array(ctx.months) };
-  },
 
   // ==================================
   // SupplyMths — Supplier purchasing with lead times, MOQs, and inventory targets
